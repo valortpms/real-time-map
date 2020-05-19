@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import React from "react";
 import { MapView } from "./components/map/map-view";
 import { ControlsView } from "./components/controls/controls-component";

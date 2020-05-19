@@ -4,31 +4,34 @@ import { progressBar } from "../progress-bar";
 import { ProgressIndicatorComponent } from "../progress-bar/progress-indicator-component";
 import { SnackBar } from "../snackbar/snackbar-component";
 import {
-  apiConfig
+   apiConfig
 } from "../../dataStore/api-config";
 import storage from "../../dataStore";
 
-export class MapView extends React.Component {
-  componentDidMount() {
-    mapModel.handleMapCreated("RTM-Map");
-    progressBar.update();
-  }
+import splCfg from "../../spartanlync/config";
+console.log("splApiUrl = " + splCfg.splApiUrl);
 
-  render() {
-    return (
-      <div id="RTM-Map-Container">
-        {storage.isStandAlone ? <button id="RTM-LogoutButton" onClick={() => { apiConfig.api.forget(); }}>Logout</button> : null}
-        <div id="RTM-Map">
-          <ProgressIndicatorComponent />
-          <button
-            type="button"
-            className="collapsible"
-            id="collapse-button"
-            title="Open Configuration Panel"
-          ></button>
-          <SnackBar />
-        </div>
-      </div>
-    );
-  }
+export class MapView extends React.Component {
+   componentDidMount() {
+      mapModel.handleMapCreated("RTM-Map");
+      progressBar.update();
+   }
+
+   render() {
+      return (
+         <div id="RTM-Map-Container">
+            {storage.isStandAlone ? <button id="RTM-LogoutButton" onClick={() => { apiConfig.api.forget(); }}>Logout</button> : null}
+            <div id="RTM-Map">
+               <ProgressIndicatorComponent />
+               <button
+                  type="button"
+                  className="collapsible"
+                  id="collapse-button"
+                  title="Open Configuration Panel"
+               ></button>
+               <SnackBar />
+            </div>
+         </div>
+      );
+   }
 }

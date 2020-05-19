@@ -8,7 +8,7 @@
 		"devStart": "sh dev.sh",
 		"devServer": "nodemon ./server.js",
 		"devBuild": "webpack --config webpack.dev.js --watch",
-		"build": "echo 'Building Version v2.3.2...' && webpack --config webpack.prod.js && echo 'Version v2.3.2 built into the dist folder.'",
+		"build": "webpack --config webpack.prod.js && echo 'Version v2.3.2 built into the dist folder.'",
 		"start": "node ./server.js",
 		"release": "npm i && npm run build && mkdir release && cp -avr -t release dist README.md configuration.json"
 	},

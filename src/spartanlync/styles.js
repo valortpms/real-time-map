@@ -1,7 +1,6 @@
 import splCfg from "./config";
-console.log("appEnv = " + splCfg.appEnv);
 
-const playBtnBgColor = (splCfg.appEnv === "dev" ? "#FF0000" : "#000000");
+const playBtnBgColor = (splCfg.appEnv === "dev" ? "#FF0000" : "#FFFFFF");
 const styles = {
    playBtnStyle: {
       backgroundColor: playBtnBgColor

@@ -8,9 +8,6 @@ import {
 } from "../../dataStore/api-config";
 import storage from "../../dataStore";
 
-import splCfg from "../../spartanlync/config";
-console.log("splApiUrl = " + splCfg.splApiUrl);
-
 export class MapView extends React.Component {
    componentDidMount() {
       mapModel.handleMapCreated("RTM-Map");

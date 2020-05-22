@@ -1,15 +1,24 @@
 /* eslint-disable one-var */
 import splCfg from "../config";
-import { InitSplAPI, InitSplSessionMgr } from "./api";
 import { userInfo } from "../../dataStore/api-config";
+import { InitSplAPI, InitSplSessionMgr } from "./api";
+import { INITGeotabTpmsTemptracLib } from "../services/api//temptrac-tpms";
 import { showMsg } from "../ui-components";
 
 const SpartanLyncServices = {
 
    debug: false,
 
+   sensorSearchRetryRangeInDays: [1, 2, 7, 30, 60, 90],    // Days from now to search for sensors (on App Start)
+   sensorSearchTimeRangeForRepeatSearchesInSeconds: 3600,  // 3600 Seconds from now to use for repeating sensor search's (default: 1 Hour)
+
+   splToolsNotInstalledErrorMsg: "The SpartanLync Tools Add-In was not found. Please install and run to enable SpartanLync Temptrac / TPMS features",
+   splToolsSearchRetry: 60000,  // (Default: 1 min) How often to poll backend for SplTools Add-In configured for this user in this database
+   _splToolsInstalled: false,
+
    _api: null,
    sessionMgr: null,
+   goLib: null,
 
    _credentials: {
       db: "",
@@ -29,108 +38,33 @@ const SpartanLyncServices = {
 
       me._api = new InitSplAPI(splCfg.splApiUrl);
       me.sessionMgr = new InitSplSessionMgr(me._api, me._credentials);
+      me.goLib = INITGeotabTpmsTemptracLib(
+         me._api,
+         me.sensorSearchRetryRangeInDays,
+         me.sensorSearchTimeRangeForRepeatSearchesInSeconds
+      );
+
+      showMsg.defaultStartDelay = 8; // Start showing messages 8 seconds after browser load)
    },
 
-   checkForSplSession: function () {
+   checkForSplTools: function () {
       const me = this;
       me.sessionMgr.getSettings((remoteStore, dbDeviceIds) => {
-         showMsg("remoteStore");
+         if (remoteStore === null) {
+            showMsg.alert(me.splToolsNotInstalledErrorMsg);
+            setTimeout(function () {
+               me.checkForSplTools();
+            }, me.splToolsSearchRetry);
+            return;
+         }
+         me._splToolsInstalled = true;
+         console.log("----- remoteStore -----");
          console.log(remoteStore);
-         showMsg("dbDeviceIds");
+         console.log("----- dbDeviceIds -----");
          console.log(dbDeviceIds);
       });
    },
 
 };
 
-/*
-const SpartanLyncServices = {
-
-   taskQueue: [],
-   pollTime: 10000,
-   running: false,
-   schedulerHandle: null,
-
-   testUrl: "virgin",
-
-   init: function () {
-      const me = this;
-      console.log("SplServices().init()");
-      console.log("testUrl = " + me.testUrl);
-      me.testUrl = splCfg.splApiUrl;
-   },
-
-   setUrl: function (url) {
-      const me = this;
-      me.testUrl = url;
-      console.log("utilityFunc(" + url + ") testUrl = " + me.testUrl);
-   },
-
-   utilityFunc: function (header) {
-      const me = this;
-      console.log("utilityFunc(" + header + ") testUrl = " + me.testUrl);
-   },
-
-   _currentTime: undefined,
-   get currentTime() {
-      console.log("get.currentTime() = " + this._currentTime);
-      return this._currentTime;
-   },
-   set currentTime(currentTime) {
-      this._currentTime = currentTime;
-      console.log("set.currentTime() = " + this._currentTime);
-   },
-
-   add: function (func) {
-      const me = this;
-      if (typeof func !== "undefined" && func !== null && typeof func === 'function') {
-         const args = Array.prototype.slice.call(arguments);
-         args.shift();
-         me.taskQueue.push({ f: func, a: args });
-      }
-      me.start();
-   },
-
-   run: function () {
-      const me = this;
-      if (me.taskQueue.length) {
-         me.running = true;
-         me.taskQueue.forEach(q => {
-            const func = q.f,
-               args = q.a;
-            func.apply(func, args);
-         });
-         me.running = false;
-      }
-   },
-
-   tick: function () {
-      const me = this;
-      if (me.schedulerHandle !== null) {
-         if (!me.running) { me.run(); }
-         me.schedulerHandle = setTimeout(function () {
-            me.tick();
-         }, me.pollTime);
-      }
-   },
-
-   start: function () {
-      const me = this;
-      if (me.schedulerHandle === null) {
-         me.schedulerHandle = setTimeout(function () {
-            me.tick();
-         }, me.pollTime);
-      }
-   },
-
-   stop: function () {
-      if (this.schedulerHandle !== null) {
-         clearTimeout(this.schedulerHandle);
-      }
-      this.taskQueue = [];
-      this.schedulerHandle = null;
-   }
-};
-
-*/
 export default SpartanLyncServices;

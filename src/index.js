@@ -13,7 +13,7 @@ class View extends React.Component {
    }
 
    componentDidMount() {
-      splServices.checkForSplSession();
+      splServices.checkForSplTools();
    }
 
    render() {

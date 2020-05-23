@@ -27,8 +27,9 @@ export function initBeforeLogin() {
    initDateKeeper();
 }
 
-export function loginToSession(api) {
+export function loginToSession(api, state) {
    apiConfig.api = api;
+   apiConfig.state = state;
    return new Promise(resolve => {
       apiConfig.api.getSession((session, server) => {
          userInfo.setUserInfo(session.userName, session.database, session.sessionId, server);
@@ -53,7 +54,9 @@ export function handleBlur() {
    console.log("Blurred!");
 }
 
-export function handleFocus() {
+export function handleFocus(api, state) {
+   apiConfig.api = api;
+   apiConfig.state = state;
    storage.dateKeeper$.resume();
    resetTransitionAnimation();
    console.log("Focused!");

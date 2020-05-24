@@ -213,6 +213,60 @@ export const InitSplSessionMgr = function (myApi, credentials) {
       );
    };
 
+   /**
+   * syncSettings() Store latest copy of storage settings with backend DB
+   *
+   * @param {object}   storageObj - data to store in DB
+   * @param {function} callback - Handler for post-syncing
+   *
+   * @return {boolean} accepted: TRUE  - supplied storageObj was saved succesfully
+   *                                     Returns local storageObj as valid
+   *                             FALSE - supplied storageObj was rejected as expired or invalid.
+   *                                     Returns remote storageObj as valid
+   * @return {object}  storageObj: Valid storageObj for Add-In usage and local browser storage
+   */
+   this.syncSettings = function (storageObj, splDeviceIdDB, callback, errorCallback) {
+      const me = this;
+      if (!storageObj || typeof storageObj !== "object" ||
+         !splDeviceIdDB || typeof splDeviceIdDB !== "object" ||
+         !callback || typeof callback !== "function" ||
+         !me._api || !me._credentials) { return; }
+
+      me._callback = callback;
+      me._errorCallback = errorCallback && errorCallback === "function" ? errorCallback : null;
+      me._storage = storageObj;
+      me._api.requestService(
+         {
+            settings: {
+               cmd: "set",
+               storage: storageObj,
+               deviceids: splDeviceIdDB
+            },
+            credentials: me._credentials
+         },
+         (result) => {
+            if (me._isSuccess(result)) {
+               const settings = result.data;
+               if (typeof settings.accepted !== "undefined" &&
+                  typeof settings.storageObj !== "undefined" &&
+                  typeof settings.deviceIdDb !== "undefined") {
+                  me._callback(settings.accepted, settings.storageObj, settings.deviceIdDb);
+               }
+               else {
+                  me._handleAppError(result, "---- splSessionMgr(): syncSettings(): ERROR: RESPONSE MISSING PROPERTIES \".accepted\" AND \".storageObj\" ----");
+               }
+            }
+            else {
+               me._handleAppError(result, "---- splSessionMgr(): syncSettings(): ERROR SAVING ----");
+            }
+         },
+         // API ERROR SYNCING
+         (result) => {
+            console.log("---- splSessionMgr(): syncSettings(): API ERROR SYNCING ----");
+            console.log(result);
+         });
+   };
+
    this._isSuccess = function (result) {
       if (typeof result !== "undefined" && result !== null && typeof result === "object" &&
          typeof result.responseStatus !== "undefined" && result.responseStatus !== null &&

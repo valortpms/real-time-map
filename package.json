@@ -45,7 +45,7 @@
 		"localforage": "^1.7.3",
 		"material-components-web": "^3.2.0",
 		"mg-api-js": "^1.0.0",
-		"moment": "^2.25.3",
+		"moment": "^2.26.0",
 		"normalize.css": "^8.0.1",
 		"nouislider": "^14.4.0",
 		"propellerkit-range-slider": "^1.2.0",

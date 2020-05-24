@@ -1,3 +1,5 @@
+import moment from "moment";
+
 /* eslint-disable complexity */
 export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearchRange) {
    return function () {

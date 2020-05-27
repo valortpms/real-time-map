@@ -1,30 +1,35 @@
 /* eslint-disable one-var */
-import splCfg from "../config";
-import { userInfo, apiConfig } from "../../dataStore/api-config";
-import { InitSplAPI, InitSplSessionMgr } from "./api";
-import { INITGeotabTpmsTemptracLib } from "../services/api//temptrac-tpms";
-import { showMsg } from "../ui-components";
-import moment from "moment";
+import moment from "moment-timezone";
 
 const SpartanLyncServices = {
 
-   debug: false,
+   /**
+    *  Settings
+    */
 
-   splStoreSyncRetry: 60000,  // (Default: 1 min) How frequently to retry saving storage object to remote server
+   debug: false,                                            // Enable detailed debugging to Console on API calls
 
-   sensorSearchRetryRangeInDays: [1, 2, 7, 30, 60, 90],    // Days from now to search for sensors (on App Start)
-   sensorSearchTimeRangeForRepeatSearchesInSeconds: 3600,  // 3600 Seconds from now to use for repeating sensor search's (default: 1 Hour)
+   splHumanTimeFormat: "dd MMM DD, YYYY LT z",              // moment() format for converting from UNIX timestamp to Human format in User's Timezone
+   splStoreSyncRetry: 60000,                                // (Default: 1 min) How frequently to retry saving storage object to remote server
+
+   sensorDataLifetime: 10,                                 // (Default: 180 seconds) Afer this period, cached vehicle sensor data is refreshed from API (in seconds)
+   sensorSearchRetryRangeInDays: [1, 2, 7, 30, 60, 90],     // Days from now to search for sensors (on App Start)
+   sensorSearchTimeRangeForRepeatSearchesInSeconds: 3600,   // 3600 Seconds from now to use for repeating sensor search's (default: 1 Hour)
 
    splToolsNotInstalledErrorMsg: "The SpartanLync Tools Add-In was not found. Please install and run to enable SpartanLync Temptrac / TPMS features",
-   splToolsSearchRetry: 60000,  // (Default: 1 min) How often to poll backend for SplTools Add-In configured for this user in this database
-   _splToolsInstalled: false,
-   _splStore: null,
-   _dbDeviceIds: null,
+   splToolsSearchRetry: 60000,                              // (Default: 1 min) How often to poll backend for SplTools Add-In configured for this user in this database
 
-   _api: null,
-   state: null,
+   alertsDefaultStartupDelay: 8,                            // (Default: 8 seconds) UI will start showing alerts XX seconds after App loads in Browser
+   alertsDefaultLabelPrefix: "SpartanLync Alert",           // Using showMsg.alert(); Unles overidden, what message to prefix the specified alert
+
+   /**
+    *  Private Variables
+    */
+
    sessionMgr: null,
    goLib: null,
+   state: null,
+   _api: null,
 
    _credentials: {
       db: "",
@@ -33,44 +38,10 @@ const SpartanLyncServices = {
       sessionId: "",
    },
 
-   init: function () {
-      const me = this;
-      me.debug = splCfg.appEnv === "dev" ? true : false;
-
-      me._credentials.db = userInfo.database;
-      me._credentials.username = userInfo.userName;
-      me._credentials.server = userInfo.server;
-      me._credentials.sessionId = userInfo.sessionId;
-
-      me.state = apiConfig.state;
-      me._api = new InitSplAPI(splCfg.splApiUrl);
-      me.sessionMgr = new InitSplSessionMgr(me._api, me._credentials);
-      me.goLib = INITGeotabTpmsTemptracLib(
-         me._api,
-         me.sensorSearchRetryRangeInDays,
-         me.sensorSearchTimeRangeForRepeatSearchesInSeconds
-      );
-
-      showMsg.defaultStartDelay = 8; // Start showing messages 8 seconds after browser load)
-   },
-
-   checkForSplTools: function () {
-      const me = this;
-      me.sessionMgr.getSettings((remoteStore, dbDeviceIds) => {
-         if (remoteStore === null || typeof remoteStore.splMap === "undefined") {
-            showMsg.alert(me.splToolsNotInstalledErrorMsg);
-            setTimeout(function () {
-               me.checkForSplTools();
-            }, me.splToolsSearchRetry);
-            return;
-         }
-         me._splToolsInstalled = true;
-         me._dbDeviceIds = dbDeviceIds;
-         remoteStore.splMap.found = true;
-         remoteStore.splMap.mapsPageName = splCfg.appEnv === "dev" ? window.location.href : window.location.hash.replace("#", "");
-         me.splStore = remoteStore;
-      });
-   },
+   _splToolsInstalled: false,
+   _splStore: null,
+   _dbDeviceIds: null,
+   _timeZone: null,
 
    /**
     *  Getters/Setters for _splStore
@@ -88,15 +59,15 @@ const SpartanLyncServices = {
 
       // Save Remotely
       me.sessionMgr.syncSettings(me._splStore, me._dbDeviceIds,
-         (accepted, remoteStore, dbDeviceIds) => {
+         (accepted) => {
             // If accepted by Remote, remoteStore = localStore
             // If rejected by Remote, remoteStore should be saved to local browser
             if (accepted) {
-               console.log("Successfully updated SplStore Remotely");
+               console.log("SplMapServices: Successfully updated SplStore Remotely");
             }
             else {
                const retryTimeoutInSeconds = parseInt(me.splStoreSyncRetry / 1000);
-               console.log("Failed to updated SplStore remotely...Will Retry in " + retryTimeoutInSeconds + " seconds");
+               console.log("SplMapServices: Failed to updated SplStore remotely...Will Retry in " + retryTimeoutInSeconds + " seconds");
                setTimeout(function () {
                   me.splStore = me._splStore;
                }, me.splStoreSyncRetry);
@@ -104,7 +75,7 @@ const SpartanLyncServices = {
          },
          // Error Handler
          (errMsg) => {
-            console.log("Failed to updated SplStore remotely...Reason: " + errMsg);
+            console.log("SplMapServices: Failed to updated SplStore remotely...Reason: " + errMsg);
          });
    }
 };

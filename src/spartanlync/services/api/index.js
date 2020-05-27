@@ -144,6 +144,13 @@ export const InitSplAPI = function (serverUrl, csrfToken) {
       }
    };
 
+   /**
+    *  Handler for Setting _debug
+    */
+   this.enableDebug = function (enable) {
+      me._debug = enable;
+   };
+
    // configure when an instance gets created
    this.configure(serverUrl, csrfToken);
 };
@@ -265,6 +272,14 @@ export const InitSplSessionMgr = function (myApi, credentials) {
             console.log("---- splSessionMgr(): syncSettings(): API ERROR SYNCING ----");
             console.log(result);
          });
+   };
+
+   /**
+    *  Handler for Setting debug in SplAPI
+    */
+   this.enableDebug = function (enable) {
+      const me = this;
+      me._api.enableDebug(enable);
    };
 
    this._isSuccess = function (result) {

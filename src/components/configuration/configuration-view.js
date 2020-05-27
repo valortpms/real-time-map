@@ -51,12 +51,12 @@ export class ConfigView extends React.Component {
    }
 
    componentDidMount() {
-      exceptionSearch.init(this.setExceptions);
-      diagnosticSearch.init(this.setStatuses);
       deviceSearch.init(this.setDevices);
-      exceptionSearch.loadSavedExceptionConfig(this.setExceptionsList);
-      diagnosticSearch.loadSavedStatusConfig(this.setStatusList);
+      diagnosticSearch.init(this.setStatuses);
+      exceptionSearch.init(this.setExceptions);
       deviceSearch.loadSavedDeviceConfig(this.setVehicleList);
+      diagnosticSearch.loadSavedStatusConfig(this.setStatusList);
+      exceptionSearch.loadSavedExceptionConfig(this.setExceptionsList);
       initCollapse();
    }
 
@@ -65,20 +65,20 @@ export class ConfigView extends React.Component {
          <div id="RTM-config-view">
             <div id="RTM-config-container">
                <div id="RTM-config-header" className="">
-                  <ExceptionsTab
-                     exceptions={this.state.exceptionsSearchList}
-                     exceptionDisplayList={this.state.exceptionDisplayList}
-                     onClick={this.setExceptionsList}
+                  <VehiclesTab
+                     devices={this.state.devices}
+                     vehicleDisplayList={this.state.vehicleDisplayList}
+                     onClick={this.setVehicleList}
                   />
                   <StatusTab
                      statuses={this.state.statuses}
                      statusDisplayList={this.state.statusDisplayList}
                      onClick={this.setStatusList}
                   />
-                  <VehiclesTab
-                     devices={this.state.devices}
-                     vehicleDisplayList={this.state.vehicleDisplayList}
-                     onClick={this.setVehicleList}
+                  <ExceptionsTab
+                     exceptions={this.state.exceptionsSearchList}
+                     exceptionDisplayList={this.state.exceptionDisplayList}
+                     onClick={this.setExceptionsList}
                   />
                </div>
             </div>

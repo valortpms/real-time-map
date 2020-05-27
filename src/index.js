@@ -3,17 +3,17 @@ import { MapView } from "./components/map/map-view";
 import { ControlsView } from "./components/controls/controls-component";
 import { ConfigView } from "./components/configuration/configuration-view";
 import ReactDOM from "react-dom";
-import splServices from "./spartanlync/services";
+import splSrvTools from "./spartanlync/services/tools";
 
 class View extends React.Component {
 
    constructor(props) {
       super(props);
-      splServices.init();
+      splSrvTools.initServices();
    }
 
    componentDidMount() {
-      splServices.checkForSplTools();
+      splSrvTools.checkForSplTools();
    }
 
    render() {

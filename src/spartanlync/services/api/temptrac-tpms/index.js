@@ -1,4 +1,4 @@
-import moment from "moment";
+import moment from "moment-timezone";
 
 /* eslint-disable complexity */
 export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearchRange) {
@@ -10,6 +10,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
           */
          _timer: {},
 
+         _api: api,
          _apiFaultFirstTimeCall: true,
          _apiFirstTimeCall: true,
 
@@ -89,7 +90,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
             // Temptrac searches, only require a search on the tractor vehicle component
             const vehComps = me._repSType === "temptrac" ? me._devComponents.ids.split(",")[0] : me._devComponents.ids;
 
-            api.multiCall(me._buildApiCall(vehComps),
+            me._api.multiCall(me._buildApiCall(vehComps),
                function (result) {
                   if (result && result.length) {
                      let tractorOnlyResults = true;
@@ -283,18 +284,19 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
 
             // Invoke Device Status API Call
             me._timer.a1 = new Date();
-            api.call("Get", apiCall, function (result) {
-               if (result && result.length) {
-                  const vehStatusObj = result[0];
-                  me._timer.a2 = new Date();
-                  console.log("--- getVehStatus(): Vehicle Status Info retrieved - " + me._convertSecondsToHMS((me._timer.a2 - me._timer.a1) / 1000));
-                  vStatusCallback(vehStatusObj);
-               }
-               else {
-                  console.log("--- Error: getVehStatus.api.call(): EMPTY RESPONSE");
-                  vStatusCallback(null);
-               }
-            },
+            me._api.call("Get", apiCall,
+               function (result) {
+                  if (result && result.length) {
+                     const vehStatusObj = result[0];
+                     me._timer.a2 = new Date();
+                     console.log("--- getVehStatus(): Vehicle Status Info retrieved - " + me._convertSecondsToHMS((me._timer.a2 - me._timer.a1) / 1000));
+                     vStatusCallback(vehStatusObj);
+                  }
+                  else {
+                     console.log("--- Error: getVehStatus.api.call(): EMPTY RESPONSE");
+                     vStatusCallback(null);
+                  }
+               },
                function (errorString) {
                   me._timer.a2 = new Date();
                   console.log("--- Vehicle Status Info retrieval failed - " + me._convertSecondsToHMS((me._timer.a2 - me._timer.a1) / 1000));
@@ -370,164 +372,165 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                ) + " date range: FROM: " + me._fromDate + " => TO: " + me._toDate);
 
             me._timer.b1 = new Date();
-            api.multiCall(me._buildApiCall(vehComps), function (result) {
-               if (result && result.length) {
-                  let sensorDataFound = false;
-                  const sdata = {};
+            me._api.multiCall(me._buildApiCall(vehComps),
+               function (result) {
+                  if (result && result.length) {
+                     let sensorDataFound = false;
+                     const sdata = {};
 
-                  me._timer.b2 = new Date();
-                  console.log("Sensor data retrieved - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000));
+                     me._timer.b2 = new Date();
+                     console.log("Sensor data retrieved - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000));
 
-                  // Analyze and Sort sensor data
-                  console.log("Sensor data being analyzed - Please Wait!");
-                  me._timer.b1 = new Date();
-                  for (const res of result) {
-                     if (Array.isArray(res) && res.length) {
-                        for (const srec of res) {
-                           if (!srec.id || srec.device.id !== me._devId || typeof srec.diagnostic.id === "undefined") {
-                              continue; // Invalid records discarded
+                     // Analyze and Sort sensor data
+                     console.log("Sensor data being analyzed - Please Wait!");
+                     me._timer.b1 = new Date();
+                     for (const res of result) {
+                        if (Array.isArray(res) && res.length) {
+                           for (const srec of res) {
+                              if (!srec.id || srec.device.id !== me._devId || typeof srec.diagnostic.id === "undefined") {
+                                 continue; // Invalid records discarded
+                              }
+                              const diagName = me._locLib.idxIds[srec.diagnostic.id];
+                              const vehCompType = me._locLib[diagName].type;
+
+                              // Init Sensor Data ordered by Vehicle component
+                              if (typeof sdata[vehCompType] === "undefined") {
+                                 sdata[vehCompType] = {
+                                    tpmstemp: {},
+                                    tpmspress: {},
+                                    temptrac: {}
+                                 };
+                              }
+
+                              // Store Temptrac sensor reading
+                              if (diagName.indexOf("reefer temperature") > -1) {
+                                 const zone = me._extractZoneFromLoc(diagName);
+                                 const locId = "temptrac_" + zone.trim().replace(/ /g, "").toLowerCase();
+                                 const recObj = {
+                                    id: locId,
+                                    type: "Temptrac",
+                                    time: moment(srec.dateTime).unix(),
+                                    zone: zone,
+                                    val: me._fromDataToValueObj(srec)
+                                 };
+
+                                 // Remember most recent records by Location
+                                 if (typeof sdata[vehCompType].temptrac[locId] === "undefined") {
+                                    sdata[vehCompType].temptrac[locId] = recObj;
+                                 }
+                                 else if (recObj.time > sdata[vehCompType].temptrac[locId].time) {
+                                    sdata[vehCompType].temptrac[locId] = recObj;
+                                 }
+                              }
+                              // Store TPMS Temperature sensor reading
+                              else if (diagName.indexOf("ire temperature:") > -1) {
+                                 const axle = me._extractAxleFromLoc(diagName).replace(/^trailer [0-9] /g, "");
+                                 const locId = "tiretemp_" + axle.trim().replace(/ /g, "").toLowerCase();
+                                 const recObj = {
+                                    id: locId,
+                                    type: "Tire Temperature",
+                                    time: moment(srec.dateTime).unix(),
+                                    axle: axle,
+                                    val: me._fromDataToValueObj(srec)
+                                 };
+
+                                 // Remember most recent records by Location
+                                 if (typeof sdata[vehCompType].tpmstemp[locId] === "undefined") {
+                                    sdata[vehCompType].tpmstemp[locId] = recObj;
+                                 }
+                                 else if (recObj.time > sdata[vehCompType].tpmstemp[locId].time) {
+                                    sdata[vehCompType].tpmstemp[locId] = recObj;
+                                 }
+                              }
+                              // Store TPMS Pressure sensor reading
+                              else if (diagName.indexOf("ire pressure:") > -1) {
+                                 const axle = me._extractAxleFromLoc(diagName).replace(/^trailer [0-9] /g, "");
+                                 const locId = "tirepress_" + axle.trim().replace(/ /g, "").toLowerCase();
+                                 const recObj = {
+                                    id: locId,
+                                    type: "Tire Pressure",
+                                    time: moment(srec.dateTime).unix(),
+                                    axle: axle,
+                                    val: me._fromDataToValueObj(srec)
+                                 };
+
+                                 // Remember most recent records by Location
+                                 if (typeof sdata[vehCompType].tpmspress[locId] === "undefined") {
+                                    sdata[vehCompType].tpmspress[locId] = recObj;
+                                 }
+                                 else if (recObj.time > sdata[vehCompType].tpmspress[locId].time) {
+                                    sdata[vehCompType].tpmspress[locId] = recObj;
+                                 }
+                              }
+                              sensorDataFound = true;
                            }
-                           const diagName = me._locLib.idxIds[srec.diagnostic.id];
-                           const vehCompType = me._locLib[diagName].type;
-
-                           // Init Sensor Data ordered by Vehicle component
-                           if (typeof sdata[vehCompType] === "undefined") {
-                              sdata[vehCompType] = {
-                                 tpmstemp: {},
-                                 tpmspress: {},
-                                 temptrac: {}
-                              };
-                           }
-
-                           // Store Temptrac sensor reading
-                           if (diagName.indexOf("reefer temperature") > -1) {
-                              const zone = me._extractZoneFromLoc(diagName);
-                              const locId = "temptrac_" + zone.trim().replace(/ /g, "").toLowerCase();
-                              const recObj = {
-                                 id: locId,
-                                 type: "Temptrac",
-                                 time: moment(srec.dateTime).unix(),
-                                 zone: zone,
-                                 val: me._fromDataToValueObj(srec)
-                              };
-
-                              // Remember most recent records by Location
-                              if (typeof sdata[vehCompType].temptrac[locId] === "undefined") {
-                                 sdata[vehCompType].temptrac[locId] = recObj;
-                              }
-                              else if (recObj.time > sdata[vehCompType].temptrac[locId].time) {
-                                 sdata[vehCompType].temptrac[locId] = recObj;
-                              }
-                           }
-                           // Store TPMS Temperature sensor reading
-                           else if (diagName.indexOf("ire temperature:") > -1) {
-                              const axle = me._extractAxleFromLoc(diagName).replace(/^trailer [0-9] /g, "");
-                              const locId = "tiretemp_" + axle.trim().replace(/ /g, "").toLowerCase();
-                              const recObj = {
-                                 id: locId,
-                                 type: "Tire Temperature",
-                                 time: moment(srec.dateTime).unix(),
-                                 axle: axle,
-                                 val: me._fromDataToValueObj(srec)
-                              };
-
-                              // Remember most recent records by Location
-                              if (typeof sdata[vehCompType].tpmstemp[locId] === "undefined") {
-                                 sdata[vehCompType].tpmstemp[locId] = recObj;
-                              }
-                              else if (recObj.time > sdata[vehCompType].tpmstemp[locId].time) {
-                                 sdata[vehCompType].tpmstemp[locId] = recObj;
-                              }
-                           }
-                           // Store TPMS Pressure sensor reading
-                           else if (diagName.indexOf("ire pressure:") > -1) {
-                              const axle = me._extractAxleFromLoc(diagName).replace(/^trailer [0-9] /g, "");
-                              const locId = "tirepress_" + axle.trim().replace(/ /g, "").toLowerCase();
-                              const recObj = {
-                                 id: locId,
-                                 type: "Tire Pressure",
-                                 time: moment(srec.dateTime).unix(),
-                                 axle: axle,
-                                 val: me._fromDataToValueObj(srec)
-                              };
-
-                              // Remember most recent records by Location
-                              if (typeof sdata[vehCompType].tpmspress[locId] === "undefined") {
-                                 sdata[vehCompType].tpmspress[locId] = recObj;
-                              }
-                              else if (recObj.time > sdata[vehCompType].tpmspress[locId].time) {
-                                 sdata[vehCompType].tpmspress[locId] = recObj;
-                              }
-                           }
-                           sensorDataFound = true;
                         }
                      }
-                  }
 
-                  if (!sensorDataFound) {
-                     if (me._apiFirstTimeCall) {
+                     if (!sensorDataFound) {
+                        if (me._apiFirstTimeCall) {
 
-                        // If its a first time call + no sensor date found, Retry with a different date range
-                        console.log("NO SENSOR DATA FOUND! Retrying search with another date range...");
-                        me._apiCallRetryCount++;
-                        me._setDateRangeAndInvokeCall();
-                        return;
-                     }
-                     else {
-
-                        // Repeat calls will fails with "No Results" found. No Retry. Return "No Results" response to callback
-                        console.log("NO SENSOR DATA FOUND for this date range!");
-                        me._apiCallRetryCount = 0;
-                        me._sDataCallback(null);
-                        return;
-                     }
-                  }
-                  else {
-                     me._timer.b2 = new Date();
-                     console.log("Sensor data analyzed and sorted - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000) + ".");
-
-                     // First-time usage of entire vehicle chooses highest-priority vehicle component found in sensor search results
-                     if (me._apiFirstTimeCall && !me._devSelectedComp) {
-                        const vehCompsFound = Object.keys(sdata);
-                        if (vehCompsFound.length === 1) {
-                           me._devSelectedComp = vehCompsFound[0];
+                           // If its a first time call + no sensor date found, Retry with a different date range
+                           console.log("NO SENSOR DATA FOUND! Retrying search with another date range...");
+                           me._apiCallRetryCount++;
+                           me._setDateRangeAndInvokeCall();
+                           return;
                         }
                         else {
-                           for (const comp of me._devComponents.ids.split(",")) {
-                              if (vehCompsFound.includes(comp)) {
-                                 me._devSelectedComp = comp;
-                                 break;
+
+                           // Repeat calls will fails with "No Results" found. No Retry. Return "No Results" response to callback
+                           console.log("NO SENSOR DATA FOUND for this date range!");
+                           me._apiCallRetryCount = 0;
+                           me._sDataCallback(null);
+                           return;
+                        }
+                     }
+                     else {
+                        me._timer.b2 = new Date();
+                        console.log("Sensor data analyzed and sorted - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000) + ".");
+
+                        // First-time usage of entire vehicle chooses highest-priority vehicle component found in sensor search results
+                        if (me._apiFirstTimeCall && !me._devSelectedComp) {
+                           const vehCompsFound = Object.keys(sdata);
+                           if (vehCompsFound.length === 1) {
+                              me._devSelectedComp = vehCompsFound[0];
+                           }
+                           else {
+                              for (const comp of me._devComponents.ids.split(",")) {
+                                 if (vehCompsFound.includes(comp)) {
+                                    me._devSelectedComp = comp;
+                                    break;
+                                 }
                               }
                            }
+
+                           // Build vehicle component configuration, returned on future search results
+                           me._devConfig = {
+                              total: vehCompsFound.length
+                           };
                         }
+                        me._devConfig.active = me._devSelectedComp;
+                        me._devConfig.activeId = me._devComponents.ids.split(",").findIndex(function (comp) { return comp === me._devSelectedComp; }) + 1;
 
-                        // Build vehicle component configuration, returned on future search results
-                        me._devConfig = {
-                           total: vehCompsFound.length
-                        };
+                        // Future calls after this successful response will not be a first-timer
+                        me._apiFirstTimeCall = false;
+
+                        // Return sensor data for single Vehicle component to UI callback
+                        me._apiCallRetryCount = 0;
+                        sdata[me._devSelectedComp].vehId = me._devId;
+                        sdata[me._devSelectedComp].vehCfg = me._devConfig;
+                        me._sDataCallback(sdata[me._devSelectedComp]);
+                        return;
                      }
-                     me._devConfig.active = me._devSelectedComp;
-                     me._devConfig.activeId = me._devComponents.ids.split(",").findIndex(function (comp) { return comp === me._devSelectedComp; }) + 1;
+                  }
 
-                     // Future calls after this successful response will not be a first-timer
-                     me._apiFirstTimeCall = false;
-
-                     // Return sensor data for single Vehicle component to UI callback
-                     me._apiCallRetryCount = 0;
-                     sdata[me._devSelectedComp].vehCfg = me._devConfig;
-                     me._sDataCallback(sdata[me._devSelectedComp]);
+                  // No results from multicall, Retry
+                  else {
+                     me._apiCallRetryCount++;
+                     me._setDateRangeAndInvokeCall();
                      return;
                   }
-               }
-
-               // No results from multicall, Retry
-               else {
-                  me._apiCallRetryCount++;
-                  me._setDateRangeAndInvokeCall();
-                  return;
-               }
-            },
-
+               },
                function (errorString) {
                   me._timer.b2 = new Date();
                   console.log("--- Sensor data retrieval failed - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000));

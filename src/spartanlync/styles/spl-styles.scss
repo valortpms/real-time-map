@@ -1,0 +1,142 @@
+.leaflet-popup-content strong {
+   color: #BD2727;
+}
+
+#RTM-Map .RTM-popupGrouped {
+   color: #BD2727;
+}
+
+/*
+ *	-- Map Vehicle Popup
+*/
+
+#RTM-Map .SPL-popupSensor {
+   color: gray;
+   border: 0;
+   margin: 0;
+   font-size: 0.8em;
+   border-top: 1px solid gray;
+}
+
+#RTM-Map .splTable {
+   margin: 5px 0px 0px 0px;
+}
+#RTM-Map .splTableRow {
+   display: flex;
+}
+#RTM-Map .splTableRow.pointer {
+   cursor: pointer;
+}
+#RTM-Map .splTableCell.header {
+   border-bottom: 1px solid gray;
+}
+#RTM-Map .splTableCell.header.header-top {
+   margin: 0px;
+   padding: 0px;
+   border-right: none;
+}
+#RTM-Map .splTableCell.header.tpms {
+   flex: 2.05 0 0%;
+}
+#RTM-Map .splTableCell {
+   flex: 1 1;
+   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+   font-size: 9px;
+   border-right: 1px solid gray;
+   padding: 2px 6px;
+   text-align: center;
+}
+#RTM-Map .splTableCell.temptrac {
+   border-right: 1px solid #04B1C7;
+}
+#RTM-Map .splTableCell:last-child {
+   border-right: none;
+}
+
+#RTM-Map .splTableCell .button-badge {
+   color: #fff;
+   border-radius: 5px;
+}
+#RTM-Map .splTableCell.tpms .button-badge {
+   font-size: 10px;
+   background-color: #BD2727;
+
+   margin: 0px 5px 2px 5px;
+   padding: 2px 5px;
+}
+#RTM-Map .splTableCell.temptrac .button-badge {
+   font-size: 9px;
+   background-color: #04B1C7;
+
+   margin: 0px 0px 2px 5px;
+   padding: 2px 5px;
+}
+
+#RTM-Map .splTableCell.content-table {
+   margin: 0px;
+   padding: 0px;
+}
+#RTM-Map .splTableCell .content-body {
+   display: flex;
+   flex-flow: column nowrap;
+   justify-content: center;
+}
+#RTM-Map .splTableCell .content-body > div {
+   position: relative;
+   margin: 2px 0px 0px 0px;
+   padding: 0px;
+}
+
+#RTM-Map .splTableCell .content-body .val-loc {
+   display: block;
+
+   border: 0px solid #ddd;
+   border-radius: 4px;
+   border-top-right-radius: 0px;
+   -webkit-border-radius: 4px;
+   -moz-border-radius: 4px;
+
+   background-color: #2F3C43;
+   color: #fff;
+   margin: 2px 5px;
+   padding: 2px;
+   text-align: center;
+   font-size: 9px;
+}
+
+#RTM-Map .splTableCell .content-body .val-temp,
+#RTM-Map .splTableCell .content-body .val-pres,
+#RTM-Map .splTableCell .content-body > div > div > p {
+   font-size: 10px;
+}
+#RTM-Map .splTableCell .content-body .val-temp span,
+#RTM-Map .splTableCell .content-body .val-pres span {
+   position: relative;
+   top: -3px;
+   font-size: 9px;
+}
+#RTM-Map .splTableCell .content-body > div > div {
+   text-align: center;
+}
+#RTM-Map .splTableCell .content-body > div > div > p {
+   margin: 0px;
+   padding: 0px;
+}
+
+#RTM-Map .splTableRow.footer {
+   display: flex;
+   flex-flow: column nowrap;
+   justify-content: center;
+   border-top: 1px solid gray;
+}
+#RTM-Map .splTableRow.footer .splTableCell {
+   font-size: 10px;
+}
+#RTM-Map .splTableRow.footer .splTableCell label {
+   display: block;
+   color: gray;
+   font-weight: normal;
+   margin: 0px 5px 0px 0px;
+   padding: 0px;
+   font-size: 9px;
+}

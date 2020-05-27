@@ -1,4 +1,6 @@
-import { showSnackBar } from "../components/snackbar/snackbar";
+import { showSnackBar } from "../../components/snackbar/snackbar";
+import splSrv from "../services";
+import splCfg from "../config";
 
 /**
  *  show Queue of messages with a delay between each message
@@ -15,7 +17,7 @@ export const showMsg = {
 
    _defaultStartDelay: 10000, // in ms (default 10 seconds)
    _defaultShowTimeout: 2000, // in ms (default 2 seconds)
-   _defaultLabel: "SpartanLync Alert",
+   _defaultLabel: splSrv.alertsDefaultLabelPrefix,
 
    /**
     *  UI Display Handler
@@ -48,6 +50,7 @@ export const showMsg = {
       const showtime = showTimeout || me._defaultShowTimeout;
       const callingMyself = selfCalling || false;
 
+      me.defaultStartDelay = splSrv.alertsDefaultStartupDelay;
       if (me._invokedForFirstTime) {
          me._invokedForFirstTime = false;
          this._msgHandle = setTimeout(function () {
@@ -93,5 +96,42 @@ export const showMsg = {
       if (parseInt(delay) >= 1) {
          me._defaultStartDelay = parseInt(delay) * 1000;
       }
+   }
+};
+
+/**
+ *  Perform page-redirect navigation to SpartanLync Tools Add-in
+ *
+ *  @returns void
+ */
+window.navigateToSplTools = (vehId, vehName) => {
+   const splToolsPageName = splSrv.splStore.splMap.toolsPageName;
+   console.log("----- Navigating to SpartanLync Tools Add-in [ " + splToolsPageName + " ] to view Vehicle [ " + vehName + " ]");
+
+   if (splCfg.appEnv === "prod") {
+      if (splSrv.state.hasAccessToPage(splToolsPageName)) {
+         switchToSplTools(vehId, vehName);
+      }
+      else {
+         const msgAlert = "SplMap Error: Your MyGeotab Account does not have sufficient permissions to allow switching to SpartanLync Tools...Please run SpartanLync Tools manually.";
+         showMsg.alert(msgAlert);
+      }
+   }
+   else {
+      switchToSplTools(vehId, vehName);
+   }
+};
+
+export function switchToSplTools(vehId, vehName) {
+   const splToolsPageName = splSrv.splStore.splMap.toolsPageName;
+   if (splCfg.appEnv === "prod") {
+      splSrv.state.gotoPage(splToolsPageName, {
+         switchToVehId: vehId,
+         switchToVehName: vehName
+      });
+   }
+   else {
+      const url = splToolsPageName + "?q=switchToVehId:" + vehId + ",switchToVehName:" + encodeURI(vehName);
+      location.href = url;
    }
 };

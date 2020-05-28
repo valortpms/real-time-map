@@ -5,6 +5,7 @@ import { ControlsView } from "./components/controls/controls-component";
 import { ConfigView } from "./components/configuration/configuration-view";
 import ReactDOM from "react-dom";
 import splSrvTools from "./spartanlync/services/tools";
+import ReactTooltip from "react-tooltip";
 
 class View extends React.Component {
 
@@ -23,6 +24,7 @@ class View extends React.Component {
             < ConfigView />
             < MapView />
             < ControlsView />
+            <ReactTooltip id="splTooltip" html={true} class="splPopupTooltip" getContent={(dataTip) => `${dataTip}`} />
          </div>
       );
    }

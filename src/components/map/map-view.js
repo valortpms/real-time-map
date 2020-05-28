@@ -8,7 +8,6 @@ import {
    apiConfig
 } from "../../dataStore/api-config";
 import storage from "../../dataStore";
-import ReactTooltip from "react-tooltip";
 
 export class MapView extends React.Component {
    componentDidMount() {
@@ -26,10 +25,10 @@ export class MapView extends React.Component {
                   type="button"
                   className="collapsible"
                   id="collapse-button"
-                  title="Open Configuration Panel"
+                  data-tip="Open Configuration Panel"
+                  data-for="splTooltip"
                ></button>
                <SnackBar />
-               <ReactTooltip id="splTooltip" html={true} getContent={(dataTip) => `${dataTip}`} />
             </div>
          </div >
       );

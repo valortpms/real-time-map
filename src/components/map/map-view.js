@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { Component } from "react";
 import { mapModel } from "./map-model";
 import { progressBar } from "../progress-bar";
@@ -7,6 +8,7 @@ import {
    apiConfig
 } from "../../dataStore/api-config";
 import storage from "../../dataStore";
+import ReactTooltip from "react-tooltip";
 
 export class MapView extends React.Component {
    componentDidMount() {
@@ -27,8 +29,9 @@ export class MapView extends React.Component {
                   title="Open Configuration Panel"
                ></button>
                <SnackBar />
+               <ReactTooltip id="splTooltip" html={true} getContent={(dataTip) => `${dataTip}`} />
             </div>
-         </div>
+         </div >
       );
    }
 }

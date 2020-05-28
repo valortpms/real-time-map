@@ -47,6 +47,11 @@ export function initMarkerPopup(deviceMarker) {
       newMarkerPopup.updatePopup();
    });
 
+   mapMarker.on("popupclose", () => {
+      splSensorDb.clearCache();
+      popup.setContent(filterMarkerButton(deviceID) + getStrongText("Getting Data"));
+   });
+
    newMarkerPopup.setTransitionAnimation();
    deviceMarker.popupModel = newMarkerPopup;
 }

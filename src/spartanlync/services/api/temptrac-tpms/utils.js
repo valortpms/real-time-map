@@ -3,6 +3,7 @@ import React from "react";
 import moment from "moment-timezone";
 import splSrv from "../..";
 import { renderToString } from "react-dom/server";
+import { Html5Entities } from "html-entities";
 
 /**
  *  Fetch Temptrac and TPMS sensor data
@@ -69,12 +70,19 @@ export const splSensorDataParser = {
    _genHtml: function (sdata) {
       const me = this;
       const keysSorted = Object.keys(sdata).sort();
+      const htmlEntities = new Html5Entities();
       let outHtml = "";
 
       keysSorted.forEach(function (loc) {
          if (sdata.hasOwnProperty(loc)) {
             const locObj = sdata[loc];
             const sensorTime = me._convertUnixToTzHuman(locObj.time);
+
+            // Animate the sensor record if NEW
+            let animationClassName = "glow-" + (locObj.type === "Temptrac" ? "temptrac" : "tpms");
+            if (typeof locObj.new !== "undefined" && locObj.new === false) {
+               animationClassName = "";
+            }
 
             // Keep track of the most recent sensor data timestamp
             if (locObj.time > me._lastReadTimestampUnix) {
@@ -84,32 +92,32 @@ export const splSensorDataParser = {
             // Process Temptrac Record
             if (locObj.type === "Temptrac") {
                const locHtml = me._convertLocToShortName(locObj.zone);
-               outHtml += renderToString((
-                  <div title={`Sensor Timestamp: ${sensorTime}`}>
+               outHtml += htmlEntities.decode(renderToString((
+                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'><p style='margin: 0px; padding: 0px;'>Sensor Timestamp:</p>${sensorTime}</div>`} data-for="splTooltip">
                      <div className="val-loc">{`${locHtml}`}</div>
                      <div className="val-temp">{`${locObj.val.c}`} <span>&#8451;</span><p>{`${locObj.val.f}`} <span>&#8457;</span></p></div>
                   </div>
-               ));
+               )));
             }
             // Process TPMS-Temperature Record
             else if (locObj.type === "Tire Temperature") {
                const locHtml = me._convertLocToShortName(locObj.axle);
-               outHtml += renderToString((
-                  <div title={`Sensor Timestamp: ${sensorTime}`}>
+               outHtml += htmlEntities.decode(renderToString((
+                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'><p style='margin: 0px; padding: 0px;'>Sensor Timestamp:</p>${sensorTime}</div>`} data-for="splTooltip">
                      <div className="val-loc">{`${locHtml}`}</div>
                      <div className="val-temp">{`${locObj.val.c}`} <span>&#8451;</span><p>{`${locObj.val.f}`} <span>&#8457;</span></p></div>
                   </div>
-               ));
+               )));
             }
             // Process TPMS-Pressure Record
             else if (locObj.type === "Tire Pressure") {
                const locHtml = me._convertLocToShortName(locObj.axle);
-               outHtml += renderToString((
-                  <div title={`Sensor Timestamp: ${sensorTime}`}>
+               outHtml += htmlEntities.decode(renderToString((
+                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'><p style='margin: 0px; padding: 0px;'>Sensor Timestamp:</p>${sensorTime}</div>`} data-for="splTooltip">
                      <div className="val-loc">{`${locHtml}`}</div>
                      <div className="val-pres">{`${locObj.val.psi}`} <span>Psi</span><p>{`${locObj.val.kpa}`} <span>kPa</span></p><p>{`${locObj.val.bar}`} <span>Bar</span></p></div>
                   </div>
-               ));
+               )));
             }
          }
       });

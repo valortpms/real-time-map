@@ -132,18 +132,22 @@ export const splSensorDb = {
                      console.log("--- No NEW Sensor Data Found for this date range");
                   }
 
-                  // Keep sending the cached data
-                  // as it's the best data we have for that search period.
-                  // while resetting when we will search again for new data
+                  // Resetting when we will search again for new data
                   me._cache[vehId].expiry = moment().utc().add(me._sensorDataLifetime, "seconds").unix();
-                  resolve(me._cache[vehId].data);  // PRODUCTION USAGE
-                  //resolve({}); // FOR DEBUGGING UI
+
+                  // (** DEPRECATED **) Keep sending the cached data, as it's the best data we have for that search period.
+                  //resolve(me._cache[vehId].data);
+
+                  // Nothing new with this data, so don't send anything to UI
+                  resolve({});
                });
          }
          else {
-            // Data from cache is fresh, send it
-            resolve(me._cache[vehId].data);  // PRODUCTION USAGE
-            //resolve({}); // FOR DEBUGGING UI
+            // (** DEPRECATED **) Data from cache is fresh, send it
+            //resolve(me._cache[vehId].data);
+
+            // Nothing new with this data, so don't send anything to UI
+            resolve({});
          }
       });
    },
@@ -157,6 +161,17 @@ export const splSensorDb = {
       if (cache === null) {
          return sdata;
       }
+
+      // Reset all records in cache as originating from cache and therefore NOT new
+      ["temptrac", "tpmstemp", "tpmspress"].forEach(function (type) {
+         if (cache.hasOwnProperty(type) && Object.keys(cache[type]).length) {
+            Object.keys(cache[type]).forEach(function (loc) {
+               cache[type][loc].new = false;
+            });
+         }
+      });
+
+      // Merge new data into Cache
       ["temptrac", "tpmstemp", "tpmspress"].forEach(function (type) {
          if (sdata.hasOwnProperty(type) && Object.keys(sdata[type]).length) {
             console.log("--- Found and Merged [ " + Object.keys(sdata[type]).length + " ] " +
@@ -167,6 +182,7 @@ export const splSensorDb = {
             );
             Object.keys(sdata[type]).forEach(function (loc) {
                cache[type][loc] = sdata[type][loc];
+               cache[type][loc].new = true;
             });
          }
       });
@@ -206,20 +222,27 @@ export const splSensorDb = {
 
       return htmlEntities.decode(
          renderToString((
-            <div className="splTable">
-               <div className="splTableRow pointer" title="View In SpartanLync Tools" myclick={`navigateToSplTools('${data.vehId}','${data.vehName}')`}>
-                  {`${headerTopHtml}`}
+            <Fragment>
+               <div className="splTable">
+                  <div className="splTableRow pointer" data-tip="View In SpartanLync Tools" data-for="splTooltip" myclick={`navigateToSplTools('${data.vehId}','${data.vehName}')`}>
+                     {`${headerTopHtml}`}
+                  </div>
+                  <div className="splTableRow">
+                     {`${headerHtml}`}
+                  </div>
+                  <div className="splTableRow">
+                     {`${contentHtml}`}
+                  </div>
+                  <div className="splTableRow footer">
+                     <div className="splTableCell"><label>Last Reading:</label>{`${data.lastReadTimestamp}`}</div>
+                  </div>
                </div>
-               <div className="splTableRow">
-                  {`${headerHtml}`}
-               </div>
-               <div className="splTableRow">
-                  {`${contentHtml}`}
-               </div>
-               <div className="splTableRow footer">
-                  <div className="splTableCell"><label>Last Reading:</label>{`${data.lastReadTimestamp}`}</div>
-               </div>
-            </div>
+               <script type="text/javascript">
+                  document.addEventListener("DOMContentLoaded", function(event) {
+                     refreshSplTooltips()
+                  });
+               </script>
+            </Fragment>
          ))
       ).replace(/myclick/g, "onclick").replace(/\s+data\-reactroot\=\"\"/g, "");
    },
@@ -264,17 +287,13 @@ export const splSensorDb = {
 
          case "header-temp":
             return renderToString((
-               <Fragment>
-                  <div className="splTableCell header">Temp</div>
-               </Fragment>
+               <div className="splTableCell header">Temp</div>
             ));
             break;
 
          case "header-press":
             return renderToString((
-               <Fragment>
-                  <div className="splTableCell header">Press</div>
-               </Fragment>
+               <div className="splTableCell header">Press</div>
             ));
             break;
 

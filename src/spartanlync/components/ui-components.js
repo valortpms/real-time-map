@@ -1,6 +1,7 @@
 import { showSnackBar } from "../../components/snackbar/snackbar";
 import splSrv from "../services";
 import splCfg from "../config";
+import ReactTooltip from "react-tooltip";
 
 /**
  *  show Queue of messages with a delay between each message
@@ -122,6 +123,11 @@ window.navigateToSplTools = (vehId, vehName) => {
    }
 };
 
+/**
+ *  Handler for navigateToSplTools() to page re-direct in DEV or PROD environements
+ *
+ *  @returns void
+ */
 export function switchToSplTools(vehId, vehName) {
    const splToolsPageName = splSrv.splStore.splMap.toolsPageName;
    if (splCfg.appEnv === "prod") {
@@ -134,4 +140,15 @@ export function switchToSplTools(vehId, vehName) {
       const url = splToolsPageName + "?q=switchToVehId:" + vehId + ",switchToVehName:" + encodeURI(vehName);
       location.href = url;
    }
+};
+
+/**
+ *  Dynamic popups call Utility Function to rescan DOM for new tooltip content
+ *
+ *  @returns void
+ */
+window.refreshSplTooltips = () => {
+   setTimeout(() => {
+      ReactTooltip.rebuild();
+   }, 1000);
 };

@@ -3,7 +3,6 @@ import { userAPI } from "../../services/api/user-api";
 import { userInfo } from "../../dataStore/api-config";
 import storage from "../../dataStore";
 import { resetTransitionAnimation } from "../../utils/helper";
-import { splSensorDb } from "../../spartanlync/components/ui-maps";
 
 let MAPBOX;
 ACCESS_TOKEN: false;
@@ -25,7 +24,6 @@ export const mapModel = {
 
       storage.map.on("mousedown", () => {
          storage.map.closePopup();
-         splSensorDb.clearCache();
       });
       storage.map.on("zoom", resetTransitionAnimation);
 

@@ -83,6 +83,7 @@
 }
 #RTM-Map .splTableCell .content-body > div {
    position: relative;
+   border-radius: 5px;
    margin: 2px 0px 0px 0px;
    padding: 0px;
 }
@@ -140,3 +141,39 @@
    padding: 0px;
    font-size: 9px;
 }
+
+/*
+ *	-- Map Vehicle Popup Animation
+*/
+
+#RTM-Map .splTableCell .content-body > div.glow-temptrac {
+   animation: glow-animation-temptrac 1s 2 alternate;
+ }
+ @keyframes glow-animation-temptrac {
+   from {
+     -webkit-box-shadow: 0 0 10px -10px rgba(4,177,199,0.5);
+     -moz-box-shadow: 0 0 10px -10px rgba(4,177,199,0.5);
+     box-shadow: 0 0 10px -10px rgba(4,177,199,0.5);
+   }
+   to {
+     -webkit-box-shadow: 0 0 10px 10px rgba(4,177,199,0.5);
+     -moz-box-shadow: 0 0 10px 10px rgba(4,177,199,0.5);
+     box-shadow: 0 0 10px 10px rgba(4,177,199,0.5);
+   }
+ }
+
+ #RTM-Map .splTableCell .content-body > div.glow-tpms {
+   animation: glow-animation-tpms 1s 2 alternate;
+ }
+ @keyframes glow-animation-tpms {
+   from {
+     -webkit-box-shadow: 0 0 10px -10px rgba(189,39,39,0.5);
+     -moz-box-shadow: 0 0 10px -10px rgba(189,39,39,0.5);
+     box-shadow: 0 0 10px -10px rgba(189,39,39,0.5);
+   }
+   to {
+     -webkit-box-shadow: 0 0 10px 10px rgba(189,39,39,0.5);
+     -moz-box-shadow: 0 0 10px 10px rgba(189,39,39,0.5);
+     box-shadow: 0 0 10px 10px rgba(189,39,39,0.5);
+   }
+ }

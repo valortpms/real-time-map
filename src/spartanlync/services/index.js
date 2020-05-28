@@ -12,7 +12,7 @@ const SpartanLyncServices = {
    splHumanTimeFormat: "dd MMM DD, YYYY LT z",              // moment() format for converting from UNIX timestamp to Human format in User's Timezone
    splStoreSyncRetry: 60000,                                // (Default: 1 min) How frequently to retry saving storage object to remote server
 
-   sensorDataLifetime: 10,                                 // (Default: 180 seconds) Afer this period, cached vehicle sensor data is refreshed from API (in seconds)
+   sensorDataLifetime: 180,                                 // (Default: 180 seconds) Afer this period, cached vehicle sensor data is refreshed from API (in seconds)
    sensorSearchRetryRangeInDays: [1, 2, 7, 30, 60, 90],     // Days from now to search for sensors (on App Start)
    sensorSearchTimeRangeForRepeatSearchesInSeconds: 3600,   // 3600 Seconds from now to use for repeating sensor search's (default: 1 Hour)
 

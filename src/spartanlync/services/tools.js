@@ -5,6 +5,7 @@ import { InitSplAPI, InitSplSessionMgr } from "./api";
 import { INITGeotabTpmsTemptracLib } from "./api/temptrac-tpms";
 import { userInfo, apiConfig } from "../../dataStore/api-config";
 import { showMsg } from "../components/ui-components";
+import { splSensorDb } from "../components/ui-maps";
 
 /**
  *
@@ -28,6 +29,7 @@ const SpartanLyncServiceTools = {
          splSrv.sensorSearchRetryRangeInDays,
          splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds
       );
+      splSensorDb.sensorDataLifetimeInSec = splSrv.sensorDataLifetime;
    },
 
    checkForSplTools: function () {

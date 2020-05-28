@@ -5,9 +5,7 @@ import splSrv from "../..";
 import { renderToString } from "react-dom/server";
 
 /**
- *
  *  Fetch Temptrac and TPMS sensor data
- *
  */
 export function fetchVehSensorData(vehId) {
    return new Promise((resolve, reject) => {
@@ -27,6 +25,40 @@ export function fetchVehSensorData(vehId) {
 export const splSensorDataParser = {
 
    _lastReadTimestampUnix: 0,
+
+   /**
+    *  Return vehicle sensor data HTML in a data object
+    *
+    *  @returns object
+    */
+   do: function (sdata) {
+      const me = this;
+      const data = {
+         vehId: sdata.vehId,
+         vehName: sdata.vehName,
+         lastReadTimestamp: ""
+      };
+      me._lastReadTimestampUnix = 0;
+
+      if (Object.keys(sdata.temptrac).length) {
+         data.foundTemptracSensors = true;
+         data.temptracHtml = me._genHtml(sdata.temptrac);
+      }
+      if (Object.keys(sdata.tpmstemp).length) {
+         data.foundTpmsTempSensors = true;
+         data.tpmsTempHtml = me._genHtml(sdata.tpmstemp);
+      }
+      if (Object.keys(sdata.tpmspress).length) {
+         data.foundTpmsPressSensors = true;
+         data.tpmsPressHtml = me._genHtml(sdata.tpmspress);
+      }
+
+      // Format the most recent timestamp, into human readable format
+      // eg. Sa Aug 17, 2020 7:00 PM EDT
+      data.lastReadTimestamp = me._convertUnixToTzHuman(me._lastReadTimestampUnix);
+
+      return data;
+   },
 
    /**
     * Generate HTML fragment for each Sensor Data Record
@@ -110,40 +142,5 @@ export const splSensorDataParser = {
                .replace(" ", "-");
       }
       return "";
-   },
-
-   /**
-    *  Return vehicle sensor data HTML in a data object
-    *
-    *  @returns object
-    */
-   do: function (sdata) {
-      const me = this;
-      const data = {
-         vehId: sdata.vehId,
-         vehName: sdata.vehName,
-         lastReadTimestamp: ""
-      };
-      me._lastReadTimestampUnix = 0;
-      console.log(sdata);
-
-      if (Object.keys(sdata.temptrac).length) {
-         data.foundTemptracSensors = true;
-         data.temptracHtml = me._genHtml(sdata.temptrac);
-      }
-      if (Object.keys(sdata.tpmstemp).length) {
-         data.foundTpmsTempSensors = true;
-         data.tpmsTempHtml = me._genHtml(sdata.tpmstemp);
-      }
-      if (Object.keys(sdata.tpmspress).length) {
-         data.foundTpmsPressSensors = true;
-         data.tpmsPressHtml = me._genHtml(sdata.tpmspress);
-      }
-
-      // Format the most recent timestamp, into human readable format
-      // eg. Sa Aug 17, 2020 7:00 PM EDT
-      data.lastReadTimestamp = me._convertUnixToTzHuman(me._lastReadTimestampUnix);
-
-      return data;
    }
 };

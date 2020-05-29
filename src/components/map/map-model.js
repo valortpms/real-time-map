@@ -3,6 +3,7 @@ import { userAPI } from "../../services/api/user-api";
 import { userInfo } from "../../dataStore/api-config";
 import storage from "../../dataStore";
 import { resetTransitionAnimation } from "../../utils/helper";
+import { showSnackBar } from "../snackbar/snackbar";
 
 let MAPBOX;
 ACCESS_TOKEN: false;
@@ -64,7 +65,7 @@ export const mapModel = {
                )
                .catch(() => mapModel.mapSetView([]));
          })
-         .catch(() => alert("Server is unavailable, please try again later."));
+         .catch(() => showSnackBar("Server is unavailable, please try again later."));
    },
 
    mapSetView(latlng) {

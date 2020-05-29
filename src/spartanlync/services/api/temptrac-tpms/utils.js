@@ -2,15 +2,37 @@
 import React from "react";
 import moment from "moment-timezone";
 import splSrv from "../..";
+import { INITGeotabTpmsTemptracLib } from "../temptrac-tpms";
+import { apiConfig } from "../../../../dataStore/api-config";
 import { renderToString } from "react-dom/server";
 import { Html5Entities } from "html-entities";
 
 /**
- *  Fetch Temptrac and TPMS sensor data
+ *  Synchronously Fetch Temptrac and TPMS sensor data
  */
 export function fetchVehSensorData(vehId) {
    return new Promise((resolve, reject) => {
       splSrv.goLib.getData(vehId, "", function (sensorData) {
+         if (sensorData === null) {
+            reject("No Sensors Found");
+         } else {
+            resolve(sensorData);
+         }
+      });
+   });
+};
+
+/**
+ *  Asynchronously Fetch Temptrac and TPMS sensor data
+ */
+export function fetchVehSensorDataAsync(vehId) {
+   return new Promise((resolve, reject) => {
+      const aSyncGoLib = INITGeotabTpmsTemptracLib(
+         apiConfig.api,
+         splSrv.sensorSearchRetryRangeInDays,
+         splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds
+      );
+      aSyncGoLib.getData(vehId, "", function (sensorData) {
          if (sensorData === null) {
             reject("No Sensors Found");
          } else {

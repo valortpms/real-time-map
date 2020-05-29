@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { deviceSearch } from "./vehicle-search";
-import { SplSensorDataButton } from "../../../spartanlync/components/ui-vehicles-config";
+import { SplSensorDataTypesButton } from "../../../spartanlync/components/ui-vehicles-config";
 import storage from "../../../dataStore";
 
 export const VehicleListComponent = props => {
@@ -45,7 +45,7 @@ export const VehicleListComponent = props => {
                      )
                   }
                ></span>
-               <SplSensorDataButton id={prop.id} name={prop.name} />
+               <SplSensorDataTypesButton id={prop.id} name={prop.name} />
             </li>
          ))
          : [];

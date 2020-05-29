@@ -1,5 +1,7 @@
 import React, { Component } from "react";
 import { deviceSearch } from "./vehicle-search";
+import { SplSensorDataButton } from "../../../spartanlync/components/ui-vehicles-config";
+import storage from "../../../dataStore";
 
 export const VehicleListComponent = props => {
    const mapPropsToComponent = props.setVehicleDisplay;
@@ -43,6 +45,7 @@ export const VehicleListComponent = props => {
                      )
                   }
                ></span>
+               <SplSensorDataButton id={prop.id} name={prop.name} />
             </li>
          ))
          : [];
@@ -65,7 +68,10 @@ const createDeviceListElement = (id, name, color, flyFunction) => {
             className="mdc-list-item__graphic material-icons vehicle"
             data-tip="Fly to Vehicle on Map"
             data-for="splTooltip"
-            onClick={() => flyFunction(id)}
+            onClick={() => {
+               storage.map.closePopup();
+               flyFunction(id);
+            }}
          ></span>
       );
    }

@@ -52,6 +52,18 @@ export function initMarkerPopup(deviceMarker) {
       popup.setContent(filterMarkerButton(deviceID) + getStrongText("Getting Data"));
    });
 
+   mapMarker.on("mouseover", () => {
+      mapMarker.unbindTooltip();
+      if (!mapMarker.isPopupOpen()) {
+         if (typeof storage.selectedDevices[deviceID] !== "undefined") {
+            const devObj = storage.selectedDevices[deviceID];
+            mapMarker.bindTooltip(devObj.name, {
+               "className": "spl-map-vehicle-tooltip",
+            }).openTooltip();
+         }
+      }
+   });
+
    newMarkerPopup.setTransitionAnimation();
    deviceMarker.popupModel = newMarkerPopup;
 }

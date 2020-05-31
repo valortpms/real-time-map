@@ -384,7 +384,7 @@ export const splSensorDataParser = {
 
       // Format the most recent timestamp, into human readable format
       // eg. Sa Aug 17, 2020 7:00 PM EDT
-      data.lastReadTimestamp = me._convertUnixToTzHuman(me._lastReadTimestampUnix);
+      data.lastReadTimestamp = splSrv.convertUnixToTzHuman(me._lastReadTimestampUnix);
 
       return data;
    },
@@ -403,7 +403,7 @@ export const splSensorDataParser = {
       keysSorted.forEach(function (loc) {
          if (sdata.hasOwnProperty(loc)) {
             const locObj = sdata[loc];
-            const sensorTime = me._convertUnixToTzHuman(locObj.time);
+            const sensorTime = splSrv.convertUnixToTzHuman(locObj.time);
 
             // Keep track of the most recent sensor data timestamp
             if (locObj.time > me._lastReadTimestampUnix) {
@@ -452,21 +452,11 @@ export const splSensorDataParser = {
    },
 
    /**
-    * Convert from Unix timestamp to Human-readable time
-    * eg. Sa Aug 17, 2020 7:00 PM EDT
-    *
-    *  @returns string
-    */
-   _convertUnixToTzHuman: function (unixTime) {
-      return isNaN(unixTime) ? null : moment.unix(unixTime).format(splSrv.splHumanTimeFormat);
-   },
-
-   /**
-    * Convert Location Title/Label to ShortName equivelant
-    * eg. "Axle 1 Tire 2" => "A1-T2"
-    *
-    *  @returns string
-    */
+   * Convert Location Title/Label to ShortName equivelant
+   * eg. "Axle 1 Tire 2" => "A1-T2"
+   *
+   *  @returns string
+   */
    _convertLocToShortName: function (locLabel) {
       if (locLabel) {
          return locLabel.indexOf("one") > -1 ?

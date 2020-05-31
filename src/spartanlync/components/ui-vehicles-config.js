@@ -9,7 +9,8 @@ import { fetchVehSensorDataAsync } from "../services/api/temptrac-tpms/utils";
 import { INITGeotabTpmsTemptracLib } from "../services/api/temptrac-tpms";
 
 /**
- *  Returns a Spl Sensor Data Button meant for a Vehicle List Item within Vehicle Configuration Panel
+ * Renders a SpartanLync Sensor Data Button / Content window
+ * meant to insert into a Vehicle List Item within Vehicle Configuration Panel
  *
  *  @returns JSX object
  */

@@ -25,6 +25,8 @@ const SpartanLyncServices = {
    alertsDefaultStartupDelay: 8,                            // (Default: 8 seconds) UI will start showing alerts XX seconds after App loads in Browser
    alertsDefaultLabelPrefix: "SpartanLync Alert",           // Using showMsg.alert(); Unles overidden, what message to prefix the specified alert
 
+   buildMetadataFilename: "build.meta",                     // Filename residing in deployment directory containg build metadata, shown when hovering over SpartanLync Map Watermark
+
    /**
     *  Private Variables
     */
@@ -81,6 +83,17 @@ const SpartanLyncServices = {
          (errMsg) => {
             console.log("SplMapServices: Failed to updated SplStore remotely...Reason: " + errMsg);
          });
+   },
+
+   /**
+    * Convert from Unix timestamp to Human-readable time
+    * eg. Sa Aug 17, 2020 7:00 PM EDT
+    *
+    *  @returns string
+    */
+   convertUnixToTzHuman: function (unixTime) {
+      const me = this;
+      return isNaN(unixTime) ? null : moment.unix(unixTime).format(me.splHumanTimeFormat);
    }
 };
 

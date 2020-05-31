@@ -1,13 +1,58 @@
-.leaflet-popup-content strong {
-   color: #BD2727;
+/*
+ *	-- General Info
+*/
+
+#RTM-ViewContainer .spl-watermark {
+   position: absolute;
+   top: 90px;
+   left: 5px;
+   z-index: 1001;
+   cursor: pointer;
 }
+#RTM-ViewContainer .spl-watermark:before  {
+   display: inline-block;
+   vertical-align: middle;
+   width: 30px;
+   height: 30px;
+   transform: translate(0px, -8px);
 
-.splPopupTooltip {
-   z-index: 1500 !important;
- }
+   content: '';
+   background: url('../images/spartanlync-logo.svg');
+   background-repeat: no-repeat;
+   background-position: center;
 
-#RTM-Map .RTM-popupGrouped {
-   color: #BD2727;
+   -webkit-filter: drop-shadow( 0 0 3px rgba(47, 60, 67,.6));
+   filter: drop-shadow( 0 0 3px rgba(47, 60, 67,.6));
+}
+#RTM-ViewContainer .spl-watermark:hover {
+   top: 79px;
+}
+#RTM-ViewContainer .spl-watermark > div {
+   display: none;
+   margin: 0px;
+   padding: 0px;
+}
+#RTM-ViewContainer .spl-watermark:hover > div {
+   display: inline-block;
+}
+#RTM-ViewContainer .spl-watermark label,
+#RTM-ViewContainer .spl-watermark > div > div,
+#RTM-ViewContainer .spl-watermark > div > div > span {
+   margin: 0px;
+   padding: 0px;
+}
+#RTM-ViewContainer .spl-watermark label {
+   font-size: 11px;
+   font-weight: bold;
+}
+#RTM-ViewContainer .spl-watermark > div > div {
+   display: grid;
+}
+#RTM-ViewContainer .spl-watermark > div > div > strong {
+   font-size: 9px;
+}
+#RTM-ViewContainer .spl-watermark > div > div > span {
+   font-size: 8px;
 }
 
 
@@ -167,6 +212,18 @@
 /*
  *	-- Vehicle Sensor Data Popup on Map / ConfigView Panel
 */
+
+.leaflet-popup-content strong {
+   color: #BD2727;
+}
+
+.splPopupTooltip {
+   z-index: 1500 !important;
+}
+
+#RTM-Map .RTM-popupGrouped {
+   color: #BD2727;
+}
 
 #RTM-ViewContainer .SPL-popupSensor {
    color: gray;

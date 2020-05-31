@@ -4,6 +4,7 @@ import { mapModel } from "./map-model";
 import { progressBar } from "../progress-bar";
 import { ProgressIndicatorComponent } from "../progress-bar/progress-indicator-component";
 import { SnackBar } from "../snackbar/snackbar-component";
+import { SplLogo } from "../../spartanlync/components/ui-logo";
 import {
    apiConfig
 } from "../../dataStore/api-config";
@@ -19,6 +20,7 @@ export class MapView extends React.Component {
       return (
          <div id="RTM-Map-Container">
             {storage.isStandAlone ? <button id="RTM-LogoutButton" onClick={() => { apiConfig.api.forget(); }}>Logout</button> : null}
+            <SplLogo app-name="SpartanLync Map" />
             <div id="RTM-Map">
                <ProgressIndicatorComponent />
                <button

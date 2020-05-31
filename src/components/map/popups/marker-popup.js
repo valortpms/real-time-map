@@ -1,7 +1,7 @@
 import L from "leaflet";
 import storage from "../../../dataStore";
 import { devicesPropertyData } from "../../../dataStore/map-data";
-import { splSensorDb } from "../../../spartanlync/components/ui-maps";
+import { splSensorsOnMap } from "../../../spartanlync/components/ui-maps";
 
 import {
    retrieveStatusInfo,
@@ -48,7 +48,7 @@ export function initMarkerPopup(deviceMarker) {
    });
 
    mapMarker.on("popupclose", () => {
-      splSensorDb.clearCache();
+      splSensorsOnMap.clearCache();
       popup.setContent(filterMarkerButton(deviceID) + getStrongText("Getting Data"));
    });
 
@@ -154,7 +154,7 @@ export function createMarkerPopupText(deviceID, groups, speed, name, statusData)
       const cleanedName = name.replace("'", "\\'");
       let splHtmlOut = "";
 
-      splSensorDb.getVehSensorDataDiv(deviceID, cleanedName)
+      splSensorsOnMap.getVehSensorDataDiv(deviceID, cleanedName)
          .then((splHtml) => {
             splHtmlOut = splHtml;
          })

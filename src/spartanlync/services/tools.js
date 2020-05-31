@@ -1,19 +1,24 @@
 import moment from "moment-timezone";
 import splCfg from "../config";
 import splSrv from "../services";
-import { InitSplAPI, InitSplSessionMgr } from "./api";
+import { INITSplAPI, INITSplSessionMgr } from "./api";
 import { INITGeotabTpmsTemptracLib } from "./api/temptrac-tpms";
+import { INITSplSensorDataTools } from "./sensor-data-tools";
 import { userInfo, apiConfig } from "../../dataStore/api-config";
 import { showMsg } from "../components/ui-components";
-import { splSensorDb } from "../components/ui-maps";
 
 /**
  *
- *  Tools for initialing / kickstarting SpartanLync Services
+ *  Initialing / kickstarting / bootstrapping SpartanLync Services
  *
  */
 const SpartanLyncServiceTools = {
 
+   /**
+   *
+   *  INIT Services at Application Start
+   *
+   */
    initServices: function () {
       splSrv._credentials.db = userInfo.database;
       splSrv._credentials.username = userInfo.userName;
@@ -21,17 +26,24 @@ const SpartanLyncServiceTools = {
       splSrv._credentials.sessionId = userInfo.sessionId;
 
       splSrv.state = apiConfig.state;
-      splSrv._api = new InitSplAPI(splCfg.splApiUrl);
-      splSrv.sessionMgr = new InitSplSessionMgr(splSrv._api, splSrv._credentials);
+      splSrv._api = new INITSplAPI(splCfg.splApiUrl);
+      splSrv.sessionMgr = new INITSplSessionMgr(splSrv._api, splSrv._credentials);
       splSrv.sessionMgr.enableDebug(splCfg.appEnv === "dev" && splSrv.debug ? true : false);
       splSrv.goLib = INITGeotabTpmsTemptracLib(
          apiConfig.api,
          splSrv.sensorSearchRetryRangeInDays,
          splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds
       );
-      splSensorDb.sensorDataLifetimeInSec = splSrv.sensorDataLifetime;
+
+      splSrv.sdataTools = new INITSplSensorDataTools(splSrv.goLib);
+      splSrv.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
    },
 
+   /**
+   *
+   *  Start Services after Application Components have successfully Loaded
+   *
+   */
    checkForSplTools: function () {
       const me = this;
       splSrv.sessionMgr.getSettings((remoteStore, dbDeviceIds) => {

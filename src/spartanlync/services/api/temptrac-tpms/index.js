@@ -623,6 +623,9 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
 
          _convertSecondsToHMS: function (seconds) {
             const sec = Number(seconds);
+            if (sec < 0.01) {
+               return "< 0.01 seconds";
+            }
             const h = Math.floor(sec / 3600);
             const m = Math.floor(sec % 3600 / 60);
             const s = Math.floor((sec % 3600 % 60) * 100) / 100;

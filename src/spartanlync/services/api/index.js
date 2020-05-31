@@ -2,7 +2,7 @@
 
 // Make asyncronous AJAX call using JSON to PHP backend
 // Expect JSON response on success or error
-export const InitSplAPI = function (serverUrl, csrfToken) {
+export const INITSplAPI = function (serverUrl, csrfToken) {
    const me = this; // required from within methods used as callbacks
 
    // private variables & methods
@@ -11,11 +11,17 @@ export const InitSplAPI = function (serverUrl, csrfToken) {
    this._timeout = 0;        // How long to wait for a response from the server (in seconds); 0 (or null) means no timeout.
    this._csrfToken = null;
 
+   /**
+    *  Make asyncronous AJAX call using JSON to PHP backend
+    */
    this.requestService = function (params, callbackSuccess, callbackError) {
       if (me._debug) { console.log("InitAPI(requestService) - callXHR(BEGIN)"); }
       return me.callXHR(params, callbackSuccess, callbackError);
    };
 
+   /**
+    *  Utility Handler for making AJAX Calls
+    */
    this.callXHR = function (params, callbackSuccess, callbackError) {
       const xhr = new XMLHttpRequest();
       const getPost = typeof params.options !== "undefined" && typeof params.options.method !== "undefined" && params.options.method === "GET" ? "GET" : "POST";
@@ -97,7 +103,6 @@ export const InitSplAPI = function (serverUrl, csrfToken) {
       };
    };
 
-
    /**
     *  Logs some debug information to the browser console, if _debug is true
     *  @private
@@ -134,6 +139,18 @@ export const InitSplAPI = function (serverUrl, csrfToken) {
       }
    };
 
+   /**
+    *  Handler for Setting _debug
+    */
+   this.enableDebug = function (enable) {
+      me._debug = enable;
+   };
+
+   /**
+    *  INIT - Constructor, When an instance gets created
+    *
+    *  @returns string
+    */
    this.configure = function (url, csrfToken) {
       const me = this;
       if (typeof url !== "undefined" && typeof url !== "") {
@@ -144,18 +161,10 @@ export const InitSplAPI = function (serverUrl, csrfToken) {
       }
    };
 
-   /**
-    *  Handler for Setting _debug
-    */
-   this.enableDebug = function (enable) {
-      me._debug = enable;
-   };
-
-   // configure when an instance gets created
    this.configure(serverUrl, csrfToken);
 };
 
-export const InitSplSessionMgr = function (myApi, credentials) {
+export const INITSplSessionMgr = function (myApi, credentials) {
    //
    // Register Add-In session with SpartanLync backend service
    //
@@ -314,6 +323,12 @@ export const InitSplSessionMgr = function (myApi, credentials) {
       }
    };
 
+   /**
+    *  INIT - Constructor, When an instance gets created
+    *
+    *  @returns string
+    */
+
    this.configure = function (myApi, myCreds) {
       if (myApi && typeof myApi === "object") {
          this._api = myApi;
@@ -323,6 +338,5 @@ export const InitSplSessionMgr = function (myApi, credentials) {
       }
    };
 
-   // configure when an instance gets created
    this.configure(myApi, credentials);
 };

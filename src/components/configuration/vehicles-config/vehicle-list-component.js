@@ -8,7 +8,7 @@ export const VehicleListComponent = props => {
    const vehicleList =
       props.vehicleDisplayList.length > 0
          ? props.vehicleDisplayList.map(prop => (
-            <li key={prop.id} className="mdc-list-item">
+            <li key={prop.id} className="spl-list-item">
                <span
                   className={`RTM-iconSquare mdc-list-item__graphic material-icons filterIcon ${
                      prop.visible ? "showConfig" : "hideConfig"

@@ -58,6 +58,10 @@ export class SplSensorDataTypesButton extends Component {
       // Fetch SpartanLync Sensor Types installed into vehicle
       me.fetchSensorTypes(me.vehId, me.vehName);
    }
+   componentWillUnmount() {
+      const me = this;
+      me.onCloseContentHandler();
+   }
 
    // eslint-disable-next-line no-unused-vars
    shouldComponentUpdate(nextProps, nextState) {
@@ -208,6 +212,7 @@ export class SplSensorDataTypesButton extends Component {
       const me = this;
       const sensorContentWrapperClass = me.state.html ? (me.state.loading ? "loading" : "") : "hidden";
       const sensorContentBtnCloseClass = me.state.loading ? "hidden" : "";
+      const sensorBtnWrapperClass = me.state.buttons.length && me.state.html ? "hidden" : "";
       const sensorBtnHandleClass = me.state.buttons.length ?
          (me.state.buttons.length > 1 ?
             "both-sensors" : "") : "hidden";
@@ -220,7 +225,7 @@ export class SplSensorDataTypesButton extends Component {
       return (
          <Fragment>
             <span
-               className="spl-vehcfg-sensor-data-btn-wrapper"
+               className={`spl-vehcfg-sensor-data-btn-wrapper ${sensorBtnWrapperClass}`}
                {...(me.state.buttons.length && {
                   "onClick": me.onClickHandler,
                   "data-tip": "View SpartanLync Sensor Data for this Vehicle",

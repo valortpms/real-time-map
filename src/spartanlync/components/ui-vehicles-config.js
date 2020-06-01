@@ -45,7 +45,7 @@ export class SplSensorDataTypesButton extends Component {
       splCfg.shouldSplSensorDataButtonUpdate = false;
       setTimeout(() => {
          splCfg.shouldSplSensorDataButtonUpdate = true;
-      }, 500);
+      }, 50);
 
       // Init SpartanLync sensor data services / tools
       me.goLib = INITGeotabTpmsTemptracLib(
@@ -82,17 +82,14 @@ export class SplSensorDataTypesButton extends Component {
       //Splunk for presence of sensor data types
       fetchVehSensorDataAsync(me.vehId)
          .then((sdata) => {
-            me.setState(function (state) {
-               if (Object.keys(sdata.temptrac).length) {
-                  state.buttons.push("temptrac");
-               }
-               if (Object.keys(sdata.tpmspress).length || Object.keys(sdata.tpmstemp).length) {
-                  state.buttons.push("tpms");
-               }
-               return {
-                  buttons: state.buttons
-               };
-            });
+            const btn = [];
+            if (Object.keys(sdata.temptrac).length) {
+               btn.push("temptrac");
+            }
+            if (Object.keys(sdata.tpmspress).length || Object.keys(sdata.tpmstemp).length) {
+               btn.push("tpms");
+            }
+            me.setState({ buttons: btn });
          })
          .catch((reason) => {
             if (reason === splSrv.sensorDataNotFoundMsg) {
@@ -146,7 +143,7 @@ export class SplSensorDataTypesButton extends Component {
     */
    onCloseContentHandler() {
       const me = this;
-      manageSensorDataContentUI.close(me.vehId);
+      manageSensorDataContentUI.cleanup(me.vehId);
       me.stopContentRefresh();
       me.setState({ html: "" });
    }
@@ -323,16 +320,20 @@ export const manageSensorDataContentUI = {
    },
 
    /**
-    * Clear Registration as resource is now closed
+    * Cleanup / Close registration as all popup are now closed
     *
     *  @returns void
     */
-   close: function (vehId) {
+   cleanup: function (vehId) {
       const me = this;
       if (me._settings.veh === vehId) {
          me._settings.veh = null;
          me._settings.confirmed = false;
          me._settings.closeHandler = null;
       }
+   },
+   close: function () {
+      const me = this;
+      me._settings.closeHandler();
    }
 };

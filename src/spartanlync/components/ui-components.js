@@ -1,7 +1,9 @@
 import { showSnackBar } from "../../components/snackbar/snackbar";
 import splSrv from "../services";
 import splCfg from "../config";
+import storage from "../../dataStore";
 import ReactTooltip from "react-tooltip";
+import { manageSensorDataContentUI } from "./ui-vehicles-config";
 
 /**
  *  show Queue of messages with a delay between each message
@@ -130,6 +132,12 @@ window.navigateToSplTools = (vehId, vehName) => {
  */
 export function switchToSplTools(vehId, vehName) {
    const splToolsPageName = splSrv.splStore.splMap.toolsPageName;
+
+   // close popups on Map or ConfigView panel
+   manageSensorDataContentUI.close();
+   storage.map.closePopup();
+
+   // Perform page redirection in Browser or MyGeotab
    if (splCfg.appEnv === "prod") {
       splSrv.state.gotoPage(splToolsPageName, {
          switchToVehId: vehId,

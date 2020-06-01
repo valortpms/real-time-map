@@ -80,7 +80,7 @@
    z-index: 1490;
 
    width: 85px;
-   height: 14px;
+   height: 16px;
 
    display: flex;
    justify-content: center; /* space-around space-between */
@@ -101,7 +101,7 @@
    margin: 0px;
    padding: 0px 5px;
    border-radius: 0px;
-   line-height: 14px;
+   line-height: 18px;
 }
 #RTM-config-view .spl-vehcfg-sensor-data-button-item:first-child {
    border-bottom-left-radius: 5px;
@@ -110,12 +110,39 @@
    border-bottom-right-radius: 5px;
 }
 
+#RTM-config-view .spl-vehcfg-sensor-data-btn-wrapper .btn-components {
+   position: absolute;
+   top: -9px;
+   right: 33px;
+   z-index: 1491;
+
+   width: 18px;
+   height: 13px;
+   line-height: 2px;
+
+   margin: 0px;
+   padding: 5px;
+   font-size: 9px;
+   text-align: center;
+
+   color: #ffffff;
+   background-color: #949393;
+   border-radius: 100%;
+   border: 1px solid #ffffff;
+}
+#RTM-config-view .spl-vehcfg-sensor-data-btn-wrapper .btn-components.both-sensors {
+   right: 28px;
+}
+.veh-components-popup span {
+   border-bottom: 1px solid #ffffff;
+}
+
 #RTM-config-view .spl-vehcfg-sensor-data-btn-wrapper .btn-handle {
    position: absolute;
-   top: 11px;
+   top: 13px;
    right: 37px;
-   height: 10px;
    width: 10px;
+   height: 10px;
    z-index: 1488;
 
    background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iNXB0IiBoZWlnaHQ9IjVwdCIgdmlld0JveD0iMCAwIDUgNSIgdmVyc2lvbj0iMS4xIj4KPGcgaWQ9InN1cmZhY2UxIj4KPHBhdGggc3R5bGU9IiBzdHJva2U6bm9uZTtmaWxsLXJ1bGU6bm9uemVybztmaWxsOnJnYig3MC4yJSw3MC4yJSw3MC4yJSk7ZmlsbC1vcGFjaXR5OjE7IiBkPSJNIDQuOTE0MDYyIDEuMTg3NSBDIDQuODUxNTYyIDEuMTI1IDQuNzc3MzQ0IDEuMDkzNzUgNC42OTE0MDYgMS4wOTM3NSBMIDAuMzEyNSAxLjA5Mzc1IEMgMC4yMjY1NjIgMS4wOTM3NSAwLjE1NjI1IDEuMTI1IDAuMDkzNzUgMS4xODc1IEMgMC4wMzEyNSAxLjI1IDAgMS4zMjQyMTkgMCAxLjQwNjI1IEMgMCAxLjQ5MjE4OCAwLjAzMTI1IDEuNTY2NDA2IDAuMDkzNzUgMS42Mjg5MDYgTCAyLjI4MTI1IDMuODE2NDA2IEMgMi4zNDM3NSAzLjg3ODkwNiAyLjQxNzk2OSAzLjkxMDE1NiAyLjUwMzkwNiAzLjkxMDE1NiBDIDIuNTg1OTM4IDMuOTEwMTU2IDIuNjYwMTU2IDMuODc4OTA2IDIuNzIyNjU2IDMuODE2NDA2IEwgNC45MTQwNjIgMS42Mjg5MDYgQyA0Ljk3NjU2MiAxLjU2NjQwNiA1LjAwNzgxMiAxLjQ5MjE4OCA1LjAwNzgxMiAxLjQwNjI1IEMgNS4wMDc4MTIgMS4zMjQyMTkgNC45NzY1NjIgMS4yNSA0LjkxNDA2MiAxLjE4NzUgWiBNIDQuOTE0MDYyIDEuMTg3NSAiLz4KPC9nPgo8L3N2Zz4K);
@@ -126,8 +153,9 @@
    right: 31px;
 }
 #RTM-config-view .spl-list-item .btn-content-wrapper .btn-content-close.hidden,
-#RTM-config-view .spl-vehcfg-sensor-data-btn-wrapper.hidden,
-#RTM-config-view .spl-vehcfg-sensor-data-btn-wrapper .btn-handle.hidden {
+#RTM-config-view .spl-vehcfg-sensor-data-btn-wrapper .btn-components.hidden,
+#RTM-config-view .spl-vehcfg-sensor-data-btn-wrapper .btn-handle.hidden,
+#RTM-config-view .spl-vehcfg-sensor-data-btn-wrapper.hidden {
    display: none;
 }
 
@@ -256,6 +284,14 @@
 }
 #RTM-ViewContainer .splTableCell.header.tpms {
    flex: 2.05 0 0%;
+}
+#RTM-ViewContainer .splTableCell.component-header {
+   font-weight: bold;
+   border-top: 1px solid gray;
+   border-bottom: 1px solid gray;
+}
+#RTM-ViewContainer .splTableCell.component-header.first {
+   border-top-width: 0px;
 }
 #RTM-ViewContainer .splTableCell {
    flex: 1 1;
@@ -394,6 +430,12 @@
 #RTM-ViewContainer .splTableCell .content-body > div.glow-temptrac {
    animation: glow-animation-temptrac 1s 2 alternate;
  }
+ #RTM-ViewContainer .splTableCell .content-body > div.glow-stay-on-temptrac {
+   animation: glow-animation-temptrac 1s 4 alternate;
+   -webkit-box-shadow: 0 0 10px 2px rgba(4,177,199,0.5);
+   -moz-box-shadow: 0 0 10px 2px rgba(4,177,199,0.5);
+   box-shadow: 0 0 10px 2px rgba(4,177,199,0.5);
+ }
  @keyframes glow-animation-temptrac {
    from {
      -webkit-box-shadow: 0 0 10px -10px rgba(4,177,199,0.5);
@@ -409,6 +451,12 @@
 
  #RTM-ViewContainer .splTableCell .content-body > div.glow-tpms {
    animation: glow-animation-tpms 1s 2 alternate;
+ }
+ #RTM-ViewContainer .splTableCell .content-body > div.glow-stay-on-tpms {
+   animation: glow-animation-tpms 1s 4 alternate;
+   -webkit-box-shadow: 0 0 10px 2px rgba(189,39,39,0.5);
+   -moz-box-shadow: 0 0 10px 2px rgba(189,39,39,0.5);
+   box-shadow: 0 0 10px 2px rgba(189,39,39,0.5);
  }
  @keyframes glow-animation-tpms {
    from {

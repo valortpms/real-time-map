@@ -27,6 +27,13 @@ const SpartanLyncServices = {
 
    buildMetadataFilename: "build.meta",                     // Filename residing in deployment directory containg build metadata, shown when hovering over SpartanLync Map Watermark
 
+   vehComponents: {                                         // Id's and Description's of supported Vehicles components
+      "tractor": "Tractor",
+      "trailer1": "Trailer 1",
+      "trailer2": "Dolly",
+      "trailer3": "Trailer 2"
+   },
+
    /**
     *  Private Variables
     */

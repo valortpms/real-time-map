@@ -19,6 +19,8 @@ export const INITSplSensorDataTools = function (goLib) {
    this._goLib = null;
    this._cache = null;
 
+   this._firstTime = true;
+
    /**
     * Fetch vehicle sensor data from cache or API
     * ( cached is refreshed after X minutes, as defined in _sensorDataLifetime )
@@ -144,6 +146,7 @@ export const INITSplSensorDataTools = function (goLib) {
          }
       }
       me._cache = {};
+      me._firstTime = true;
       return true;
    };
 
@@ -157,7 +160,7 @@ export const INITSplSensorDataTools = function (goLib) {
 
       const me = this;
       const htmlEntities = new Html5Entities();
-      const data = splSensorDataParser.do(sdata);
+      const data = splSensorDataParser.do(sdata, !me._firstTime);
       let headerTopHtml = "";
       let headerHtml = "";
       let contentHtml = "";
@@ -178,6 +181,7 @@ export const INITSplSensorDataTools = function (goLib) {
             contentHtml += me._getTpmsHtml("content-press", data.tpmsPressHtml);
          }
       }
+      me._firstTime = false;
 
       return htmlEntities.decode(
          renderToString((
@@ -204,6 +208,20 @@ export const INITSplSensorDataTools = function (goLib) {
             </Fragment>
          ))
       ).replace(/myclick/g, "onclick").replace(/\s+data\-reactroot\=\"\"/g, "");
+   };
+
+   this._getComponentHeaderHtml = function (title, firstComponent) {
+      const htmlEntities = new Html5Entities();
+      const titleHtml = title || "";
+      const firstComponentHeaderClass = firstComponent ? "first" : "";
+
+      return htmlEntities.decode(renderToString((
+         <div class="splTableRow">
+            <div className={`splTableCell component-header ${firstComponentHeaderClass}`}>
+               {`${titleHtml}`}
+            </div>
+         </div>
+      )));
    };
 
    this._getTemptracHtml = function (section, content) {
@@ -360,7 +378,7 @@ export const splSensorDataParser = {
     *
     *  @returns object
     */
-   do: function (sdata) {
+   do: function (sdata, isUpdate) {
       const me = this;
       const data = {
          vehId: sdata.vehId,
@@ -371,15 +389,15 @@ export const splSensorDataParser = {
 
       if (Object.keys(sdata.temptrac).length) {
          data.foundTemptracSensors = true;
-         data.temptracHtml = me._genHtml(sdata.temptrac);
+         data.temptracHtml = me._genHtml(sdata.temptrac, isUpdate);
       }
       if (Object.keys(sdata.tpmstemp).length) {
          data.foundTpmsTempSensors = true;
-         data.tpmsTempHtml = me._genHtml(sdata.tpmstemp);
+         data.tpmsTempHtml = me._genHtml(sdata.tpmstemp, isUpdate);
       }
       if (Object.keys(sdata.tpmspress).length) {
          data.foundTpmsPressSensors = true;
-         data.tpmsPressHtml = me._genHtml(sdata.tpmspress);
+         data.tpmsPressHtml = me._genHtml(sdata.tpmspress, isUpdate);
       }
 
       // Format the most recent timestamp, into human readable format
@@ -394,7 +412,7 @@ export const splSensorDataParser = {
     *
     *  @returns string
     */
-   _genHtml: function (sdata) {
+   _genHtml: function (sdata, isUpdate) {
       const me = this;
       const keysSorted = Object.keys(sdata).sort();
       const htmlEntities = new Html5Entities();
@@ -410,8 +428,12 @@ export const splSensorDataParser = {
                me._lastReadTimestampUnix = locObj.time;
             }
 
-            // Animate the sensor record if NEW
-            let animationClassName = "glow-" + (locObj.type === "Temptrac" ? "temptrac" : "tpms");
+            // Animate the sensor record if NEW === true
+            let animationClassName = "glow-" +
+               (locObj.type === "Temptrac" ?
+                  (isUpdate ? "stay-on-" : "") + "temptrac" :
+                  (isUpdate ? "stay-on-" : "") + "tpms"
+               );
             if (typeof locObj.new !== "undefined" && locObj.new === false) {
                animationClassName = "";
             }

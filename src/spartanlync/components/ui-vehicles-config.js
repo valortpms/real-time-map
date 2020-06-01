@@ -24,6 +24,7 @@ export class SplSensorDataTypesButton extends Component {
       this.onCloseContentHandler = this.onCloseContentHandler.bind(this);
 
       this.state = {
+         components: [], //"tractor", "trailer1", "trailer2", "trailer3"
          buttons: [],
          html: "",
          loading: false
@@ -213,6 +214,9 @@ export class SplSensorDataTypesButton extends Component {
       const sensorContentWrapperClass = me.state.html ? (me.state.loading ? "loading" : "") : "hidden";
       const sensorContentBtnCloseClass = me.state.loading ? "hidden" : "";
       const sensorBtnWrapperClass = me.state.buttons.length && me.state.html ? "hidden" : "";
+      const sensorBtnComponentsClass = me.state.components.length && me.state.buttons.length ?
+         (me.state.buttons.length > 1 ?
+            "both-sensors" : "") : "hidden";
       const sensorBtnHandleClass = me.state.buttons.length ?
          (me.state.buttons.length > 1 ?
             "both-sensors" : "") : "hidden";
@@ -235,6 +239,16 @@ export class SplSensorDataTypesButton extends Component {
                   {me.state.buttons.length ? me.state.buttons.map(type => me.renderSplButton(type)) : ""}
                </div>
                <span className={`btn-handle ${sensorBtnHandleClass}`}></span>
+               <div className={`btn-components ${sensorBtnComponentsClass}`}
+                  {...(me.state.components.length && {
+                     "data-tip":
+                        "<div class='veh-components-popup'><span>Vehicle Components</span>" +
+                        me.state.components.map(component => "<li>" + splSrv.vehComponents[component] + "</li>").join("") +
+                        "</div>",
+                     "data-for": "splTooltip"
+                  })}>
+                  {me.state.components.length ? me.state.components.length : ""}
+               </div>
             </span >
             <div className={`btn-content-wrapper ${sensorContentWrapperClass}`}>
                <button className={`btn-content-close ${sensorContentBtnCloseClass}`} onClick={me.onCloseContentHandler}>×</button>

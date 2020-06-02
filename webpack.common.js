@@ -76,7 +76,7 @@ module.exports = {
          failOnError: true //change to false when debugging to fix these circular dependencies
       }),
       new HtmlWebpackPlugin({
-         title: "SpartanLync Real Time Map",
+         title: "SpartanLync Map",
          template: "./index-template.ejs",
          favicon: "./favicon.png"
       }),

@@ -57,6 +57,10 @@ const SpartanLyncServiceTools = {
          splSrv._splToolsInstalled = true;
          splSrv._dbDeviceIds = dbDeviceIds;
 
+         // Update sensorDataLifetime, based on "sensorInfoRefreshRate" user setting in SplTools
+         splSrv.sensorDataLifetime = remoteStore.sensorInfoRefreshRate;
+         splSrv.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
+
          // Update moment() with User-defined Timezone
          splSrv._timeZone = remoteStore.timezone;
          moment.tz.setDefault(splSrv._timeZone);

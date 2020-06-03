@@ -20,7 +20,7 @@ export function initMarkerPopup(deviceMarker) {
 
    const popup = L.popup({
       // keepInView: true,
-      maxHeight: 360,
+      maxHeight: 200,
       className: "markerPopups",
       offset: [0, 0]
    });

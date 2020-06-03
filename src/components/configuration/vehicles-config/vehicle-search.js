@@ -158,9 +158,15 @@ export const deviceSearch = {
       const deviceMarker = markerList[id];
       if (deviceMarker) {
          const newZoomLevel = Math.max(Math.min(storage.map.getZoom() + 1, 18), 15);
-         storage.map.flyTo(deviceMarker.currentlatLng, newZoomLevel);
-      } else {
-         showSnackBar("Sorry, no current day data for selected vehicle.");
+         if (typeof deviceMarker.currentlatLng === "undefined") {
+            showSnackBar("Sorry, Cannot fly to this vehicle...please try again in a few minutes");
+         }
+         else {
+            storage.map.flyTo(deviceMarker.currentlatLng, newZoomLevel);
+         }
+      }
+      else {
+         showSnackBar("Sorry, no current day GPS data for this vehicle.");
       }
    }
 };

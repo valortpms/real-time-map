@@ -9,19 +9,21 @@ import { apiConfig } from "../../../../dataStore/api-config";
 *
 *  @returns object / string (on Error)
 */
-export function fetchVehSensorDataAsync(vehId) {
+export function fetchVehSensorDataAsync(vehId, vehComp, firstTimeCallOverride) {
+   const vehComponent = vehComp || "";
+   const overrideFirstTimeCall = typeof firstTimeCallOverride === "undefined" ? null : firstTimeCallOverride;
    return new Promise((resolve, reject) => {
       const aSyncGoLib = INITGeotabTpmsTemptracLib(
          apiConfig.api,
          splSrv.sensorSearchRetryRangeInDays,
          splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds
       );
-      aSyncGoLib.getData(vehId, "", function (sensorData) {
+      aSyncGoLib.getData(vehId, vehComponent, function (sensorData) {
          if (sensorData === null) {
             reject(splSrv.sensorDataNotFoundMsg);
          } else {
             resolve(sensorData);
          }
-      });
+      }, overrideFirstTimeCall);
    });
 };

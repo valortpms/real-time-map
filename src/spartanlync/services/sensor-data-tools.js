@@ -4,6 +4,7 @@ import moment from "moment-timezone";
 import splSrv from ".";
 import { renderToString } from "react-dom/server";
 import { Html5Entities } from "html-entities";
+import { fetchVehSensorDataAsync } from "../services/api/temptrac-tpms/utils";
 
 /**
  *  Manage / Generate cached Vehicle Sensor data as HTML output to UI
@@ -49,11 +50,15 @@ export const INITSplSensorDataTools = function (goLib) {
             if (me._cache[vehId].data === null) {
                me._goLib.resetAsFirstTime();
             }
+            else {
+               console.log("----- session expired ------", me._cache[vehId].data);
+            }
 
             //Splunk for sensor data
             me._fetchData(vehId)
                .then((sensorData) => {
                   me._cache[vehId].searching = false;
+                  console.log("----- _fetchData(FINAL-RESULT) = ", sensorData);
 
                   // Save Vehicle Name
                   sensorData.vehName = vehName;
@@ -61,16 +66,43 @@ export const INITSplSensorDataTools = function (goLib) {
                   // Report on what we found on the initial search only,
                   // Reporting on Repeat searches will be handled by the data merging code
                   if (me._cache[vehId].data === null) {
-                     console.log("--- NEW SENSOR DATA FOUND after the last search.  " +
-                        "Temptrac [" + Object.keys(sensorData.temptrac).length + "]  " +
-                        "TPMS Temperature [" + Object.keys(sensorData.tpmstemp).length + "]  " +
-                        "TPMS Pressure [" + Object.keys(sensorData.tpmspress).length + "]"
-                     );
+                     if (sensorData.vehCfg.total === 1) {
+                        console.log("--- NEW SENSOR DATA FOUND after the last search.  " +
+                           "Temptrac [" + Object.keys(sensorData.temptrac).length + "]  " +
+                           "TPMS Temperature [" + Object.keys(sensorData.tpmstemp).length + "]  " +
+                           "TPMS Pressure [" + Object.keys(sensorData.tpmspress).length + "]"
+                        );
+                     }
+                     else {
+                        sensorData.vehCfg.ids.map(compId => {
+                           console.log("--- NEW SENSOR DATA FOUND on " +
+                              splSrv.vehComponents[compId].toUpperCase() + " after the last search.  " +
+                              "Temptrac [" + Object.keys(sensorData[compId].temptrac).length + "]  " +
+                              "TPMS Temperature [" + Object.keys(sensorData[compId].tpmstemp).length + "]  " +
+                              "TPMS Pressure [" + Object.keys(sensorData[compId].tpmspress).length + "]"
+                           );
+                        });
+                     }
                   }
 
-                  // Merge new data with cached data
+                  // Merge new TRACTOR data with cached data
+                  if (sensorData.vehCfg.total === 1) {
+                     me._cache[vehId].data = me._mergeSensorDataIntoCache(me._cache[vehId].data, sensorData);
+                  }
+                  // Merge new Vehicle Multi-Component data with cached data
+                  else {
+                     if (me._cache[vehId].data === null) {
+                        me._cache[vehId].data = sensorData;
+                     }
+                     else {
+                        sensorData.vehCfg.ids.map(compId => {
+                           me._cache[vehId].data[compId] = me._mergeSensorDataIntoCache(me._cache[vehId].data[compId], sensorData[compId]);
+                        });
+                     }
+                  }
+
+                  // Set next cache expiry
                   me._cache[vehId].expiry = moment().utc().add(me._sensorDataLifetime, "seconds").unix();
-                  me._cache[vehId].data = me._mergeSensorDataIntoCache(me._cache[vehId].data, sensorData);
 
                   // Fresh data, update cache and then send it
                   resolve(me._cache[vehId].data);
@@ -84,23 +116,18 @@ export const INITSplSensorDataTools = function (goLib) {
                      reject(reason);
                   }
                   else {
-                     console.log("---- No NEW Sensor Data Found for this date range");
+                     const additionalInfo = reason === splSrv.sensorDataNotFoundMsg ? "." : ": " + reason;
+                     console.log("---- No NEW Sensor Data Found for this date range" + additionalInfo);
                   }
 
                   // Resetting when we will search again for new data
                   me._cache[vehId].expiry = moment().utc().add(me._sensorDataLifetime, "seconds").unix();
-
-                  // (** DEPRECATED **) Keep sending the cached data, as it's the best data we have for that search period.
-                  //resolve(me._cache[vehId].data);
 
                   // Nothing new with this data, so don't send anything to UI
                   resolve({});
                });
          }
          else {
-            // (** DEPRECATED **) Data from cache is fresh, send it
-            //resolve(me._cache[vehId].data);
-
             // Nothing new with this data, so don't send anything to UI
             resolve({});
          }
@@ -165,23 +192,30 @@ export const INITSplSensorDataTools = function (goLib) {
       let headerHtml = "";
       let contentHtml = "";
 
+      // Render Headers
       if (data.foundTemptracSensors) {
          headerTopHtml += me._getTemptracHtml("header-top");
          headerHtml += me._getTemptracHtml("header");
-         contentHtml += me._getTemptracHtml("content", data.temptracHtml);
       }
       if (data.foundTpmsTempSensors || data.foundTpmsPressSensors) {
          headerTopHtml += me._getTpmsHtml("header-top");
          if (data.foundTpmsTempSensors) {
             headerHtml += me._getTpmsHtml("header-temp");
-            contentHtml += me._getTpmsHtml("content-temp", data.tpmsTempHtml);
          }
          if (data.foundTpmsPressSensors) {
             headerHtml += me._getTpmsHtml("header-press");
-            contentHtml += me._getTpmsHtml("content-press", data.tpmsPressHtml);
          }
       }
       me._firstTime = false;
+
+      // Render Content
+      data.compIds.map(compId => {
+         contentHtml += me._getComponentContentHtml(
+            compId,
+            (data.compIds.length !== 1),
+            data
+         );
+      });
 
       return htmlEntities.decode(
          renderToString((
@@ -193,9 +227,7 @@ export const INITSplSensorDataTools = function (goLib) {
                   <div className="splTableRow">
                      {`${headerHtml}`}
                   </div>
-                  <div className="splTableRow">
-                     {`${contentHtml}`}
-                  </div>
+                  {`${contentHtml}`}
                   <div className="splTableRow footer">
                      <div className="splTableCell"><label>Last Reading:</label>{`${data.lastReadTimestamp}`}</div>
                   </div>
@@ -210,17 +242,45 @@ export const INITSplSensorDataTools = function (goLib) {
       ).replace(/myclick/g, "onclick").replace(/\s+data\-reactroot\=\"\"/g, "");
    };
 
-   this._getComponentHeaderHtml = function (title, firstComponent) {
+   this._getComponentContentHtml = function (compId, showHeader, data) {
+      const me = this;
       const htmlEntities = new Html5Entities();
-      const titleHtml = title || "";
-      const firstComponentHeaderClass = firstComponent ? "first" : "";
-
-      return htmlEntities.decode(renderToString((
-         <div class="splTableRow">
+      const firstComponentHeaderClass = compId === data.compIds[0] ? "first" : "";
+      const headerTitle = showHeader ? splSrv.vehComponents[compId] : "";
+      const compHeaderHtml = headerTitle ? htmlEntities.decode(renderToString((
+         <div className="splTableRow">
             <div className={`splTableCell component-header ${firstComponentHeaderClass}`}>
-               {`${titleHtml}`}
+               {`${headerTitle}`}
             </div>
          </div>
+      ))) : "";
+
+      let compContentHtml = "";
+      if (data.foundTemptracSensors) {
+         compContentHtml += me._getTemptracHtml("content",
+            typeof data[compId].temptracHtml !== "undefined" ?
+               data[compId].temptracHtml : "&nbsp;");
+      }
+      if (data.foundTpmsTempSensors || data.foundTpmsPressSensors) {
+         if (data.foundTpmsTempSensors) {
+            compContentHtml += me._getTpmsHtml("content-temp",
+               typeof data[compId].tpmsTempHtml !== "undefined" ?
+                  data[compId].tpmsTempHtml : "&nbsp;");
+         }
+         if (data.foundTpmsPressSensors) {
+            compContentHtml += me._getTpmsHtml("content-press",
+               typeof data[compId].tpmsPressHtml !== "undefined" ?
+                  data[compId].tpmsPressHtml : "&nbsp;");
+         }
+      }
+
+      return htmlEntities.decode(renderToString((
+         <Fragment>
+            {`${compHeaderHtml}`}
+            <div className="splTableRow">
+               {`${compContentHtml}`}
+            </div>
+         </Fragment>
       )));
    };
 
@@ -300,7 +360,46 @@ export const INITSplSensorDataTools = function (goLib) {
                reject(splSrv.sensorDataNotFoundMsg);
             }
             else {
-               resolve(sensorData);
+               // Single-Vehicle Component found (normally TRACTOR, but we should not assume)
+               if (sensorData.vehCfg.total === 1) {
+                  resolve(sensorData);
+               }
+               // Multi-Vehicle Component(s) found (any combination of "tractor", "trailer1", "trailer2", "trailer3")
+               else {
+                  console.log("--------------------------------- _fetchData(RESULT) = ", sensorData);
+                  const vehCompFound = sensorData.vehCfg.active;
+                  let ids = sensorData.vehCfg.ids.filter((id) => { return id !== vehCompFound; });
+                  const data = {
+                     vehCfg: sensorData.vehCfg,
+                     vehId: sensorData.vehId,
+                  };
+                  data[vehCompFound] = {
+                     temptrac: sensorData.temptrac,
+                     tpmspress: sensorData.tpmspress,
+                     tpmstemp: sensorData.tpmstemp,
+                  };
+                  sensorData.vehCfg.ids
+                     .filter(compId => { return (compId !== vehCompFound); })
+                     .map(compId => {
+                        fetchVehSensorDataAsync(vehId, compId, me._firstTime)
+                           .then((sdata) => {
+                              data[compId] = {
+                                 temptrac: sdata.temptrac,
+                                 tpmspress: sdata.tpmspress,
+                                 tpmstemp: sdata.tpmstemp,
+                              };
+                              ids = ids.filter((id) => { return id !== compId; });
+                           })
+                           .catch(() => {
+                              data[compId] = null;
+                           })
+                           .finally(() => {
+                              if (ids.length === 0) {
+                                 resolve(data);
+                              }
+                           });
+                     });
+               }
             }
          });
       });
@@ -311,10 +410,11 @@ export const INITSplSensorDataTools = function (goLib) {
     *
     *  @returns object
     */
-   this._mergeSensorDataIntoCache = function (cache, sdata) {
+   this._mergeSensorDataIntoCache = function (cache, sdata, vehCompId) {
       if (cache === null) {
          return sdata;
       }
+      const vehCompDesc = typeof vehCompId !== "undefined" && vehCompId ? splSrv.vehComponents[vehCompId].toUpperCase() : "";
 
       // Reset all records in cache as originating from cache and therefore NOT new
       ["temptrac", "tpmstemp", "tpmspress"].forEach(function (type) {
@@ -342,7 +442,8 @@ export const INITSplSensorDataTools = function (goLib) {
                   (type === "temptrac" ? "Temptrac" :
                      (type === "tpmstemp" ? "TPMS Temperature" :
                         "TPMS Pressure")) +
-                  " sensor data records"
+                  " sensor data records" +
+                  (vehCompDesc ? " from " + vehCompDesc : "")
                );
             }
          }
@@ -381,23 +482,56 @@ export const splSensorDataParser = {
    do: function (sdata, isUpdate) {
       const me = this;
       const data = {
+         compIds: [],
          vehId: sdata.vehId,
          vehName: sdata.vehName,
          lastReadTimestamp: ""
       };
       me._lastReadTimestampUnix = 0;
 
-      if (Object.keys(sdata.temptrac).length) {
-         data.foundTemptracSensors = true;
-         data.temptracHtml = me._genHtml(sdata.temptrac, isUpdate);
+      // Process TRACTOR-only data
+      if (sdata.vehCfg.total === 1) {
+         data.compIds.push("tractor");
+         data["tractor"] = {};
+         if (Object.keys(sdata.temptrac).length) {
+            data.foundTemptracSensors = true;
+            data["tractor"].temptracHtml = me._genHtml(sdata.temptrac, isUpdate);
+         }
+         if (Object.keys(sdata.tpmstemp).length) {
+            data.foundTpmsTempSensors = true;
+            data["tractor"].tpmsTempHtml = me._genHtml(sdata.tpmstemp, isUpdate);
+         }
+         if (Object.keys(sdata.tpmspress).length) {
+            data.foundTpmsPressSensors = true;
+            data["tractor"].tpmsPressHtml = me._genHtml(sdata.tpmspress, isUpdate);
+         }
       }
-      if (Object.keys(sdata.tpmstemp).length) {
-         data.foundTpmsTempSensors = true;
-         data.tpmsTempHtml = me._genHtml(sdata.tpmstemp, isUpdate);
-      }
-      if (Object.keys(sdata.tpmspress).length) {
-         data.foundTpmsPressSensors = true;
-         data.tpmsPressHtml = me._genHtml(sdata.tpmspress, isUpdate);
+      // Process Vehicle Multi-Component data
+      else {
+         data.foundTemptracSensors = false;
+         data.foundTpmsTempSensors = false;
+         data.foundTpmsPressSensors = false;
+         sdata.vehCfg.ids.map(compId => {
+            data[compId] = {};
+            if (Object.keys(sdata[compId].temptrac).length) {
+               data.compIds.push(compId);
+               data.foundTemptracSensors = true;
+               data[compId].temptracHtml = me._genHtml(sdata[compId].temptrac, isUpdate);
+            }
+            if (Object.keys(sdata[compId].tpmstemp).length) {
+               data.compIds.push(compId);
+               data.foundTpmsTempSensors = true;
+               data[compId].tpmsTempHtml = me._genHtml(sdata[compId].tpmstemp, isUpdate);
+            }
+            if (Object.keys(sdata[compId].tpmspress).length) {
+               data.compIds.push(compId);
+               data.foundTpmsPressSensors = true;
+               data[compId].tpmsPressHtml = me._genHtml(sdata[compId].tpmspress, isUpdate);
+            }
+         });
+
+         // Remove duplicate component Ids
+         data.compIds = [...new Set(data.compIds)];
       }
 
       // Format the most recent timestamp, into human readable format

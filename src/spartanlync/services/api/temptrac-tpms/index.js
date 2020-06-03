@@ -46,192 +46,6 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
          _timeSearchRetryRangeInDays: retrySearchRange,
 
          /**
-         * getReportData() Retrieves TPMS /Temptrac sensor data from Geotab API using supplied report criteria
-         *
-         * @param {object} params   - Report parameters object
-         * @param {string} callback - Callback func to invoke upon retrieval of data
-         *
-         * If first call, start with a search over last 24 hours.
-         * - If nothing found, retry with 2 days, then 1 week, 1 month, 2 months, then we give up
-         * - If sensor data found,
-         *   (1) convert sensor data to a time-sorted array of sensor objects and
-         *   (2) pass back to supplied callback function
-         *
-         * @return {array} Array of Sensor objects, sorted by time from oldest to newest
-         */
-
-         getReportData: function (params, callback) {
-            if (typeof params !== "object" ||
-               typeof params.vehId === "undefined" ||
-               typeof params.from === "undefined" ||
-               typeof params.to === "undefined" ||
-               typeof params.sensorType === "undefined" ||
-               params.vehId.toString().trim() === "" ||
-               params.from.toString().trim() === "" ||
-               params.to.toString().trim() === "" ||
-               params.sensorType.toString().trim() === "" ||
-               typeof callback === "undefined" ||
-               typeof callback !== "function") {
-               if (typeof callback === "function") {
-                  callback(null);
-               }
-               return;
-            }
-            me._devId = params.vehId;
-            me._fromDate = params.from;
-            me._toDate = params.to;
-            me._repSType = params.sensorType;
-            me._repCallback = callback;
-
-            // Build then perform TPMS/Temptrac Multicall
-            console.log("Please Wait...Retrieving Report sensor data using date range - FROM: " + me._fromDate + " => TO: " + me._toDate);
-            me._timer.b1 = new Date();
-
-            // Temptrac searches, only require a search on the tractor vehicle component
-            const vehComps = me._repSType === "temptrac" ? me._devComponents.ids.split(",")[0] : me._devComponents.ids;
-
-            me._api.multiCall(me._buildApiCall(vehComps),
-               function (result) {
-                  if (result && result.length) {
-                     let tractorOnlyResults = true;
-                     const sdata = {
-                        history: []
-                     };
-
-                     me._timer.b2 = new Date();
-                     console.log("Sensor data retrieved - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000));
-
-                     // Analyze and Sort sensor data
-                     console.log("Sensor data being analyzed - Please Wait!");
-                     me._timer.b1 = new Date();
-                     for (const res of result) {
-                        if (Array.isArray(res) && res.length) {
-                           for (const srec of res) {
-                              if (!srec.id || srec.device.id !== me._devId || typeof srec.diagnostic.id === "undefined") {
-                                 continue; // Invalid records discarded
-                              }
-                              const diagName = me._locLib.idxIds[srec.diagnostic.id];
-                              // eslint-disable-next-line no-unused-vars
-                              const vehCompType = me._locLib[diagName].type;
-
-                              // Flag whether results contrains (a) Tractor + Trailer / Dollys, or (b) Tractor only
-                              if (diagName.match(/: trailer [0-9]/gi)) {
-                                 tractorOnlyResults = false;
-                              }
-
-                              // Only process data pertaining to report sensor-type criteria
-                              if (me._repSType === "temptrac") {
-
-                                 // Store Temptrac sensor reading
-                                 if (diagName.indexOf("reefer temperature") > -1) {
-                                    const zone = me._extractZoneFromLoc(diagName);
-                                    const recObj = {
-                                       loc: zone.trim().replace(/ /g, "").toLowerCase(),
-                                       type: "Temptrac",
-                                       time: moment(srec.dateTime).unix(),
-                                       zone: zone,
-                                       val: me._fromDataToValueObj(srec)
-                                    };
-
-                                    // Create historical records
-                                    sdata.history.push(recObj);
-                                 }
-                              }
-                              else if (me._repSType === "tpms") {
-
-                                 // Store TPMS Temperature / Pressure sensor readings
-                                 if (diagName.indexOf("ire temperature:") > -1 || diagName.indexOf("ire pressure:") > -1) {
-                                    const axle = me._extractAxleFromLoc(diagName);
-                                    const stype = diagName.indexOf("ire temperature:") > -1 ? "Tire Temperature" : "Tire Pressure";
-                                    const recObj = {
-                                       loc: axle.trim().replace(/ /g, "").toLowerCase(),
-                                       type: stype,
-                                       time: moment(srec.dateTime).unix(),
-                                       axle: axle,
-                                       val: me._fromDataToValueObj(srec)
-                                    };
-
-                                    // Create historical records
-                                    sdata.history.push(recObj);
-                                 }
-                              }
-                           }
-                        }
-                     }
-
-                     // Report "No Sensor Results Found" response to callback
-                     if (!sdata.history.length) {
-                        console.log("NOTHING FOUND: No Sensor Records Found within the specified search criteria!");
-                        me._repCallback({});
-                        return;
-                     }
-                     else {
-
-                        // Sort each Temptrac / TPMS Array by time (oldest first)
-                        sdata.history.sort(function (s1, s2) {
-                           if (s1.time === s2.time) {
-                              return s1.loc.localeCompare(s2.loc);
-                           }
-                           return s1.time > s2.time ? 1 : -1;
-                        });
-
-                        // Build a report table timeline index,
-                        // which will group temp/pressure by time + location
-                        // while also removing duplicates
-                        const repIdx = {};
-                        const timeIdx = [sdata.history[0]["time"]];
-                        for (let idx = 0; idx < sdata.history.length; idx++) {
-
-                           // Rename Axle & locations to "Tractor", "Trailer 1", "Dolly", or "Trailer 2" labels
-                           if (me._repSType === "tpms" && !tractorOnlyResults) {
-                              if (sdata.history[idx].axle.indexOf("trailer") > -1) {
-                                 sdata.history[idx].axle = sdata.history[idx].axle.replace(/trailer 2/gi, "Dolly -");
-                                 sdata.history[idx].axle = sdata.history[idx].axle.replace(/trailer 3/gi, "Trailer 2 -");
-                                 sdata.history[idx].axle = sdata.history[idx].axle.replace(/trailer 1/gi, "Trailer 1 -");
-                              }
-                              else {
-                                 sdata.history[idx].axle = "Tractor - " + sdata.history[idx].axle;
-                              }
-                              sdata.history[idx].loc = sdata.history[idx].axle.trim().replace(/[- ]/g, "").toLowerCase();
-                           }
-
-                           // Build Report
-                           const time = sdata.history[idx].time;
-                           const loc = sdata.history[idx].loc;
-                           const type = sdata.history[idx].type === "Tire Pressure" ? "press" : "temp";
-
-                           if (typeof repIdx[time] === "undefined" ||
-                              typeof repIdx[time][loc] === "undefined" ||
-                              typeof repIdx[time][loc][type] === "undefined") {
-                              me._mDimAssign(repIdx, [time, loc, type], idx);
-                           }
-                           if (timeIdx[timeIdx.length - 1] !== time) {
-                              timeIdx.push(time);
-                           }
-                        }
-                        sdata["_repIdx"] = repIdx;
-                        sdata["_timeIdx"] = timeIdx;
-
-                        // We"re done
-                        me._timer.b2 = new Date();
-                        console.log("Sensor data analyzed and sorted - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000) + ".");
-                        console.log("Found [ " + sdata.history.length + " ] " + (me._repSType === "temptrac" ? "Temptrac" : "TPMS Temperature / Pressure") + " sensor records for Report");
-
-                        // Return sensor data to callback
-                        me._repCallback(sdata);
-                        return;
-                     }
-                  }
-
-                  // No results from multicall, Retry
-                  else {
-                     me._repCallback(null);
-                     return;
-                  }
-               });
-         },
-
-         /**
          * getData() Retrieves TPMS /Temptrac sensor data from Geotab API
          *
          * @param {string} devId    - Geotab Device Id
@@ -247,9 +61,13 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
          * @return {array} Array of Sensor objects, sorted by time from oldest to newest
          */
 
-         getData: function (devId, devComp, callback) {
+         getData: function (devId, devComp, callback, firstTimeCallOverride) {
             if (devId.toString().trim() === "" || typeof callback === "undefined" || typeof callback !== "function") {
                return;
+            }
+            if (typeof firstTimeCallOverride !== "undefined" && firstTimeCallOverride !== null) {
+               console.log("------------- fetchVehSensorDataAsync().getData() Overrode me._apiFirstTimeCall = ", firstTimeCallOverride);
+               me._apiFirstTimeCall = firstTimeCallOverride;
             }
             me._devId = devId;
             me._devSelectedComp = devComp;
@@ -342,30 +160,20 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                   return;
                }
 
-               // Search for all Vehicle componenents, if a specific component not specified
-               vehComps = me._devSelectedComp ? me._devSelectedComp : me._devComponents.ids;
-
                // Iterate date range array USING _apiCallRetryCount until a successful API response
                me._fromDate = moment().utc().subtract(me._timeSearchRetryRangeInDays[me._apiCallRetryCount], "day").format();
             }
             // Repeat call, search over the last few minutes
             else {
                me._fromDate = moment().utc().subtract(me._timeRangeForRepeatSearchesInSeconds, "seconds").format();
-
-               // If specified, use selected vehicle component for subsequent calls. Or first component if not specified.
-               vehComps = me._devSelectedComp;
-               if (!me._devSelectedComp) {
-                  vehComps = me._devSelectedComp = me._devComponents.ids.split(",")[0];
-               }
             }
+            // Search for all Vehicle componenents, if a specific component not specified
+            vehComps = me._devSelectedComp ? me._devSelectedComp : me._devComponents.ids;
 
             // Build then perform TPMS/Temptrac Multicall
             console.log("Please Wait...Attempt#" + (me._apiCallRetryCount + 1) +
-               " Retrieving " + (
-                  me._apiFirstTimeCall ?
-                     (me._devSelectedComp ? me._devComponents.names[me._devSelectedComp].toUpperCase() : "ALL") :
-                     me._devComponents.names[me._devSelectedComp].toUpperCase()
-               ) + " Sensor Data using " + (
+               " Retrieving " + (me._devSelectedComp ? me._devComponents.names[me._devSelectedComp].toUpperCase() : "ALL") +
+               " Sensor Data using " + (
                   me._apiFirstTimeCall ?
                      me._timeSearchRetryRangeInDays[me._apiCallRetryCount] + " day" :
                      me._convertSecondsToHMS(me._timeRangeForRepeatSearchesInSeconds)
@@ -489,8 +297,9 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                         me._timer.b2 = new Date();
                         console.log("Sensor data analyzed and sorted - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000) + ".");
 
-                        // First-time usage of entire vehicle chooses highest-priority vehicle component found in sensor search results
                         if (me._apiFirstTimeCall && !me._devSelectedComp) {
+
+                           // First-time usage of entire vehicle chooses highest-priority vehicle component found in sensor search results
                            const vehCompsFound = Object.keys(sdata);
                            if (vehCompsFound.length === 1) {
                               me._devSelectedComp = vehCompsFound[0];
@@ -506,11 +315,11 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
 
                            // Build vehicle component configuration, returned on future search results
                            me._devConfig = {
+                              ids: vehCompsFound,
                               total: vehCompsFound.length
                            };
                         }
                         me._devConfig.active = me._devSelectedComp;
-                        me._devConfig.activeId = me._devComponents.ids.split(",").findIndex(function (comp) { return comp === me._devSelectedComp; }) + 1;
 
                         // Future calls after this successful response will not be a first-timer
                         me._apiFirstTimeCall = false;

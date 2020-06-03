@@ -24,7 +24,7 @@ export class SplSensorDataTypesButton extends Component {
       this.onCloseContentHandler = this.onCloseContentHandler.bind(this);
 
       this.state = {
-         components: [], //"tractor", "trailer1", "trailer2", "trailer3"
+         components: [],
          buttons: [],
          html: "",
          loading: false
@@ -72,14 +72,14 @@ export class SplSensorDataTypesButton extends Component {
 
    /**
     * Fetch vehicle sensor data from API
-    * Parse results and update state on sensor types in vehicle
+    * Parse results and update state on sensor types & components of vehicle
     *
     *  @returns void
     */
    fetchSensorTypes() {
       const me = this;
 
-      //Splunk for presence of sensor data types
+      //Splunk for presence of sensor data types & vehicle components
       fetchVehSensorDataAsync(me.vehId)
          .then((sdata) => {
             const btn = [];
@@ -89,7 +89,10 @@ export class SplSensorDataTypesButton extends Component {
             if (Object.keys(sdata.tpmspress).length || Object.keys(sdata.tpmstemp).length) {
                btn.push("tpms");
             }
-            me.setState({ buttons: btn });
+            me.setState({
+               components: sdata.vehCfg.ids.length > 1 ? sdata.vehCfg.ids : [],
+               buttons: btn
+            });
          })
          .catch((reason) => {
             if (reason === splSrv.sensorDataNotFoundMsg) {

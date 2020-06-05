@@ -1,8 +1,8 @@
-import { showSnackBar } from "../../components/snackbar/snackbar";
 import splSrv from "../services";
 import splCfg from "../config";
 import storage from "../../dataStore";
 import ReactTooltip from "react-tooltip";
+import { showSnackBar } from "../../components/snackbar/snackbar";
 import { manageSensorDataContentUI } from "./ui-vehicles-config";
 
 /**
@@ -133,9 +133,11 @@ window.navigateToSplTools = (vehId, vehName) => {
 export function switchToSplTools(vehId, vehName) {
    const splToolsPageName = splSrv.splStore.splMap.toolsPageName;
 
-   // close popups on Map or ConfigView panel
+   // Close  all Popups / Tooltips on Map and ConfigView panel
    manageSensorDataContentUI.close();
    storage.map.closePopup();
+   storage.map.closeTooltip();
+   ReactTooltip.hide();
 
    // Perform page redirection in Browser or MyGeotab
    if (splCfg.appEnv === "prod") {

@@ -114,7 +114,7 @@ export class SplSensorDataTypesButton extends Component {
 
          // Set the Loading Page
          me.setState({
-            html: "<strong>Getting Data</strong>",
+            html: "<strong class='loading'>Getting Data</strong>",
             loading: true
          });
 
@@ -337,6 +337,8 @@ export const manageSensorDataContentUI = {
    },
    close: function () {
       const me = this;
-      me._settings.closeHandler();
+      if (typeof me._settings.closeHandler === "function") {
+         me._settings.closeHandler();
+      }
    }
 };

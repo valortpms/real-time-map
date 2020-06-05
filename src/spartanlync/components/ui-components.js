@@ -185,13 +185,16 @@ export const splToolsHelper = {
       cmds.get.map(cmd => {
          switch (cmd) {
             case "flyToVehId":
-               const name = cmds.val("flyToVehName") ? cmds.val("flyToVehName") : cmds.val("flyToVehId");
+               const vehLabel = cmds.val("flyToVehName") ? cmds.val("flyToVehName") : cmds.val("flyToVehId");
+               const msg = "Flying To Vehicle '" + vehLabel + "'";
+
                setTimeout(() => {
                   // Remove page redirect query parameters from browser URL
                   me.resetBrowserUrlHistory();
 
                   // Fly to current vehicle location
-                  showMsg.msg("Flying To Vehicle '", name, "'");
+                  showSnackBar(msg);
+                  console.log("---- " + msg + " ----");
                   flyToDevice(cmds.val("flyToVehId"));
 
                }, 5000);

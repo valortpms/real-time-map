@@ -245,11 +245,6 @@
  *	-- Vehicle Sensor Data Popup on Map / ConfigView Panel
 */
 
-.leaflet-popup-content strong {
-   color: #BD2727;
-   font-size: 9px;
-}
-
 .splPopupTooltip {
    z-index: 1500 !important;
 }
@@ -266,8 +261,31 @@
    border-top: 1px solid gray;
 }
 
+#RTM-ViewContainer .leaflet-popup-content strong {
+   color: #BD2727;
+   font-size: 9px;
+}
+#RTM-ViewContainer .leaflet-popup-content strong.loading {
+   position: relative;
+   display: inline-block;
+   top: -2px;
+   color: #BD2727;
+   font-size: 12px;
+   width: 150px;
+   margin: 0px;
+   padding: 0px;
+   text-align: center;
+}
+
+#RTM-ViewContainer .leaflet-container a.leaflet-popup-close-button {
+   right: -5px;
+}
+
 #RTM-ViewContainer .splTable {
    margin: 5px 0px 0px 0px;
+}
+#RTM-ViewContainer .leaflet-popup-content .splTable {
+   margin-right: 5px;
 }
 #RTM-ViewContainer .splTableRow {
    display: flex;

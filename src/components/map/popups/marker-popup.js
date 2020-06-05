@@ -19,13 +19,13 @@ export function initMarkerPopup(deviceMarker) {
    } = deviceMarker;
 
    const popup = L.popup({
-      // keepInView: true,
       maxHeight: 200,
+      minWidth: 190,
       className: "markerPopups",
       offset: [0, 0]
    });
 
-   popup.setContent(filterMarkerButton(deviceID) + getStrongText("Getting Data"));
+   popup.setContent(filterMarkerButton(deviceID) + "<strong class='loading'>Getting Data</strong>");
 
    mapMarker.bindPopup(popup);
 
@@ -49,7 +49,7 @@ export function initMarkerPopup(deviceMarker) {
 
    mapMarker.on("popupclose", () => {
       splSensorsOnMap.clearCache();
-      popup.setContent(filterMarkerButton(deviceID) + getStrongText("Getting Data"));
+      popup.setContent(filterMarkerButton(deviceID) + "<strong class='loading'>Getting Data</strong>");
    });
 
    mapMarker.on("mouseover", () => {

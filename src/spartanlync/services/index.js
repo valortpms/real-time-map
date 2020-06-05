@@ -34,6 +34,12 @@ const SpartanLyncServices = {
       "trailer3": "Trailer 2"
    },
 
+   splLanguages: {                                          // Languages supported by SpartanLync Tools
+      "en": "English",
+      "fr": "Fran&#231;ais",
+      "es": "Espa&#241;ol"
+   },
+
    /**
     *  Private Variables
     */
@@ -53,6 +59,8 @@ const SpartanLyncServices = {
 
    _splToolsInstalled: false,
    _splStore: null,
+   _splMapUrl: null,
+   _splLogoCallbackFunc: null,
    _dbDeviceIds: null,
    _timeZone: null,
 

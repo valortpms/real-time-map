@@ -5,7 +5,7 @@ import { INITSplAPI, INITSplSessionMgr } from "./api";
 import { INITGeotabTpmsTemptracLib } from "./api/temptrac-tpms";
 import { INITSplSensorDataTools } from "./sensor-data-tools";
 import { userInfo, apiConfig } from "../../dataStore/api-config";
-import { showMsg } from "../components/ui-components";
+import { showMsg, splToolsHelper } from "../components/ui-components";
 
 /**
  *
@@ -67,11 +67,47 @@ const SpartanLyncServiceTools = {
 
          // Update shared Store object with SplMaps Add-In PageName and Sync with SplTools Add-In
          remoteStore.splMap.found = true;
-         remoteStore.splMap.mapsPageName = splCfg.appEnv === "dev" ? window.location.href : window.location.hash.replace("#", "");
+         remoteStore.splMap.mapsPageName = me.getSplMapPageName();
          splSrv.splStore = remoteStore;
 
+         // Perfrom checks to see if SplMap was given instructions by SplTools
+         // Called by MyGeotab handleFocus() in PROD
+         if (splCfg.appEnv === "dev") {
+            splToolsHelper.scanForInstructions();
+         }
+
+         // Refresh SplLogo with SplTools settings
+         if (typeof splSrv._splLogoCallbackFunc === "function") {
+            splSrv._splLogoCallbackFunc();
+         }
+
+         // Notify on successful startup
          showMsg.msg("SpartanLync Map Services Started Successfully");
       });
+   },
+
+   /**
+   *
+   * Parse environment for MyGeotab unique Add-In page name in PROD / App URL in DEV
+   * Store
+   *
+   */
+   getSplMapPageName: function () {
+      let splMapPageName = "";
+      let splMapPageUrl = "";
+
+      if (splCfg.appEnv === "dev") {
+         splMapPageName = splMapPageUrl = window.location.origin;
+      }
+      else {
+         splMapPageName = window.location.hash.indexOf(",") > -1 ? window.location.hash.split(",")[0] : window.location.hash;
+         splMapPageName = splMapPageName.replace("#", "");
+         splMapPageUrl = window.location.origin + window.location.pathname + "#" + splMapPageName;
+      }
+      // Store SplMap URL for any later URL cleanup
+      splSrv._splMapUrl = splMapPageUrl;
+
+      return splMapPageName;
    }
 };
 

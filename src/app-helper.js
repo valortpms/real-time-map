@@ -21,8 +21,9 @@ import {
 import {
    resetAnimationOnFocus,
    resetTransitionAnimation
-}
-   from "./utils/helper";
+} from "./utils/helper";
+import { splToolsHelper } from "./spartanlync/components/ui-components";
+
 
 export function initBeforeLogin() {
    initDateKeeper();
@@ -61,4 +62,7 @@ export function handleFocus(api, state) {
    storage.dateKeeper$.resume();
    resetTransitionAnimation();
    console.log("Focused!");
+
+   // Perfrom checks to see if SplMap was given instructions by SplTools
+   splToolsHelper.scanForInstructions();
 }

@@ -51,7 +51,7 @@ fi
 rm -rf "${ADDIN_CONFIG_JSON_FILE_PATH}.bak"
 
 # Update config.json with correct URL/Menu paths & Titles for build
-echo -ne "----  FIXING URL/Menu paths & Titles in [ ${ADDIN_CONFIG_JSON_FILE_PATH} ]\n"
+echo -ne "---- FIXING URL/Menu paths & Titles in [ ${ADDIN_CONFIG_JSON_FILE_PATH} ]\n"
 sed -i "s/\/splmap\//\/splmap${BUILD_EXTENSION}\//g" ${ADDIN_CONFIG_JSON_FILE_PATH}
 sed -i "s/Map\"/Map${ADDIN_CONFIG_JSON_TITLE_SUFFIX}\"/g" ${ADDIN_CONFIG_JSON_FILE_PATH}
 sed -i "s/\"path\": \"\"/\"path\": \"${ADDIN_CONFIG_JSON_MENU_PATH}\"/g" ${ADDIN_CONFIG_JSON_FILE_PATH}

@@ -160,3 +160,97 @@ window.refreshSplTooltips = () => {
       ReactTooltip.rebuild();
    }, 1000);
 };
+
+
+/**
+*
+*  Checks performed looking for communication instructions from SplTools
+*
+*/
+export const splToolsHelper = {
+
+   _msgQueue: [],
+   _msgHandle: null,
+
+
+   /**
+    * Scan environment for query parameters (passed by SplTools) intended for execution by SplMap
+    *
+    *  @returns void
+    */
+   scanForInstructions: function () {
+      const me = this;
+      const cmds = me.getCmds();
+
+      cmds.get.map(cmd => {
+         switch (cmd) {
+            case "flyToVehId":
+               const name = cmds.val("flyToVehName") ? cmds.val("flyToVehName") : cmds.val("flyToVehId");
+               setTimeout(() => {
+                  // Remove page redirect query parameters from browser URL
+                  me.resetBrowserUrlHistory();
+
+                  // Fly to current vehicle location
+                  showMsg.msg("Flying To Vehicle '", name, "'");
+                  flyToDevice(cmds.val("flyToVehId"));
+
+               }, 5000);
+               break;
+
+            default:
+         }
+      });
+   },
+
+   /**
+   * Remove page redirect query parameters from browser URL
+   *
+   *  @returns void
+   */
+   resetBrowserUrlHistory: function () {
+      window.history.replaceState({}, document.title, splSrv._splMapUrl);
+   },
+
+   /**
+    * Scan environment for query parameters
+    *
+    *  @returns object
+    */
+   getCmds: function () {
+      const cmds = {
+         get: [],
+         data: {},
+         val: function (k) {
+            const me = this;
+            return typeof me.data[k] !== "undefined" && me.data[k] ? me.data[k] : "";
+         }
+      };
+
+      if (splCfg.appEnv === "prod") {
+         const queryParams = splSrv.state.getState();
+         for (const prop of Object.keys(queryParams)) {
+            if (typeof queryParams[prop] !== "undefined" && queryParams[prop]) {
+               cmds.data[prop] = queryParams[prop];
+               cmds.get.push(prop);
+            }
+         }
+      }
+      else {
+         let queryParams = window.location.search;
+         if (queryParams.indexOf("q=") > -1) {
+            queryParams = queryParams.split("q=")[1];
+            if (queryParams.indexOf(",") > -1) {
+               queryParams = queryParams.split(",");
+               queryParams.map(q => {
+                  const cmd = q.indexOf(":") > -1 ? q.split(":")[0] : q;
+                  const val = q.indexOf(":") > -1 ? decodeURIComponent(q.split(":")[1]) : "";
+                  cmds.data[cmd] = val;
+                  cmds.get.push(cmd);
+               });
+            }
+         }
+      }
+      return cmds;
+   }
+
+};

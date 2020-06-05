@@ -16,12 +16,23 @@ export class SplLogo extends Component {
       this.buildUrlAttempt = 0;
       this.state = {
          buildVersion: "",
-         buildDateUnix: null
+         buildDateUnix: null,
+
+         spltoolsTimezone: "",
+         spltoolsLang: "",
+         spltoolsSensorInfoRefreshRate: 0,
       };
+
+      this.fetchSettings = this.fetchSettings.bind(this);
    }
 
    componentDidMount() {
       const me = this;
+
+      // Register a callback, invoked when SplTools is successfully initialized
+      splSrv._splLogoCallbackFunc = me.fetchSettings;
+
+      // Get build info from Backend server
       me.fetchBuildDate((metadataTxt) => {
          const [appVer, unixTimestamp] = metadataTxt.trim().split("\n");
          if (appVer && !isNaN(unixTimestamp)) {
@@ -48,6 +59,15 @@ export class SplLogo extends Component {
       }
    }
 
+   fetchSettings() {
+      const me = this;
+      me.setState({
+         spltoolsTimezone: splSrv.splStore.timezone,
+         spltoolsLang: splSrv.splStore.lang,
+         spltoolsSensorInfoRefreshRate: splSrv.splStore.sensorInfoRefreshRate,
+      });
+   }
+
    getBuildUrl() {
       const me = this;
       me.buildUrlAttempt++;
@@ -70,6 +90,9 @@ export class SplLogo extends Component {
    }
 
    render() {
+      const timezone = this.state.spltoolsTimezone ? this.state.spltoolsTimezone : "UnKnown";
+      const lang = this.state.spltoolsLang ? splSrv.splLanguages[this.state.spltoolsLang] : "UnKnown";
+      const sensorInfoRefreshRate = this.state.spltoolsSensorInfoRefreshRate ? this.state.spltoolsSensorInfoRefreshRate : "UnKnown";
       const buildVersion = this.state.buildVersion ? this.state.buildVersion : "UnKnown";
       let buildDateHuman = this.state.buildDateUnix ? splSrv.convertUnixToTzHuman(this.state.buildDateUnix) : "UnKnown";
       buildDateHuman = buildDateHuman ? buildDateHuman : "UnKnown";
@@ -79,6 +102,13 @@ export class SplLogo extends Component {
             <div>
                <label>{this.props["app-name"]}</label>
                <div>
+                  <strong>Date & Time Timezone:</strong>
+                  <span>{timezone}</span>
+                  <strong>Sensor Info Refresh Rate:</strong>
+                  <span>{sensorInfoRefreshRate / 60} min</span>
+                  <strong>Language:</strong>
+                  <span dangerouslySetInnerHTML={{ __html: lang }}></span>
+                  <br />
                   <strong>Build Version:</strong>
                   <span>{buildVersion}</span>
                   <strong>Build Date:</strong>

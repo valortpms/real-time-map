@@ -77,9 +77,7 @@ const SpartanLyncServiceTools = {
          }
 
          // Refresh SplLogo with SplTools settings
-         if (typeof splSrv._splLogoCallbackFunc === "function") {
-            splSrv._splLogoCallbackFunc();
-         }
+         splSrv.events.exec("onLoadSplServices");
 
          // Notify on successful startup
          showMsg.msg("SpartanLync Map Services Started Successfully");

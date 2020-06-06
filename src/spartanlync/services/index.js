@@ -60,7 +60,6 @@ const SpartanLyncServices = {
    _splToolsInstalled: false,
    _splStore: null,
    _splMapUrl: null,
-   _splLogoCallbackFunc: null,
    _dbDeviceIds: null,
    _timeZone: null,
 
@@ -98,6 +97,67 @@ const SpartanLyncServices = {
          (errMsg) => {
             console.log("SplMapServices: Failed to updated SplStore remotely...Reason: " + errMsg);
          });
+   },
+
+   /**
+    * Register callbacks to event(s) and execute those callbacks when event(s) occur
+    */
+   events: {
+
+      _events: {},
+
+      /**
+      * Register callbacks to event array
+      *
+      * @param {string}   event        - Name of Event (Required)
+      * @param {function} callback     - Callback executed when this event occurs
+      * @param {boolean}  execOnceOnly - Execute Callback once, then remove from Event Array (Optional - Default: true)
+      *
+      * @returns void
+      */
+      register: function (event, callback, execOnceOnly) {
+         const me = this;
+         const execOneTime = typeof execOnceOnly !== "undefined" && execOnceOnly === false ? false : true;
+
+         if (event !== null && typeof event !== "undefined" && typeof callback === "function") {
+            if (typeof me._events[event] === "undefined") {
+               me._events[event] = [{
+                  func: callback,
+                  execOnce: execOneTime
+               }];
+            }
+            else {
+               me._events[event].push({
+                  func: callback,
+                  execOnce: execOneTime
+               });
+            }
+         }
+      },
+
+      /**
+      * Invoke registered callbacks (if any) on a event(s) array
+      *
+      * @param {string} event - Name of Event Array to execute stored callbacks (Required)
+      *
+      * @returns void
+      */
+      exec: function (event) {
+         const me = this;
+         if (event !== null &&
+            typeof event !== "undefined" &&
+            typeof me._events[event] !== "undefined" &&
+            Array.isArray(me._events[event]) &&
+            me._events[event].length
+         ) {
+            me._events[event] = me._events[event].filter((callee, EvtIdx) => {
+               if (typeof callee.func === "function") {
+                  callee.func();
+               }
+               return !callee.execOnce;
+            });
+         }
+      }
    },
 
    /**

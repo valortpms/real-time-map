@@ -1,7 +1,8 @@
 import L from "leaflet";
+import splSrv from "../../spartanlync/services";
+import storage from "../../dataStore";
 import { userAPI } from "../../services/api/user-api";
 import { userInfo } from "../../dataStore/api-config";
-import storage from "../../dataStore";
 import { resetTransitionAnimation } from "../../utils/helper";
 import { showSnackBar } from "../snackbar/snackbar";
 
@@ -23,6 +24,10 @@ export const mapModel = {
          mapModel.addOSMTileLayer(storage.map);
       }
 
+      // Execute any SpartanLync Listeners waiting for this moment when the map has changed due to animations
+      storage.map.on("zoomend", () => {
+         splSrv.events.exec("onFlyingComplete");
+      });
       storage.map.on("mousedown", () => {
          storage.map.closePopup();
       });

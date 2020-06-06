@@ -30,7 +30,7 @@ export class SplLogo extends Component {
       const me = this;
 
       // Register a callback, invoked when SplTools is successfully initialized
-      splSrv._splLogoCallbackFunc = me.fetchSettings;
+      splSrv.events.register("onLoadSplServices", me.fetchSettings, false);
 
       // Get build info from Backend server
       me.fetchBuildDate((metadataTxt) => {
@@ -92,7 +92,7 @@ export class SplLogo extends Component {
    render() {
       const timezone = this.state.spltoolsTimezone ? this.state.spltoolsTimezone : "UnKnown";
       const lang = this.state.spltoolsLang ? splSrv.splLanguages[this.state.spltoolsLang] : "UnKnown";
-      const sensorInfoRefreshRate = this.state.spltoolsSensorInfoRefreshRate ? this.state.spltoolsSensorInfoRefreshRate : "UnKnown";
+      const sensorInfoRefreshRate = this.state.spltoolsSensorInfoRefreshRate ? this.state.spltoolsSensorInfoRefreshRate : null;
       const buildVersion = this.state.buildVersion ? this.state.buildVersion : "UnKnown";
       let buildDateHuman = this.state.buildDateUnix ? splSrv.convertUnixToTzHuman(this.state.buildDateUnix) : "UnKnown";
       buildDateHuman = buildDateHuman ? buildDateHuman : "UnKnown";
@@ -105,7 +105,7 @@ export class SplLogo extends Component {
                   <strong>Date & Time Timezone:</strong>
                   <span>{timezone}</span>
                   <strong>Sensor Info Refresh Rate:</strong>
-                  <span>{sensorInfoRefreshRate / 60} min</span>
+                  <span>{sensorInfoRefreshRate ? (sensorInfoRefreshRate / 60) + " min" : "UnKnown"}</span>
                   <strong>Language:</strong>
                   <span dangerouslySetInnerHTML={{ __html: lang }}></span>
                   <br />

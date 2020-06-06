@@ -54,7 +54,8 @@
 		"react": "^16.13.1",
 		"react-dom": "^16.13.1",
 		"react-tooltip": "^4.2.6",
-		"rxjs": "^6.5.5"
+		"rxjs": "^6.5.5",
+		"sweetalert2": "^9.14.0"
 	},
 	"devDependencies": {
 		"@babel/preset-react": "^7.9.4",

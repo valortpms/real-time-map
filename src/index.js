@@ -1,11 +1,11 @@
 /* eslint-disable no-unused-vars */
 import React from "react";
+import ReactDOM from "react-dom";
+import ReactTooltip from "react-tooltip";
+import splSrvTools from "./spartanlync/services/tools";
 import { MapView } from "./components/map/map-view";
 import { ControlsView } from "./components/controls/controls-component";
 import { ConfigView } from "./components/configuration/configuration-view";
-import ReactDOM from "react-dom";
-import splSrvTools from "./spartanlync/services/tools";
-import ReactTooltip from "react-tooltip";
 
 class View extends React.Component {
 

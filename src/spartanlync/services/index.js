@@ -83,11 +83,11 @@ const SpartanLyncServices = {
             // If accepted by Remote, remoteStore = localStore
             // If rejected by Remote, remoteStore should be saved to local browser
             if (accepted) {
-               console.log("SplMapServices: Successfully updated SplStore Remotely");
+               console.log("SplMapService: Successfully updated SplStore Remotely");
             }
             else {
                const retryTimeoutInSeconds = parseInt(me.splStoreSyncRetry / 1000);
-               console.log("SplMapServices: Failed to updated SplStore remotely...Will Retry in " + retryTimeoutInSeconds + " seconds");
+               console.log("SplMapService: Failed to updated SplStore remotely...Will Retry in " + retryTimeoutInSeconds + " seconds");
                setTimeout(function () {
                   me.splStore = me._splStore;
                }, me.splStoreSyncRetry);
@@ -95,7 +95,7 @@ const SpartanLyncServices = {
          },
          // Error Handler
          (errMsg) => {
-            console.log("SplMapServices: Failed to updated SplStore remotely...Reason: " + errMsg);
+            console.log("SplMapService: Failed to updated SplStore remotely...Reason: " + errMsg);
          });
    },
 

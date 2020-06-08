@@ -80,7 +80,7 @@ const SpartanLyncServiceTools = {
          splSrv.events.exec("onLoadSplServices");
 
          // Notify on successful startup
-         showMsg.msg("SpartanLync Map Services Started Successfully");
+         showMsg.msg("SpartanLync Map Service Started Successfully");
       });
    },
 

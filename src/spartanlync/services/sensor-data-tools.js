@@ -21,6 +21,7 @@ export const INITSplSensorDataTools = function (goLib) {
    this._cache = null;
 
    this._firstTime = true;
+   this._noSensorDataFound = true;
 
    /**
     * Fetch vehicle sensor data from cache or API
@@ -44,6 +45,7 @@ export const INITSplSensorDataTools = function (goLib) {
          }
          else if (me._cache[vehId].data === null || me._cache[vehId].expiry < moment().utc().unix()) {
             me._cache[vehId].searching = true;
+            me._noSensorDataFound = true;
 
             // On first-time search of a vehicle
             // In Geotab library, reset the Sensor Search Parameters to a new Vehicle configuration
@@ -66,6 +68,8 @@ export const INITSplSensorDataTools = function (goLib) {
                   // Report on what we found on the initial search only,
                   // Reporting on Repeat searches will be handled by the data merging code
                   if (me._cache[vehId].data === null) {
+                     me._noSensorDataFound = false;
+
                      if (sensorData.vehCfg.total === 1) {
                         console.log("--- NEW SENSOR DATA FOUND after the last search.  " +
                            "Temptrac [" + Object.keys(sensorData.temptrac).length + "]  " +
@@ -85,20 +89,92 @@ export const INITSplSensorDataTools = function (goLib) {
                      }
                   }
 
-                  // Merge new TRACTOR data with cached data
-                  if (sensorData.vehCfg.total === 1) {
-                     me._cache[vehId].data = me._mergeSensorDataIntoCache(me._cache[vehId].data, sensorData);
-                  }
-                  // Merge new Vehicle Multi-Component data with cached data
-                  else {
-                     if (me._cache[vehId].data === null) {
-                        me._cache[vehId].data = sensorData;
+                  // If cache is EMPTY, populate with new sensor data
+                  if (me._cache[vehId].data === null) {
+                     console.log("----- _fetchData(MERGING DATA): EMPTY CACHE - NOTHING TO MERGE");
+                     if (sensorData.vehCfg.total === 1) {
+                        sensorData[sensorData.vehCfg.active] = {
+                           temptrac: sensorData.temptrac,
+                           tpmspress: sensorData.tpmspress,
+                           tpmstemp: sensorData.tpmstemp
+                        };
+                        delete sensorData.temptrac;
+                        delete sensorData.tpmspress;
+                        delete sensorData.tpmstemp;
                      }
+                     me._cache[vehId].data = sensorData;
+                  }
+                  // Merge NEW Single-Component (possibly TRACTOR) data with cached data
+                  else if (sensorData.vehCfg.total === 1) {
+
+                     // Flag all data in cache as OLD
+                     me._resetSensorDataInCache(vehId);
+
+                     // Merge with Single-Component cached data
+                     if (me._cache[vehId].data.vehCfg.total === 1) {
+                        console.log("----- _fetchData(MERGING DATA): NEW Single-Component <=> CACHED Single-Component");
+                        me._cache[vehId].data[me._cache[vehId].data.vehCfg.active] =
+                           me._mergeSensorDataIntoCache(
+                              me._cache[vehId].data[me._cache[vehId].data.vehCfg.active],
+                              sensorData,
+                              me._cache[vehId].data.vehCfg.active,
+                              vehId
+                           );
+                     }
+                     // Merge with Multi-Component cached data
                      else {
-                        sensorData.vehCfg.ids.map(compId => {
-                           me._cache[vehId].data[compId] = me._mergeSensorDataIntoCache(me._cache[vehId].data[compId], sensorData[compId]);
+                        console.log("----- _fetchData(MERGING DATA): NEW Single-Component <=> CACHED Multi-Component");
+                        me._cache[vehId].data.vehCfg.ids.map(cacheCompId => {
+                           if (cacheCompId === sensorData.vehCfg.active) {
+                              me._cache[vehId].data[cacheCompId] = me._mergeSensorDataIntoCache(
+                                 me._cache[vehId].data[cacheCompId],
+                                 sensorData,
+                                 cacheCompId,
+                                 vehId
+                              );
+                           }
                         });
                      }
+                  }
+                  // Merge NEW Multi-Component Vehicle data with cached data
+                  else {
+
+                     // Flag all data in cache as OLD
+                     me._resetSensorDataInCache(vehId);
+
+                     // Merge with Single-Component cached data
+                     if (me._cache[vehId].data.vehCfg.total === 1) {
+                        console.log("----- _fetchData(MERGING DATA): NEW Multi-Component <=> CACHED Single-Component");
+                        sensorData.vehCfg.ids.map(compId => {
+                           if (compId === me._cache[vehId].data.vehCfg.active) {
+                              console.log("----------------- compId = ", compId, " cache = ", me._cache[vehId].data[compId], " sdata = ", sensorData[compId]);
+                              sensorData[compId] = me._mergeSensorDataIntoCache(
+                                 me._cache[vehId].data[compId],
+                                 sensorData[compId],
+                                 compId,
+                                 vehId
+                              );
+                           }
+                        });
+                        me._cache[vehId].data = sensorData;
+                     }
+                     // Merge with Multi-Component cached data
+                     else {
+                        console.log("----- _fetchData(MERGING DATA): NEW Multi-Component <=> CACHED Multi-Component");
+                        sensorData.vehCfg.ids.map(compId => {
+                           me._cache[vehId].data[compId] = me._mergeSensorDataIntoCache(
+                              me._cache[vehId].data[compId],
+                              sensorData[compId],
+                              compId,
+                              vehId
+                           );
+                        });
+                     }
+                  }
+
+                  // Notify if no sensor data was found
+                  if (me._noSensorDataFound) {
+                     console.log("NO NEW SENSOR DATA FOUND for this date range");
                   }
 
                   // Set next cache expiry
@@ -117,7 +193,7 @@ export const INITSplSensorDataTools = function (goLib) {
                   }
                   else {
                      const additionalInfo = reason === splSrv.sensorDataNotFoundMsg ? "." : ": " + reason;
-                     console.log("---- No NEW Sensor Data Found for this date range" + additionalInfo);
+                     console.log("NO NEW SENSOR DATA FOUND for this date range" + additionalInfo);
                   }
 
                   // Resetting when we will search again for new data
@@ -174,6 +250,7 @@ export const INITSplSensorDataTools = function (goLib) {
       }
       me._cache = {};
       me._firstTime = true;
+      me._noSensorDataFound = true;
       return true;
    };
 
@@ -406,24 +483,56 @@ export const INITSplSensorDataTools = function (goLib) {
    };
 
    /**
+    * Reset cached data as old, prior to merging with new data
+    * by reseting all location records as originating from cache and therefore NOT new
+    *
+    * @param {string} vehId       - Geotab Device Id
+    * @param {boolean} clearNulls - Reset stale NEW sensor readings to OLD readings
+    *
+    * @returns object
+    */
+   this._resetSensorDataInCache = function (vehId, clearNewNulls) {
+      const me = this;
+      const resetNewNulls = typeof clearNewNulls !== "undefined" && clearNewNulls === true ? true : false;
+      me._cache[vehId].data.vehCfg.ids.map(compId => {
+         ["temptrac", "tpmstemp", "tpmspress"].forEach(function (type) {
+            if (typeof me._cache[vehId].data[compId] !== "undefined" &&
+               me._cache[vehId].data[compId].hasOwnProperty(type) &&
+               Object.keys(me._cache[vehId].data[compId][type]).length) {
+               Object.keys(me._cache[vehId].data[compId][type]).forEach(function (loc) {
+                  if (resetNewNulls) {
+                     if (typeof me._cache[vehId].data[compId][type][loc].new !== "undefined" &&
+                        me._cache[vehId].data[compId][type][loc].new === null) {
+                        me._cache[vehId].data[compId][type][loc].new = false;
+                     }
+                  }
+                  else {
+                     if (typeof me._cache[vehId].data[compId][type][loc].new === "undefined") {
+                        me._cache[vehId].data[compId][type][loc].new = false;
+                     }
+                     else {
+                        if (me._cache[vehId].data[compId][type][loc].new === true) {
+                           me._cache[vehId].data[compId][type][loc].new = null;
+                        }
+                     }
+                  }
+               });
+            }
+         });
+      });
+   };
+
+   /**
     * Merge fresh sensor data with existing cache data (by sensor location)
     *
     *  @returns object
     */
-   this._mergeSensorDataIntoCache = function (cache, sdata, vehCompId) {
+   this._mergeSensorDataIntoCache = function (cache, sdata, vehCompId, vehId) {
       if (cache === null) {
          return sdata;
       }
-      const vehCompDesc = typeof vehCompId !== "undefined" && vehCompId ? splSrv.vehComponents[vehCompId].toUpperCase() : "";
-
-      // Reset all records in cache as originating from cache and therefore NOT new
-      ["temptrac", "tpmstemp", "tpmspress"].forEach(function (type) {
-         if (cache.hasOwnProperty(type) && Object.keys(cache[type]).length) {
-            Object.keys(cache[type]).forEach(function (loc) {
-               cache[type][loc].new = false;
-            });
-         }
-      });
+      const me = this;
+      let newSensorDataFound = false;
 
       // Merge new data into Cache
       ["temptrac", "tpmstemp", "tpmspress"].forEach(function (type) {
@@ -431,13 +540,22 @@ export const INITSplSensorDataTools = function (goLib) {
 
          if (sdata.hasOwnProperty(type) && Object.keys(sdata[type]).length) {
             Object.keys(sdata[type]).forEach(function (loc) {
+               if (typeof cache[type][loc].time === "undefined" || typeof sdata[type][loc].time === "undefined") {
+                  console.log("-----------------MERGE(UNDEFINED): compId = ", vehCompId, " type = ", type, " loc = ", loc, " cache = ", cache, " sdata = ", sdata);
+               }
                if (cache[type][loc].time !== sdata[type][loc].time) {
                   mergeCount++;
                   cache[type][loc] = sdata[type][loc];
                   cache[type][loc].new = true;
+                  newSensorDataFound = true;
                }
             });
             if (mergeCount) {
+               const vehCompDesc =
+                  typeof vehCompId !== "undefined" && vehCompId ?
+                     splSrv.vehComponents[vehCompId].toUpperCase() :
+                     "";
+
                console.log("--- Found and Merged [ " + mergeCount + " ] " +
                   (type === "temptrac" ? "Temptrac" :
                      (type === "tpmstemp" ? "TPMS Temperature" :
@@ -448,6 +566,10 @@ export const INITSplSensorDataTools = function (goLib) {
             }
          }
       });
+      if (newSensorDataFound) {
+         me._noSensorDataFound = false;
+         me._resetSensorDataInCache(vehId, true);
+      }
       return cache;
    };
 
@@ -481,6 +603,7 @@ export const splSensorDataParser = {
     */
    do: function (sdata, isUpdate) {
       const me = this;
+      const compIds = sdata.vehCfg.total === 1 ? [sdata.vehCfg.active] : sdata.vehCfg.ids;
       const data = {
          compIds: [],
          vehId: sdata.vehId,
@@ -489,50 +612,31 @@ export const splSensorDataParser = {
       };
       me._lastReadTimestampUnix = 0;
 
-      // Process TRACTOR-only data
-      if (sdata.vehCfg.total === 1) {
-         data.compIds.push("tractor");
-         data["tractor"] = {};
-         if (Object.keys(sdata.temptrac).length) {
+      // Process Single/Multi-Component source sensor data
+      data.foundTemptracSensors = false;
+      data.foundTpmsTempSensors = false;
+      data.foundTpmsPressSensors = false;
+      compIds.map(compId => {
+         data[compId] = {};
+         if (Object.keys(sdata[compId].temptrac).length) {
+            data.compIds.push(compId);
             data.foundTemptracSensors = true;
-            data["tractor"].temptracHtml = me._genHtml(sdata.temptrac, isUpdate);
+            data[compId].temptracHtml = me._genHtml(sdata[compId].temptrac, isUpdate);
          }
-         if (Object.keys(sdata.tpmstemp).length) {
+         if (Object.keys(sdata[compId].tpmstemp).length) {
+            data.compIds.push(compId);
             data.foundTpmsTempSensors = true;
-            data["tractor"].tpmsTempHtml = me._genHtml(sdata.tpmstemp, isUpdate);
+            data[compId].tpmsTempHtml = me._genHtml(sdata[compId].tpmstemp, isUpdate);
          }
-         if (Object.keys(sdata.tpmspress).length) {
+         if (Object.keys(sdata[compId].tpmspress).length) {
+            data.compIds.push(compId);
             data.foundTpmsPressSensors = true;
-            data["tractor"].tpmsPressHtml = me._genHtml(sdata.tpmspress, isUpdate);
+            data[compId].tpmsPressHtml = me._genHtml(sdata[compId].tpmspress, isUpdate);
          }
-      }
-      // Process Vehicle Multi-Component data
-      else {
-         data.foundTemptracSensors = false;
-         data.foundTpmsTempSensors = false;
-         data.foundTpmsPressSensors = false;
-         sdata.vehCfg.ids.map(compId => {
-            data[compId] = {};
-            if (Object.keys(sdata[compId].temptrac).length) {
-               data.compIds.push(compId);
-               data.foundTemptracSensors = true;
-               data[compId].temptracHtml = me._genHtml(sdata[compId].temptrac, isUpdate);
-            }
-            if (Object.keys(sdata[compId].tpmstemp).length) {
-               data.compIds.push(compId);
-               data.foundTpmsTempSensors = true;
-               data[compId].tpmsTempHtml = me._genHtml(sdata[compId].tpmstemp, isUpdate);
-            }
-            if (Object.keys(sdata[compId].tpmspress).length) {
-               data.compIds.push(compId);
-               data.foundTpmsPressSensors = true;
-               data[compId].tpmsPressHtml = me._genHtml(sdata[compId].tpmspress, isUpdate);
-            }
-         });
+      });
 
-         // Remove duplicate component Ids
-         data.compIds = [...new Set(data.compIds)];
-      }
+      // Remove duplicate component Ids
+      data.compIds = [...new Set(data.compIds)];
 
       // Format the most recent timestamp, into human readable format
       // eg. Sa Aug 17, 2020 7:00 PM EDT

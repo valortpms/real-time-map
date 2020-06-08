@@ -66,7 +66,6 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                return;
             }
             if (typeof firstTimeCallOverride !== "undefined" && firstTimeCallOverride !== null) {
-               console.log("------------- fetchVehSensorDataAsync().getData() Overrode me._apiFirstTimeCall = ", firstTimeCallOverride);
                me._apiFirstTimeCall = firstTimeCallOverride;
             }
             me._devId = devId;
@@ -287,7 +286,6 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                         else {
 
                            // Repeat calls will fails with "No Results" found. No Retry. Return "No Results" response to callback
-                           console.log("NO SENSOR DATA FOUND for this date range!");
                            me._apiCallRetryCount = 0;
                            me._sDataCallback(null);
                            return;
@@ -297,9 +295,9 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                         me._timer.b2 = new Date();
                         console.log("Sensor data analyzed and sorted - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000) + ".");
 
-                        if (me._apiFirstTimeCall && !me._devSelectedComp) {
+                        if (!me._devSelectedComp) {
 
-                           // First-time usage of entire vehicle chooses highest-priority vehicle component found in sensor search results
+                           // Search results for the Entire Vehicle Train chooses the highest-priority vehicle component found in search results
                            const vehCompsFound = Object.keys(sdata);
                            if (vehCompsFound.length === 1) {
                               me._devSelectedComp = vehCompsFound[0];

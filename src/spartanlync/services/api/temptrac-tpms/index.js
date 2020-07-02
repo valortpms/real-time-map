@@ -172,7 +172,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
             // Build then perform TPMS/Temptrac Multicall
             console.log("Please Wait...Attempt#" + (me._apiCallRetryCount + 1) +
                " Retrieving " + (me._devSelectedComp ? me._devComponents.names[me._devSelectedComp].toUpperCase() : "ALL") +
-               " Sensor Data using " + (
+               " Sensor Data on VehicleID [ " + me._devId + " ] using " + (
                   me._apiFirstTimeCall ?
                      me._timeSearchRetryRangeInDays[me._apiCallRetryCount] + " day" :
                      me._convertSecondsToHMS(me._timeRangeForRepeatSearchesInSeconds)
@@ -186,10 +186,10 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                      const sdata = {};
 
                      me._timer.b2 = new Date();
-                     console.log("Sensor data retrieved - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000));
+                     console.log("Sensor data for VehicleID [ " + me._devId + " ] retrieved - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000));
 
                      // Analyze and Sort sensor data
-                     console.log("Sensor data being analyzed - Please Wait!");
+                     console.log("Sensor data for VehicleID [ " + me._devId + " ] being analyzed - Please Wait!");
                      me._timer.b1 = new Date();
                      for (const res of result) {
                         if (Array.isArray(res) && res.length) {
@@ -278,7 +278,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                         if (me._apiFirstTimeCall) {
 
                            // If its a first time call + no sensor date found, Retry with a different date range
-                           console.log("NO SENSOR DATA FOUND! Retrying search with another date range...");
+                           console.log("NO SENSOR DATA FOUND on VehicleID [ " + me._devId + " ]! Retrying search with another date range...");
                            me._apiCallRetryCount++;
                            me._setDateRangeAndInvokeCall();
                            return;
@@ -293,7 +293,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                      }
                      else {
                         me._timer.b2 = new Date();
-                        console.log("Sensor data analyzed and sorted - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000) + ".");
+                        console.log("Sensor data for VehicleID [ " + me._devId + " ] analyzed and sorted - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000) + ".");
 
                         if (!me._devSelectedComp) {
 
@@ -314,7 +314,8 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                            // Build vehicle component configuration, returned on future search results
                            me._devConfig = {
                               ids: vehCompsFound,
-                              total: vehCompsFound.length
+                              total: vehCompsFound.length,
+                              compsdata: sdata
                            };
                         }
                         me._devConfig.active = me._devSelectedComp;
@@ -324,9 +325,10 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
 
                         // Return sensor data for single Vehicle component to UI callback
                         me._apiCallRetryCount = 0;
-                        sdata[me._devSelectedComp].vehId = me._devId;
-                        sdata[me._devSelectedComp].vehCfg = me._devConfig;
-                        me._sDataCallback(sdata[me._devSelectedComp]);
+                        const compdata = JSON.parse(JSON.stringify(sdata[me._devSelectedComp]));
+                        compdata.vehId = me._devId;
+                        compdata.vehCfg = me._devConfig;
+                        me._sDataCallback(compdata);
                         return;
                      }
                   }

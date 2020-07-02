@@ -57,7 +57,7 @@ export class SplSensorDataTypesButton extends Component {
       me.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
 
       // Fetch SpartanLync Sensor Types installed into vehicle
-      me.fetchSensorTypes(me.vehId, me.vehName);
+      me.fetchSensorTypes();
    }
    componentWillUnmount() {
       const me = this;
@@ -83,11 +83,31 @@ export class SplSensorDataTypesButton extends Component {
       fetchVehSensorDataAsync(me.vehId)
          .then((sdata) => {
             const btn = [];
-            if (Object.keys(sdata.temptrac).length) {
-               btn.push("temptrac");
+            if (typeof sdata.vehCfg.ids !== "undefined" && Array.isArray(sdata.vehCfg.ids)) {
+               const stypes = [];
+               sdata.vehCfg.ids.forEach(function (comp) {
+                  const compSdata = sdata.vehCfg.compsdata[comp];
+                  if (Object.keys(compSdata.temptrac).length) {
+                     stypes.push("temptrac");
+                  }
+                  if (Object.keys(compSdata.tpmspress).length || Object.keys(compSdata.tpmstemp).length) {
+                     stypes.push("tpms");
+                  }
+               });
+               if (stypes.includes("temptrac")) {
+                  btn.push("temptrac");
+               }
+               if (stypes.includes("tpms")) {
+                  btn.push("tpms");
+               }
             }
-            if (Object.keys(sdata.tpmspress).length || Object.keys(sdata.tpmstemp).length) {
-               btn.push("tpms");
+            else {
+               if (Object.keys(sdata.temptrac).length) {
+                  btn.push("temptrac");
+               }
+               if (Object.keys(sdata.tpmspress).length || Object.keys(sdata.tpmstemp).length) {
+                  btn.push("tpms");
+               }
             }
             me.setState({
                components: sdata.vehCfg.ids.length > 1 ? sdata.vehCfg.ids : [],
@@ -96,7 +116,7 @@ export class SplSensorDataTypesButton extends Component {
          })
          .catch((reason) => {
             if (reason === splSrv.sensorDataNotFoundMsg) {
-               console.log("---- NO SENSORS FOUND for Vehicle [ " + me.vehName + " ]");
+               console.log("---- NO SENSORS FOUND for VehicleID [ " + me.vehId + " ] named [ " + me.vehName + " ]");
             }
          });
    }

@@ -2,6 +2,8 @@
 import React, { Component } from "react";
 import splSrv from "../services";
 import prodSplCfg from "../config/prod";
+// eslint-disable-next-line no-unused-vars
+import { SplGeotabMapInstallationStatusBtn } from "../components/ui-geotab-map-install-widget";
 
 /**
  *  Renders a SpartanLync Logo Icon meant to show SplMap meta-data
@@ -108,7 +110,7 @@ export class SplLogo extends Component {
                   <span>{sensorInfoRefreshRate ? (sensorInfoRefreshRate / 60) + " min" : "UnKnown"}</span>
                   <strong>Language:</strong>
                   <span dangerouslySetInnerHTML={{ __html: lang }}></span>
-                  <br />
+                  <SplGeotabMapInstallationStatusBtn />
                   <strong>Build Version:</strong>
                   <span>{buildVersion}</span>
                   <strong>Build Date:</strong>

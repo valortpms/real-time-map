@@ -224,7 +224,7 @@ export class SplSensorDataTypesButton extends Component {
    renderSplButton(type) {
       return (
          <div className={`spl-vehcfg-sensor-data-button-item ${type}`} key={type}>
-            {type === "temptrac" ? "Temptrac" : "TPMS"}
+            {type === "temptrac" ? "TempTrac" : "TPMS"}
          </div>
       );
    }

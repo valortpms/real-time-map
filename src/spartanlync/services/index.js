@@ -40,6 +40,32 @@ const SpartanLyncServices = {
       "es": "Espa&#241;ol"
    },
 
+   splDeeperAddIn: {                                         // Widget Configuration Settings for the MyGeotab Map SpartanLync Deeper Add-In
+      name: "SplGeotabMap",
+      json: "{\"name\":\"SplGeotabMap\",\"supportEmail\":\"lmitchell@spartanlync.com\",\"version\":\"1.0.1.01\",\"items\":[{\"page\":\"map\",\"mapScript\":{\"url\":\"https://help.spartansense.com/geotab/splgeotabmap/splgeotabmap.html\"}}],\"isSigned\":false}",
+      msgs: {
+         initMsg: "Checking Installation Status",
+         successMsg: "Successfully {op} SpartanLync {intofrom} MyGeotab Map",
+         installBtnLbl: "Install SpartanLync into MyGeotab Map",
+         unInstallBtnLbl: "Remove SpartanLync from MyGeotab Map",
+         cannotInstallBtnLbl: "Cannot Add/Remove SpartanLync from MyGeotab Map",
+         cannotInstallBtnSubLbl: "Not enough priviliges...Please have your database Owner/Admin use this buttom",
+
+         addInInstalledMsg: "--- SpartanLync Deeper Add-In for Geotab Map Installed",
+         addInNotInstalledMsg: "--- SpartanLync Deeper Add-In for Geotab Map NOT Installed",
+
+         failureMsg: "Failed to {op} SpartanLync {tofrom} MyGeotab Map",
+         initFailureMsg: "Failed to Initialize SpartanLync in MyGeotab Map",
+         errFetchUserDataMsg: "Missing user account data after Fetching from Geotab API",
+         errFetchSystemDataMsg: "Missing System Settings data after Fetching from Geotab API",
+
+         featurePreviewEnabledForUser: "--- Feature Preview already Enabled for [ {username} ]",
+         featurePreviewOpSuccessMsg: "--- Successfully {op} Feature Preview for [ {username} ]",
+         featurePreviewOpFailureMsg: "Failed to {op} Feature Preview for user [ {username} ]"
+      }
+   },
+
+
    /**
     *  Private Variables
     */

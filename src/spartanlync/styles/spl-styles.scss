@@ -1,5 +1,62 @@
 /*
- *	-- General Info
+*	-- SpartanLync Geotab Map Installation Status Button
+*/
+
+#RTM-ViewContainer .spl-geotab-map-install-status-btn {
+   position: relative;
+   cursor: pointer;
+   display: inline-block;;
+   vertical-align: middle;
+   max-width: 350px;
+   padding: 3px 6px;
+   margin: 10px 0px;
+   font-size: 11px;
+   font-weight: 400;
+   line-height: 1.42857143;
+   text-align: center;
+   text-shadow: 0 1px 0 #fff;
+   -ms-touch-action: manipulation;
+   touch-action: manipulation;
+   -webkit-user-select: none;
+   -moz-user-select: none;
+   -ms-user-select: none;
+   user-select: none;
+   color: #999;
+   border: 1px solid #ccc;
+   border-radius: 7px;
+   background-color: #fff;
+   background-image: linear-gradient(to bottom,#fff 0,#e0e0e0 100%);
+   background-repeat: repeat-x;
+   box-shadow: inset 0 1px 0 rgba(255,255,255,.15),0 1px 1px rgba(0,0,0,.075);
+}
+
+#RTM-ViewContainer .spl-geotab-map-install-status-btn,
+#RTM-ViewContainer .spl-geotab-map-install-status-btn:focus {
+   outline: none !important;
+   outline-offset: 0 !important;
+   text-decoration: none;
+}
+
+#RTM-ViewContainer .spl-geotab-map-install-status-btn:not(.disabled):hover {
+   color: #999;
+   border-color: #adadad;
+   background-color: #e0e0e0;
+   background-position: 0 -15px;
+}
+
+#RTM-ViewContainer .spl-geotab-map-install-status-btn.disabled {
+   cursor: default;
+}
+
+#RTM-ViewContainer .spl-geotab-map-install-status-btn > div {
+   font-size: 9px;
+   font-style: italic;
+   color: #1b1b1b;
+}
+
+
+/*
+*	-- SpartanLync Watermark
 */
 
 #RTM-ViewContainer .spl-watermark {

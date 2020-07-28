@@ -27,7 +27,7 @@ export const INITSplSensorDataTools = function (goLib) {
     * Fetch vehicle sensor data from cache or API
     * ( cached is refreshed after X minutes, as defined in _sensorDataLifetime )
     *
-    *  @returns object / string (on Error)
+    *  @returns promise
     */
    this.fetchCachedSensorData = function (vehId, vehName) {
       const me = this;
@@ -55,6 +55,10 @@ export const INITSplSensorDataTools = function (goLib) {
             else {
                console.log("----- session expired ------", me._cache[vehId].data);
             }
+
+            // DEBUG TEMP
+            let debugCacheData = "";
+            let debugSensorData = "";
 
             //Splunk for sensor data
             me._fetchData(vehId)
@@ -113,6 +117,8 @@ export const INITSplSensorDataTools = function (goLib) {
                      // Merge with Single-Component cached data
                      if (me._cache[vehId].data.vehCfg.total === 1) {
                         console.log("----- _fetchData(MERGING DATA): NEW Single-Component <=> CACHED Single-Component");
+                        debugCacheData = JSON.stringify(me._cache[vehId].data[me._cache[vehId].data.vehCfg.active]); //DEBUG
+                        debugSensorData = JSON.stringify(sensorData); //DEBUG
                         me._cache[vehId].data[me._cache[vehId].data.vehCfg.active] =
                            me._mergeSensorDataIntoCache(
                               me._cache[vehId].data[me._cache[vehId].data.vehCfg.active],
@@ -126,6 +132,8 @@ export const INITSplSensorDataTools = function (goLib) {
                         console.log("----- _fetchData(MERGING DATA): NEW Single-Component <=> CACHED Multi-Component");
                         me._cache[vehId].data.vehCfg.ids.map(cacheCompId => {
                            if (cacheCompId === sensorData.vehCfg.active) {
+                              debugCacheData = JSON.stringify(me._cache[vehId].data[cacheCompId]); //DEBUG
+                              debugSensorData = JSON.stringify(sensorData); //DEBUG
                               me._cache[vehId].data[cacheCompId] = me._mergeSensorDataIntoCache(
                                  me._cache[vehId].data[cacheCompId],
                                  sensorData,
@@ -148,6 +156,8 @@ export const INITSplSensorDataTools = function (goLib) {
                         sensorData.vehCfg.ids.map(compId => {
                            if (compId === me._cache[vehId].data.vehCfg.active) {
                               console.log("----------------- compId = ", compId, " cache = ", me._cache[vehId].data[compId], " sdata = ", sensorData[compId]);
+                              debugCacheData = JSON.stringify(me._cache[vehId].data[compId]); //DEBUG
+                              debugSensorData = JSON.stringify(sensorData[compId]); //DEBUG
                               sensorData[compId] = me._mergeSensorDataIntoCache(
                                  me._cache[vehId].data[compId],
                                  sensorData[compId],
@@ -162,6 +172,8 @@ export const INITSplSensorDataTools = function (goLib) {
                      else {
                         console.log("----- _fetchData(MERGING DATA): NEW Multi-Component <=> CACHED Multi-Component");
                         sensorData.vehCfg.ids.map(compId => {
+                           debugCacheData = JSON.stringify(me._cache[vehId].data[compId]); //DEBUG
+                           debugSensorData = JSON.stringify(sensorData[compId]); //DEBUG
                            me._cache[vehId].data[compId] = me._mergeSensorDataIntoCache(
                               me._cache[vehId].data[compId],
                               sensorData[compId],
@@ -188,12 +200,17 @@ export const INITSplSensorDataTools = function (goLib) {
 
                   if (me._cache[vehId].data === null) {
                      // If there was never any sensor data for this vehicle, notify User
-                     console.log("---- Vehicle [ " + vehName + " ] Error:", reason);
+                     console.log("---- ERROR OCCURED WHILE PROCESSING DATA for Vehicle [ " + vehName + " ]:", reason);
                      reject(reason);
                   }
                   else {
-                     const additionalInfo = reason === splSrv.sensorDataNotFoundMsg ? "." : ": " + reason;
-                     console.log("NO NEW SENSOR DATA FOUND for this date range" + additionalInfo);
+                     if (reason === splSrv.sensorDataNotFoundMsg) {
+                        console.log("NO NEW SENSOR DATA FOUND for this date range.");
+                     }
+                     else {
+                        console.log("---- ERROR OCCURED WHILE PROCESSING DATA: " + reason);
+                        console.log("---- mergeSensorDataIntoCache(): cache = ", debugCacheData, " sdata = ", debugSensorData);
+                     }
                   }
 
                   // Resetting when we will search again for new data
@@ -427,7 +444,7 @@ export const INITSplSensorDataTools = function (goLib) {
    /**
     *  Fetch Temptrac and TPMS sensor data
     *
-    *  @returns object / string (on Error)
+    *  @returns promise
     */
    this._fetchData = function (vehId) {
       const me = this;
@@ -540,15 +557,18 @@ export const INITSplSensorDataTools = function (goLib) {
 
          if (sdata.hasOwnProperty(type) && Object.keys(sdata[type]).length) {
             Object.keys(sdata[type]).forEach(function (loc) {
-               if (typeof cache[type][loc].time === "undefined" || typeof sdata[type][loc].time === "undefined") {
-                  console.log("-----------------MERGE(UNDEFINED): compId = ", vehCompId, " type = ", type, " loc = ", loc, " cache = ", cache, " sdata = ", sdata);
-               }
-               if (cache[type][loc].time !== sdata[type][loc].time) {
+               console.log("6a>----- vehCompId=[", vehCompId, "] type=[ ", type, " ] loc=[ ", loc, " ]");
+               const cacheTime = cache[type][loc].time;
+               console.log("6b>----------------------------------------------------------");
+               const sdataTime = sdata[type][loc].time;
+               console.log("6c>----------------------------------------------------------");
+               if (cacheTime !== sdataTime) {
                   mergeCount++;
                   cache[type][loc] = sdata[type][loc];
                   cache[type][loc].new = true;
                   newSensorDataFound = true;
                }
+               console.log("6d>----------------------------------------------------------");
             });
             if (mergeCount) {
                const vehCompDesc =

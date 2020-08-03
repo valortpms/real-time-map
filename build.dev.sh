@@ -11,12 +11,14 @@ BUILD_PUBLIC_DIR="splmap${BUILD_EXTENSION}"
 BUILD_TEMPLATE_DIR="_splmap.Template"
 BUILD_RELATIVE_PATH="../_Builds"
 BUILD_PROD_RELATIVE_PATH="./dist"
+MAPS_ARCHIVE_RELATIVE_PATH="../../src/map.src"
 ZIP_CMD="/usr/bin/7z"
+RSYNC_CMD="/usr/bin/rsync"
 
 # Init
 UNIX_TIMESTAMP=`date +%s`
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-BUILD_ROOT_PATH="$CURRENT_DIR/$BUILD_RELATIVE_PATH"
+BUILD_ROOT_PATH="${CURRENT_DIR}/$BUILD_RELATIVE_PATH"
 BUILD_TEMPLATE_PATH="$BUILD_ROOT_PATH/$BUILD_TEMPLATE_DIR"
 BUILD_PUBLIC_PATH="$BUILD_ROOT_PATH/$BUILD_PUBLIC_DIR"
 LARAVEL_APP_CONFIG_PATH="${CURRENT_DIR}/../../src/config/app.php"
@@ -25,6 +27,7 @@ BUILD_PUBLIC_ZIP_FILE="${BUILD_PUBLIC_DIR}.v${VERSION}.zip"
 BUILD_PUBLIC_ZIP_FILE_PATH="$BUILD_ROOT_PATH/${BUILD_PUBLIC_ZIP_FILE}"
 BUILD_UNIX_TIMESTAMP_PATH="${BUILD_PUBLIC_PATH}/${BUILD_UNIX_TIMESTAMP_FILE}"
 ADDIN_CONFIG_JSON_FILE_PATH="${BUILD_PUBLIC_PATH}/config.json"
+MAPS_ARCHIVE_PATH="${CURRENT_DIR}/${MAPS_ARCHIVE_RELATIVE_PATH}"
 
 # Generate new build
 echo "---- BUILDING SpartanLync v${VERSION} SplMap App ----"
@@ -66,3 +69,15 @@ echo "---- ZIPPING SplMap BUILD TO ${BUILD_PUBLIC_ZIP_FILE} ----"
 rm -rf ${BUILD_PUBLIC_ZIP_FILE_PATH}
 (cd ${BUILD_ROOT_PATH} && ${ZIP_CMD} a -r ${BUILD_PUBLIC_ZIP_FILE} ${BUILD_PUBLIC_DIR} > /dev/null)
 
+#
+# Sync "Geotab\Real-Time-Maps\valor_src" working dev source code (hosted on Github https://github.com/valortpms/real-time-map repo)
+# with
+# "Geotab\src\map.src" (SpartanLync Map source code archive folder for hosting on Bitbucket, with GIT and NPM folders excluded)
+#
+echo -ne "---- SYNCING \"${CURRENT_DIR}\"\n        with \"${MAPS_ARCHIVE_PATH}\"\n"
+rm -rf ${MAPS_ARCHIVE_PATH}
+ERROR=$( { ${RSYNC_CMD} -rv --exclude=node_modules --exclude=.git "${CURRENT_DIR}/" "${MAPS_ARCHIVE_PATH}"; } 2>&1 )
+EXIT_CODE=$?
+if [[ $EXIT_CODE != 0 ]]; then echo -ne "\n**** RSYNC ERROR!! ****...Try Again!\n${ERROR}\n\n"; exit $EXIT_CODE; fi
+
+echo -ne "Done\n"

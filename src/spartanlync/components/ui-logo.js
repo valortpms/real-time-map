@@ -79,10 +79,6 @@ export class SplLogo extends Component {
             break;
 
          case 2:
-            return prodSplCfg.splApiUrl.replace("/api/", "/splmap.staging/" + splSrv.buildMetadataFilename);
-            break;
-
-         case 3:
             return prodSplCfg.splApiUrl.replace("/api/", "/splmap/" + splSrv.buildMetadataFilename);
             break;
 

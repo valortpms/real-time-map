@@ -1,0 +1,11 @@
+{
+   "name": "SplGeotabMap",
+   "supportEmail": "lmitchell@spartanlync.com",
+   "version": "1.0.1.01",
+   "items": [{
+      "page": "map",
+      "mapScript": {
+         "url": "https://help.spartansense.com/geotab/splgeotabmap/splgeotabmap.html"
+      }
+   }]
+}

@@ -194,8 +194,10 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                      for (const res of result) {
                         if (Array.isArray(res) && res.length) {
                            for (const srec of res) {
-                              if (!srec.id || srec.device.id !== me._devId || typeof srec.diagnostic.id === "undefined") {
-                                 continue; // Invalid records discarded
+                              // Invalid records discarded
+                              if (!srec.id || !srec.dateTime || srec.device.id !== me._devId || typeof srec.diagnostic.id === "undefined" ||
+                                 !(moment(srec.dateTime).unix() > moment(me._fromDate).unix() && moment(srec.dateTime).unix() < moment(me._toDate).unix())) {
+                                 continue;
                               }
                               const diagName = me._locLib.idxIds[srec.diagnostic.id];
                               const vehCompType = me._locLib[diagName].type;

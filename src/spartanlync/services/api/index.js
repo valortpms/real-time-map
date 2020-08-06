@@ -192,7 +192,7 @@ export const INITSplSessionMgr = function (myApi, credentials) {
       if (!callback || typeof callback !== "function" || !me._api || !me._credentials) { return; }
 
       me._callback = callback;
-      me._errorCallback = errorCallback && errorCallback === "function" ? errorCallback : null;
+      me._errorCallback = errorCallback && typeof errorCallback === "function" ? errorCallback : null;
       me._api.requestService(
          {
             settings: {
@@ -223,8 +223,10 @@ export const INITSplSessionMgr = function (myApi, credentials) {
          },
          // API ERROR FETCHING
          (result) => {
-            console.log("---- splSessionMgr(): getSettings(): API ERROR FETCHING ----");
-            console.log(result);
+            const msg = "---- splSessionMgr(): getSettings(): API ERROR FETCHING: " + result;
+            if (me._errorCallback) {
+               me._errorCallback(msg);
+            }
          }
       );
    };

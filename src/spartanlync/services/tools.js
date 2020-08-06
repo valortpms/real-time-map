@@ -81,6 +81,11 @@ const SpartanLyncServiceTools = {
 
          // Notify on successful startup
          showMsg.msg("SpartanLync Map Service Started Successfully");
+
+      }, (errMsg) => {
+         const msg = "SpartanLync Map Service Startup Failed";
+         console.log(msg + ": " + errMsg);
+         showMsg.msg(msg);
       });
    },
 

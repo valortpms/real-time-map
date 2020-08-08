@@ -37,6 +37,12 @@ const SpartanLyncServiceTools = {
 
       splSrv.sdataTools = new INITSplSensorDataTools(splSrv.goLib);
       splSrv.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
+
+      // Detect if running on SpartanLync Servers in proxy-mode
+      if (typeof splSrv.state.inSpartanLyncDomain !== "undefined" &&
+         splSrv.state.inSpartanLyncDomain === true) {
+         splSrv.runningOnSpartanLyncDomain = true;
+      }
    },
 
    /**
@@ -64,12 +70,6 @@ const SpartanLyncServiceTools = {
          // Update moment() with User-defined Timezone
          splSrv._timeZone = remoteStore.timezone;
          moment.tz.setDefault(splSrv._timeZone);
-
-         // Detect if running on SpartanLync Servers in proxy-mode
-         if (typeof splSrv.state.inSpartanLyncDomain !== "undefined" &&
-            splSrv.state.inSpartanLyncDomain === true) {
-            splSrv.runningOnSpartanLyncDomain = true;
-         }
 
          // Update shared Store object with SplMaps Add-In PageName and Sync with SplTools Add-In
          const oldMapsPageName = remoteStore.splMap.mapsPageName;

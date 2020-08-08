@@ -201,7 +201,10 @@ window.navigateToSplTools = (vehId, vehName) => {
    const splToolsPageName = splSrv.splStore.splMap.toolsPageName;
    console.log("----- Navigating to SpartanLync Tools Add-in [ " + splToolsPageName + " ] to view Vehicle [ " + vehName + " ]");
 
-   if (splCfg.appEnv === "prod") {
+   if (splCfg.appEnv === "dev" || splSrv.runningOnSpartanLyncDomain) {
+      switchToSplTools(vehId, vehName);
+   }
+   else {
       if (splSrv.state.hasAccessToPage(splToolsPageName)) {
          switchToSplTools(vehId, vehName);
       }
@@ -209,9 +212,6 @@ window.navigateToSplTools = (vehId, vehName) => {
          const msgAlert = "SplMap Error: Your MyGeotab Account does not have sufficient permissions to allow switching to SpartanLync Tools...Please run SpartanLync Tools manually.";
          showMsg.alert(msgAlert);
       }
-   }
-   else {
-      switchToSplTools(vehId, vehName);
    }
 };
 
@@ -230,15 +230,15 @@ export function switchToSplTools(vehId, vehName) {
    ReactTooltip.hide();
 
    // Perform page redirection in Browser or MyGeotab
-   if (splCfg.appEnv === "prod") {
+   if (splCfg.appEnv === "dev" || splSrv.runningOnSpartanLyncDomain) {
+      const url = splToolsPageName + "?q=switchToVehId:" + vehId + ",switchToVehName:" + encodeURI(vehName);
+      location.href = url;
+   }
+   else {
       splSrv.state.gotoPage(splToolsPageName, {
          switchToVehId: vehId,
          switchToVehName: vehName
       });
-   }
-   else {
-      const url = splToolsPageName + "?q=switchToVehId:" + vehId + ",switchToVehName:" + encodeURI(vehName);
-      location.href = url;
    }
 };
 
@@ -328,16 +328,7 @@ export const splToolsHelper = {
          }
       };
 
-      if (splCfg.appEnv === "prod") {
-         const queryParams = splSrv.state.getState();
-         for (const prop of Object.keys(queryParams)) {
-            if (typeof queryParams[prop] !== "undefined" && queryParams[prop]) {
-               cmds.data[prop] = queryParams[prop];
-               cmds.get.push(prop);
-            }
-         }
-      }
-      else {
+      if (splCfg.appEnv === "dev" || splSrv.runningOnSpartanLyncDomain) {
          let queryParams = window.location.search;
          if (queryParams.indexOf("q=") > -1) {
             queryParams = queryParams.split("q=")[1];
@@ -349,6 +340,15 @@ export const splToolsHelper = {
                   cmds.data[cmd] = val;
                   cmds.get.push(cmd);
                });
+            }
+         }
+      }
+      else {
+         const queryParams = splSrv.state.getState();
+         for (const prop of Object.keys(queryParams)) {
+            if (typeof queryParams[prop] !== "undefined" && queryParams[prop]) {
+               cmds.data[prop] = queryParams[prop];
+               cmds.get.push(prop);
             }
          }
       }

@@ -65,10 +65,22 @@ const SpartanLyncServiceTools = {
          splSrv._timeZone = remoteStore.timezone;
          moment.tz.setDefault(splSrv._timeZone);
 
+         // Detect if running on SpartanLync Servers in proxy-mode
+         if (typeof splSrv.state.inSpartanLyncDomain !== "undefined" &&
+            splSrv.state.inSpartanLyncDomain === true) {
+            splSrv.runningOnSpartanLyncDomain = true;
+         }
+
          // Update shared Store object with SplMaps Add-In PageName and Sync with SplTools Add-In
+         const oldMapsPageName = remoteStore.splMap.mapsPageName;
          remoteStore.splMap.found = true;
          remoteStore.splMap.mapsPageName = me.getSplMapPageName();
-         splSrv.splStore = remoteStore;
+         if (remoteStore.splMap.mapsPageName !== oldMapsPageName) {
+            splSrv.splStore = remoteStore; // Save Locally and Sync with SpartanLync Servers
+         }
+         else {
+            splSrv._splStore = remoteStore; // Only Save Locally
+         }
 
          // Perfrom checks to see if SplMap was given instructions by SplTools
          // Called by MyGeotab handleFocus() in PROD
@@ -99,7 +111,10 @@ const SpartanLyncServiceTools = {
       let splMapPageName = "";
       let splMapPageUrl = "";
 
-      if (splCfg.appEnv === "dev") {
+      if (splSrv.runningOnSpartanLyncDomain) {
+         splMapPageName = splMapPageUrl = window.location.origin + window.location.pathname;
+      }
+      else if (splCfg.appEnv === "dev") {
          splMapPageName = splMapPageUrl = window.location.origin;
       }
       else {

@@ -1,4 +1,12 @@
 /*
+*	-- General / Global configurations
+*/
+
+#RTM-Map-Container {
+   position: relative;
+}
+
+/*
 *	-- SpartanLync Geotab Map Installation Status Button
 */
 
@@ -176,6 +184,7 @@
    width: 18px;
    height: 13px;
    line-height: 2px;
+   box-sizing: border-box;
 
    margin: 0px;
    padding: 5px;

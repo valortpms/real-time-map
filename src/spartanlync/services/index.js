@@ -8,6 +8,7 @@ const SpartanLyncServices = {
     */
 
    debug: false,                                            // Enable detailed debugging to Console on API calls
+   devDomain: "geotab.local",                               // Domain for local development
 
    splHumanTimeFormat: "dd MMM DD, YYYY LT z",              // moment() format for converting from UNIX timestamp to Human format in User's Timezone
    splStoreSyncRetry: 60000,                                // (Default: 1 min) How frequently to retry saving storage object to remote server
@@ -73,6 +74,8 @@ const SpartanLyncServices = {
    sessionMgr: null,
    goLib: null,
    sdataTools: null,
+
+   runningOnSpartanLyncDomain: false,
 
    state: null,
    _api: null,

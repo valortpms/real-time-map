@@ -1,350 +1,439 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link rel="stylesheet" href="styles/splgeotabmap.css" />
+    <script src="scripts/tools.js" async></script>
+    <script src="scripts/ui.js" async></script>
+    <script src="scripts/splgeotabmap.js" async></script>
+  </head>
 
-<head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-   <link rel="stylesheet" href="styles/splgeotabmap.css">
-   <script src="scripts/utils.js" async></script>
-   <script src="scripts/splgeotabmap.js" async></script>
-</head>
-
-<body>
-   <div id="SplGeotabMapContainer">
+  <body>
+    <div id="SplGeotabMapContainer">
       <div class="splTableRow">
-         <div class="splTableCell title">
-            <label>SpartanLync Sensors For:</label>
-            <strong></strong>
-            <div></div>
-         </div>
+        <div class="splTableCell title">
+          <label>SpartanLync Sensors For:</label>
+          <strong></strong>
+          <div></div>
+        </div>
       </div>
       <div class="splTable hidden">
-         <div class="splTableRow" title="View In SpartanLync Tools" onClick="console.log('THIS IS A CLICK TEST');">
-            <div class="splTableCell header header-top temptrac">
-               <div class="button-badge">TEMPTRAC</div>
-            </div>
-            <div class="splTableCell header header-top tpms">
-               <div class="button-badge">TPMS</div>
-            </div>
-         </div>
-         <div class="splTableRow">
-            <div class="splTableCell header temptrac">Temp</div>
-            <div class="splTableCell header">Temp</div>
-            <div class="splTableCell header">Press</div>
-         </div>
-         <!-- CONTENT -->
+        <div
+          class="splTableRow"
+          title="View In SpartanLync Tools"
+          onClick="console.log('THIS IS A CLICK TEST');"
+        >
+          <div class="splTableCell header header-top temptrac">
+            <div class="button-badge">TEMPTRAC</div>
+          </div>
+          <div class="splTableCell header header-top tpms">
+            <div class="button-badge">TPMS</div>
+          </div>
+        </div>
+        <div class="splTableRow">
+          <div class="splTableCell header temptrac">Temp</div>
+          <div class="splTableCell header">Temp</div>
+          <div class="splTableCell header">Press</div>
+        </div>
+        <!-- CONTENT -->
 
-         <div class="splTableRow">
-            <div class="splTableCell component-header first">
-               Tractor
+        <div class="splTableRow">
+          <div class="splTableCell component-header first">
+            Tractor
+          </div>
+        </div>
+        <div class="splTableRow">
+          <div class="splTableCell temptrac content-table">
+            <div class="content-body">
+              <div
+                class="glow-stay-on-temptrac"
+                title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT"
+              >
+                <div class="val-loc">Zone 1</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
+                <div class="val-loc">Zone 2</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div
+                class="glow-temptrac"
+                title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT"
+              >
+                <div class="val-loc">Zone 3</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
             </div>
-         </div>
-         <div class="splTableRow">
-            <div class="splTableCell temptrac content-table">
-               <div class="content-body">
-                  <div class="glow-stay-on-temptrac" title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
-                     <div class="val-loc">Zone 1</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
-                     <div class="val-loc">Zone 2</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div class="glow-temptrac" title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT">
-                     <div class="val-loc">Zone 3</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-               </div>
+          </div>
+          <div class="splTableCell content-table">
+            <div class="content-body">
+              <div title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
+                <div class="val-loc">A1-T1</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
+                <div class="val-loc">A1-T2</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div
+                class="glow-stay-on-tpms"
+                title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT"
+              >
+                <div class="val-loc">A2-T1</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 4:00 PM EDT">
+                <div class="val-loc">A2-T2</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
             </div>
-            <div class="splTableCell content-table">
-               <div class="content-body">
-                  <div title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
-                     <div class="val-loc">A1-T1</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
-                     <div class="val-loc">A1-T2</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div class="glow-stay-on-tpms" title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT">
-                     <div class="val-loc">A2-T1</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 4:00 PM EDT">
-                     <div class="val-loc">A2-T2</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-               </div>
+          </div>
+          <div class="splTableCell content-table">
+            <div class="content-body">
+              <div
+                class="glow-tpms"
+                title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT"
+              >
+                <div class="val-loc">A1-T1</div>
+                <div class="val-pres">
+                  51.1 <span>Psi</span>
+                  <p>352 <span>kPa</span></p>
+                  <p>3.5 <span>Bar</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
+                <div class="val-loc">A1-T2</div>
+                <div class="val-pres">
+                  51.1 <span>Psi</span>
+                  <p>352 <span>kPa</span></p>
+                  <p>3.5 <span>Bar</span></p>
+                </div>
+              </div>
             </div>
-            <div class="splTableCell content-table">
-               <div class="content-body">
-                  <div class="glow-tpms" title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
-                     <div class="val-loc">A1-T1</div>
-                     <div class="val-pres">51.1 <span>Psi</span>
-                        <p>352 <span>kPa</span></p>
-                        <p>3.5 <span>Bar</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
-                     <div class="val-loc">A1-T2</div>
-                     <div class="val-pres">51.1 <span>Psi</span>
-                        <p>352 <span>kPa</span></p>
-                        <p>3.5 <span>Bar</span></p>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         </div>
+          </div>
+        </div>
 
-         <div class="splTableRow">
-            <div class="splTableCell component-header">
-               Trailer 1
+        <div class="splTableRow">
+          <div class="splTableCell component-header">
+            Trailer 1
+          </div>
+        </div>
+        <div class="splTableRow">
+          <div class="splTableCell temptrac content-table">
+            <div class="content-body">
+              <div
+                class="glow-temptrac"
+                title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT"
+              >
+                <div class="val-loc">Zone 1</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
+                <div class="val-loc">Zone 2</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div
+                class="glow-temptrac"
+                title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT"
+              >
+                <div class="val-loc">Zone 3</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
             </div>
-         </div>
-         <div class="splTableRow">
-            <div class="splTableCell temptrac content-table">
-               <div class="content-body">
-                  <div class="glow-temptrac" title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
-                     <div class="val-loc">Zone 1</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
-                     <div class="val-loc">Zone 2</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div class="glow-temptrac" title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT">
-                     <div class="val-loc">Zone 3</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-               </div>
+          </div>
+          <div class="splTableCell content-table">
+            <div class="content-body">
+              <div title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
+                <div class="val-loc">A1-T1</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
+                <div class="val-loc">A1-T2</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div
+                class="glow-tpms"
+                title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT"
+              >
+                <div class="val-loc">A2-T1</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 4:00 PM EDT">
+                <div class="val-loc">A2-T2</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
             </div>
-            <div class="splTableCell content-table">
-               <div class="content-body">
-                  <div title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
-                     <div class="val-loc">A1-T1</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
-                     <div class="val-loc">A1-T2</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div class="glow-tpms" title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT">
-                     <div class="val-loc">A2-T1</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 4:00 PM EDT">
-                     <div class="val-loc">A2-T2</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-               </div>
+          </div>
+          <div class="splTableCell content-table">
+            <div class="content-body">
+              <div
+                class="glow-tpms"
+                title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT"
+              >
+                <div class="val-loc">A1-T1</div>
+                <div class="val-pres">
+                  51.1 <span>Psi</span>
+                  <p>352 <span>kPa</span></p>
+                  <p>3.5 <span>Bar</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
+                <div class="val-loc">A1-T2</div>
+                <div class="val-pres">
+                  51.1 <span>Psi</span>
+                  <p>352 <span>kPa</span></p>
+                  <p>3.5 <span>Bar</span></p>
+                </div>
+              </div>
             </div>
-            <div class="splTableCell content-table">
-               <div class="content-body">
-                  <div class="glow-tpms" title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
-                     <div class="val-loc">A1-T1</div>
-                     <div class="val-pres">51.1 <span>Psi</span>
-                        <p>352 <span>kPa</span></p>
-                        <p>3.5 <span>Bar</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
-                     <div class="val-loc">A1-T2</div>
-                     <div class="val-pres">51.1 <span>Psi</span>
-                        <p>352 <span>kPa</span></p>
-                        <p>3.5 <span>Bar</span></p>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         </div>
+          </div>
+        </div>
 
-         <div class="splTableRow">
-            <div class="splTableCell component-header">
-               Dolly
+        <div class="splTableRow">
+          <div class="splTableCell component-header">
+            Dolly
+          </div>
+        </div>
+        <div class="splTableRow">
+          <div class="splTableCell temptrac content-table">
+            <div class="content-body">
+              <div
+                class="glow-temptrac"
+                title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT"
+              >
+                <div class="val-loc">Zone 1</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
+                <div class="val-loc">Zone 2</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div
+                class="glow-temptrac"
+                title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT"
+              >
+                <div class="val-loc">Zone 3</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
             </div>
-         </div>
-         <div class="splTableRow">
-            <div class="splTableCell temptrac content-table">
-               <div class="content-body">
-                  <div class="glow-temptrac" title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
-                     <div class="val-loc">Zone 1</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
-                     <div class="val-loc">Zone 2</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div class="glow-temptrac" title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT">
-                     <div class="val-loc">Zone 3</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-               </div>
+          </div>
+          <div class="splTableCell content-table">
+            <div class="content-body">
+              <div title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
+                <div class="val-loc">A1-T1</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
+                <div class="val-loc">A1-T2</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div
+                class="glow-tpms"
+                title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT"
+              >
+                <div class="val-loc">A2-T1</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 4:00 PM EDT">
+                <div class="val-loc">A2-T2</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
             </div>
-            <div class="splTableCell content-table">
-               <div class="content-body">
-                  <div title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
-                     <div class="val-loc">A1-T1</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
-                     <div class="val-loc">A1-T2</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div class="glow-tpms" title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT">
-                     <div class="val-loc">A2-T1</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 4:00 PM EDT">
-                     <div class="val-loc">A2-T2</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-               </div>
+          </div>
+          <div class="splTableCell content-table">
+            <div class="content-body">
+              <div
+                class="glow-tpms"
+                title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT"
+              >
+                <div class="val-loc">A1-T1</div>
+                <div class="val-pres">
+                  51.1 <span>Psi</span>
+                  <p>352 <span>kPa</span></p>
+                  <p>3.5 <span>Bar</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
+                <div class="val-loc">A1-T2</div>
+                <div class="val-pres">
+                  51.1 <span>Psi</span>
+                  <p>352 <span>kPa</span></p>
+                  <p>3.5 <span>Bar</span></p>
+                </div>
+              </div>
             </div>
-            <div class="splTableCell content-table">
-               <div class="content-body">
-                  <div class="glow-tpms" title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
-                     <div class="val-loc">A1-T1</div>
-                     <div class="val-pres">51.1 <span>Psi</span>
-                        <p>352 <span>kPa</span></p>
-                        <p>3.5 <span>Bar</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
-                     <div class="val-loc">A1-T2</div>
-                     <div class="val-pres">51.1 <span>Psi</span>
-                        <p>352 <span>kPa</span></p>
-                        <p>3.5 <span>Bar</span></p>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         </div>
+          </div>
+        </div>
 
-         <div class="splTableRow">
-            <div class="splTableCell component-header">
-               Trailer 2
+        <div class="splTableRow">
+          <div class="splTableCell component-header">
+            Trailer 2
+          </div>
+        </div>
+        <div class="splTableRow">
+          <div class="splTableCell temptrac content-table">
+            <div class="content-body">
+              <div
+                class="glow-temptrac"
+                title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT"
+              >
+                <div class="val-loc">Zone 1</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
+                <div class="val-loc">Zone 2</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div
+                class="glow-temptrac"
+                title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT"
+              >
+                <div class="val-loc">Zone 3</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
             </div>
-         </div>
-         <div class="splTableRow">
-            <div class="splTableCell temptrac content-table">
-               <div class="content-body">
-                  <div class="glow-temptrac" title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
-                     <div class="val-loc">Zone 1</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
-                     <div class="val-loc">Zone 2</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div class="glow-temptrac" title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT">
-                     <div class="val-loc">Zone 3</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-               </div>
+          </div>
+          <div class="splTableCell content-table">
+            <div class="content-body">
+              <div title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
+                <div class="val-loc">A1-T1</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
+                <div class="val-loc">A1-T2</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div
+                class="glow-tpms"
+                title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT"
+              >
+                <div class="val-loc">A2-T1</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 4:00 PM EDT">
+                <div class="val-loc">A2-T2</div>
+                <div class="val-temp">
+                  23 <span>&#8451;</span>
+                  <p>73.4 <span>&#8457;</span></p>
+                </div>
+              </div>
             </div>
-            <div class="splTableCell content-table">
-               <div class="content-body">
-                  <div title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
-                     <div class="val-loc">A1-T1</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
-                     <div class="val-loc">A1-T2</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div class="glow-tpms" title="Sensor Timestamp: Su May 24, 2020 3:00 PM EDT">
-                     <div class="val-loc">A2-T1</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 4:00 PM EDT">
-                     <div class="val-loc">A2-T2</div>
-                     <div class="val-temp">23 <span>&#8451;</span>
-                        <p>73.4 <span>&#8457;</span></p>
-                     </div>
-                  </div>
-               </div>
+          </div>
+          <div class="splTableCell content-table">
+            <div class="content-body">
+              <div
+                class="glow-tpms"
+                title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT"
+              >
+                <div class="val-loc">A1-T1</div>
+                <div class="val-pres">
+                  51.1 <span>Psi</span>
+                  <p>352 <span>kPa</span></p>
+                  <p>3.5 <span>Bar</span></p>
+                </div>
+              </div>
+              <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
+                <div class="val-loc">A1-T2</div>
+                <div class="val-pres">
+                  51.1 <span>Psi</span>
+                  <p>352 <span>kPa</span></p>
+                  <p>3.5 <span>Bar</span></p>
+                </div>
+              </div>
             </div>
-            <div class="splTableCell content-table">
-               <div class="content-body">
-                  <div class="glow-tpms" title="Sensor Timestamp: Su May 24, 2020 1:00 PM EDT">
-                     <div class="val-loc">A1-T1</div>
-                     <div class="val-pres">51.1 <span>Psi</span>
-                        <p>352 <span>kPa</span></p>
-                        <p>3.5 <span>Bar</span></p>
-                     </div>
-                  </div>
-                  <div title="Sensor Timestamp: Su May 24, 2020 2:00 PM EDT">
-                     <div class="val-loc">A1-T2</div>
-                     <div class="val-pres">51.1 <span>Psi</span>
-                        <p>352 <span>kPa</span></p>
-                        <p>3.5 <span>Bar</span></p>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         </div>
+          </div>
+        </div>
 
-         <!-- FOOTER -->
-         <div class="splTableRow footer">
-            <div class="splTableCell"><label>Last Reading:</label>May 24, 20 6:30 PM</div>
-         </div>
+        <!-- FOOTER -->
+        <div class="splTableRow footer">
+          <div class="splTableCell">
+            <label>Last Reading:</label>May 24, 20 6:30 PM
+          </div>
+        </div>
       </div>
-   </div>
-</body>
-
+    </div>
+  </body>
 </html>

@@ -7,7 +7,7 @@ import { Html5Entities } from "html-entities";
 import { fetchVehSensorDataAsync } from "../services/api/temptrac-tpms/utils";
 
 /**
- *  Manage / Generate cached Vehicle Sensor data as HTML output to UI
+ *  Manage / Generate cached Vehicle Sensor data for UI
  */
 export const INITSplSensorDataTools = function (goLib) {
 
@@ -253,6 +253,18 @@ export const INITSplSensorDataTools = function (goLib) {
    };
 
    /**
+    * Getters/Setters for _firstTime
+    */
+   this.getFirstTime = function () {
+      const me = this;
+      return me._firstTime;
+   };
+   this.setFirstTime = function (firstTime) {
+      const me = this;
+      me._firstTime = firstTime;
+   };
+
+   /**
     * Clear the Sensor data cache of all vehicles
     * IF a SEARCH OPERATION is NOT occuring
     *
@@ -269,176 +281,6 @@ export const INITSplSensorDataTools = function (goLib) {
       me._firstTime = true;
       me._noSensorDataFound = true;
       return true;
-   };
-
-   /**
-    *  Generate HTML from sensor data
-    *
-    *  @returns string
-    */
-   this.generateSensorDataHtml = function (sdata) {
-      if (typeof sdata.vehCfg === "undefined") { return ""; }
-
-      const me = this;
-      const htmlEntities = new Html5Entities();
-      const data = splSensorDataParser.do(sdata, !me._firstTime);
-      let headerTopHtml = "";
-      let headerHtml = "";
-      let contentHtml = "";
-
-      // Render Headers
-      if (data.foundTemptracSensors) {
-         headerTopHtml += me._getTemptracHtml("header-top");
-         headerHtml += me._getTemptracHtml("header");
-      }
-      if (data.foundTpmsTempSensors || data.foundTpmsPressSensors) {
-         headerTopHtml += me._getTpmsHtml("header-top");
-         if (data.foundTpmsTempSensors) {
-            headerHtml += me._getTpmsHtml("header-temp");
-         }
-         if (data.foundTpmsPressSensors) {
-            headerHtml += me._getTpmsHtml("header-press");
-         }
-      }
-      me._firstTime = false;
-
-      // Render Content
-      data.compIds.map(compId => {
-         contentHtml += me._getComponentContentHtml(
-            compId,
-            (data.compIds.length !== 1),
-            data
-         );
-      });
-
-      return htmlEntities.decode(
-         renderToString((
-            <Fragment>
-               <div className="splTable">
-                  <div className="splTableRow pointer" data-tip="View In SpartanLync Tools" data-for="splTooltip" myclick={`navigateToSplTools('${data.vehId}','${data.vehName}')`}>
-                     {`${headerTopHtml}`}
-                  </div>
-                  <div className="splTableRow">
-                     {`${headerHtml}`}
-                  </div>
-                  {`${contentHtml}`}
-                  <div className="splTableRow footer">
-                     <div className="splTableCell"><label>Last Reading:</label>{`${data.lastReadTimestamp}`}</div>
-                  </div>
-               </div>
-               <script type="text/javascript">
-                  document.addEventListener("DOMContentLoaded", function(event) {
-                     refreshSplTooltips()
-                  });
-               </script>
-            </Fragment>
-         ))
-      ).replace(/myclick/g, "onclick").replace(/\s+data\-reactroot\=\"\"/g, "");
-   };
-
-   this._getComponentContentHtml = function (compId, showHeader, data) {
-      const me = this;
-      const htmlEntities = new Html5Entities();
-      const firstComponentHeaderClass = compId === data.compIds[0] ? "first" : "";
-      const headerTitle = showHeader ? splSrv.vehComponents[compId] : "";
-      const compHeaderHtml = headerTitle ? htmlEntities.decode(renderToString((
-         <div className="splTableRow">
-            <div className={`splTableCell component-header ${firstComponentHeaderClass}`}>
-               {`${headerTitle}`}
-            </div>
-         </div>
-      ))) : "";
-
-      let compContentHtml = "";
-      if (data.foundTemptracSensors) {
-         compContentHtml += me._getTemptracHtml("content",
-            typeof data[compId].temptracHtml !== "undefined" ?
-               data[compId].temptracHtml : "&nbsp;");
-      }
-      if (data.foundTpmsTempSensors || data.foundTpmsPressSensors) {
-         if (data.foundTpmsTempSensors) {
-            compContentHtml += me._getTpmsHtml("content-temp",
-               typeof data[compId].tpmsTempHtml !== "undefined" ?
-                  data[compId].tpmsTempHtml : "&nbsp;");
-         }
-         if (data.foundTpmsPressSensors) {
-            compContentHtml += me._getTpmsHtml("content-press",
-               typeof data[compId].tpmsPressHtml !== "undefined" ?
-                  data[compId].tpmsPressHtml : "&nbsp;");
-         }
-      }
-
-      return htmlEntities.decode(renderToString((
-         <Fragment>
-            {`${compHeaderHtml}`}
-            <div className="splTableRow">
-               {`${compContentHtml}`}
-            </div>
-         </Fragment>
-      )));
-   };
-
-   this._getTemptracHtml = function (section, content) {
-      const htmlEntities = new Html5Entities();
-      const contentHtml = content || "";
-      switch (section) {
-         case "header-top":
-            return renderToString((
-               <div className="splTableCell header header-top temptrac"><div className="button-badge">TEMPTRAC</div></div>
-            ));
-            break;
-
-         case "header":
-            return renderToString((
-               <div className="splTableCell header temptrac">Temp</div>
-            ));
-            break;
-
-         case "content":
-            return htmlEntities.decode(renderToString((
-               <div className="splTableCell temptrac content-table">
-                  <div className="content-body">
-                     {`${contentHtml}`}
-                  </div>
-               </div>
-            )));
-            break;
-      }
-   };
-
-   this._getTpmsHtml = function (section, content) {
-      const htmlEntities = new Html5Entities();
-      const contentHtml = content || "";
-      switch (section) {
-         case "header-top":
-            return renderToString((
-               <div className="splTableCell header header-top tpms"><div className="button-badge">TPMS</div></div>
-            ));
-            break;
-
-         case "header-temp":
-            return renderToString((
-               <div className="splTableCell header">Temp</div>
-            ));
-            break;
-
-         case "header-press":
-            return renderToString((
-               <div className="splTableCell header">Press</div>
-            ));
-            break;
-
-         case "content-temp":
-         case "content-press":
-            return htmlEntities.decode(renderToString((
-               <div className="splTableCell content-table">
-                  <div className="content-body">
-                     {`${contentHtml}`}
-                  </div>
-               </div>
-            )));
-            break;
-      }
    };
 
    /**
@@ -615,6 +457,176 @@ export const INITSplSensorDataTools = function (goLib) {
 export const splSensorDataParser = {
 
    _lastReadTimestampUnix: 0,
+
+   /**
+    *  Generate HTML from sensor data
+    *
+    *  @returns string
+    */
+   generateSensorDataHtml: function (sdata, sdataToolsLib) {
+      if (typeof sdata.vehCfg === "undefined") { return ""; }
+
+      const me = this;
+      const htmlEntities = new Html5Entities();
+      const data = me.do(sdata, !sdataToolsLib.getFirstTime());
+      let headerTopHtml = "";
+      let headerHtml = "";
+      let contentHtml = "";
+
+      // Render Headers
+      if (data.foundTemptracSensors) {
+         headerTopHtml += me._getTemptracHtml("header-top");
+         headerHtml += me._getTemptracHtml("header");
+      }
+      if (data.foundTpmsTempSensors || data.foundTpmsPressSensors) {
+         headerTopHtml += me._getTpmsHtml("header-top");
+         if (data.foundTpmsTempSensors) {
+            headerHtml += me._getTpmsHtml("header-temp");
+         }
+         if (data.foundTpmsPressSensors) {
+            headerHtml += me._getTpmsHtml("header-press");
+         }
+      }
+      sdataToolsLib.setFirstTime(false);
+
+      // Render Content
+      data.compIds.map(compId => {
+         contentHtml += me._getComponentContentHtml(
+            compId,
+            (data.compIds.length !== 1),
+            data
+         );
+      });
+
+      return htmlEntities.decode(
+         renderToString((
+            <Fragment>
+               <div className="splTable">
+                  <div className="splTableRow pointer" data-tip="View In SpartanLync Tools" data-for="splTooltip" myclick={`navigateToSplTools('${data.vehId}','${data.vehName}')`}>
+                     {`${headerTopHtml}`}
+                  </div>
+                  <div className="splTableRow">
+                     {`${headerHtml}`}
+                  </div>
+                  {`${contentHtml}`}
+                  <div className="splTableRow footer">
+                     <div className="splTableCell"><label>Last Reading:</label>{`${data.lastReadTimestamp}`}</div>
+                  </div>
+               </div>
+               <script type="text/javascript">
+                  document.addEventListener("DOMContentLoaded", function(event) {
+                     refreshSplTooltips()
+                  });
+               </script>
+            </Fragment>
+         ))
+      ).replace(/myclick/g, "onclick").replace(/\s+data\-reactroot\=\"\"/g, "");
+   },
+
+   _getComponentContentHtml: function (compId, showHeader, data) {
+      const me = this;
+      const htmlEntities = new Html5Entities();
+      const firstComponentHeaderClass = compId === data.compIds[0] ? "first" : "";
+      const headerTitle = showHeader ? splSrv.vehComponents[compId] : "";
+      const compHeaderHtml = headerTitle ? htmlEntities.decode(renderToString((
+         <div className="splTableRow">
+            <div className={`splTableCell component-header ${firstComponentHeaderClass}`}>
+               {`${headerTitle}`}
+            </div>
+         </div>
+      ))) : "";
+
+      let compContentHtml = "";
+      if (data.foundTemptracSensors) {
+         compContentHtml += me._getTemptracHtml("content",
+            typeof data[compId].temptracHtml !== "undefined" ?
+               data[compId].temptracHtml : "&nbsp;");
+      }
+      if (data.foundTpmsTempSensors || data.foundTpmsPressSensors) {
+         if (data.foundTpmsTempSensors) {
+            compContentHtml += me._getTpmsHtml("content-temp",
+               typeof data[compId].tpmsTempHtml !== "undefined" ?
+                  data[compId].tpmsTempHtml : "&nbsp;");
+         }
+         if (data.foundTpmsPressSensors) {
+            compContentHtml += me._getTpmsHtml("content-press",
+               typeof data[compId].tpmsPressHtml !== "undefined" ?
+                  data[compId].tpmsPressHtml : "&nbsp;");
+         }
+      }
+
+      return htmlEntities.decode(renderToString((
+         <Fragment>
+            {`${compHeaderHtml}`}
+            <div className="splTableRow">
+               {`${compContentHtml}`}
+            </div>
+         </Fragment>
+      )));
+   },
+
+   _getTemptracHtml: function (section, content) {
+      const htmlEntities = new Html5Entities();
+      const contentHtml = content || "";
+      switch (section) {
+         case "header-top":
+            return renderToString((
+               <div className="splTableCell header header-top temptrac"><div className="button-badge">TEMPTRAC</div></div>
+            ));
+            break;
+
+         case "header":
+            return renderToString((
+               <div className="splTableCell header temptrac">Temp</div>
+            ));
+            break;
+
+         case "content":
+            return htmlEntities.decode(renderToString((
+               <div className="splTableCell temptrac content-table">
+                  <div className="content-body">
+                     {`${contentHtml}`}
+                  </div>
+               </div>
+            )));
+            break;
+      }
+   },
+
+   _getTpmsHtml: function (section, content) {
+      const htmlEntities = new Html5Entities();
+      const contentHtml = content || "";
+      switch (section) {
+         case "header-top":
+            return renderToString((
+               <div className="splTableCell header header-top tpms"><div className="button-badge">TPMS</div></div>
+            ));
+            break;
+
+         case "header-temp":
+            return renderToString((
+               <div className="splTableCell header">Temp</div>
+            ));
+            break;
+
+         case "header-press":
+            return renderToString((
+               <div className="splTableCell header">Press</div>
+            ));
+            break;
+
+         case "content-temp":
+         case "content-press":
+            return htmlEntities.decode(renderToString((
+               <div className="splTableCell content-table">
+                  <div className="content-body">
+                     {`${contentHtml}`}
+                  </div>
+               </div>
+            )));
+            break;
+      }
+   },
 
    /**
     *  Return vehicle sensor data HTML in a data object

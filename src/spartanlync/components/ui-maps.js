@@ -1,6 +1,7 @@
 // eslint-disable-next-line no-unused-vars
 import React, { Fragment } from "react";
 import splSrv from "../services";
+import { splSensorDataParser } from "../services/sensor-data-tools";
 
 /**
  *  Manage the Vehicle Sensor Data shown on Map
@@ -16,7 +17,7 @@ export const splSensorsOnMap = {
       return new Promise((resolve, reject) => {
          splSrv.sdataTools.fetchCachedSensorData(vehId, vehName)
             .then((sensorData) => {
-               const splHtml = splSrv.sdataTools.generateSensorDataHtml(sensorData);
+               const splHtml = splSensorDataParser.generateSensorDataHtml(sensorData, splSrv.sdataTools);
                resolve(splHtml ? `<p class="SPL-popupSensor"> ${splHtml} </p>` : "");
             })
             .catch((reason) => {

@@ -2,10 +2,10 @@
 	"editor.detectIndentation": false,
 	"editor.tabSize": 3,
 	"search.exclude": {
-		"**/node_modules": true,
-    "**/dist": true,
-    // "package-lock.json": true
-  },
+      "**/dist": true,
+      "**/node_modules": true,
+      "**/splgeotabmap.src": true
+   },
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "vscode.typescript-language-features",
   "[javascript]": {

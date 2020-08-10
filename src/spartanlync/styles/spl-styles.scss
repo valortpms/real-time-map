@@ -54,6 +54,7 @@
 
 #RTM-ViewContainer .spl-geotab-map-install-status-btn.disabled {
    cursor: default;
+   opacity: 1 !important;
 }
 
 #RTM-ViewContainer .spl-geotab-map-install-status-btn > div {
@@ -90,7 +91,7 @@
    filter: drop-shadow( 0 0 3px rgba(47, 60, 67,.6));
 }
 #RTM-ViewContainer .spl-watermark:hover {
-   top: 79px;
+   top: 85px;
 }
 #RTM-ViewContainer .spl-watermark > div {
    display: none;

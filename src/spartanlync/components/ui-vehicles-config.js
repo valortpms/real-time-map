@@ -4,7 +4,7 @@ import ReactTooltip from "react-tooltip";
 import splSrv from "../services";
 import splCfg from "../config";
 import { apiConfig } from "../../dataStore/api-config";
-import { INITSplSensorDataTools } from "../services/sensor-data-tools";
+import { INITSplSensorDataTools, splSensorDataParser } from "../services/sensor-data-tools";
 import { fetchVehSensorDataAsync } from "../services/api/temptrac-tpms/utils";
 import { INITGeotabTpmsTemptracLib } from "../services/api/temptrac-tpms";
 
@@ -142,7 +142,7 @@ export class SplSensorDataTypesButton extends Component {
          me.sdataTools.resetCache();
          me.sdataTools.fetchCachedSensorData(me.vehId, me.vehName)
             .then((sensorData) => {
-               splHtmlOut = me.sdataTools.generateSensorDataHtml(sensorData);
+               splHtmlOut = splSensorDataParser.generateSensorDataHtml(sensorData, me.sdataTools);
                me.startContentRefresh();  // Start content update timer
             })
             .catch((reason) => {
@@ -181,7 +181,7 @@ export class SplSensorDataTypesButton extends Component {
       let splHtmlOut = "";
       me.sdataTools.fetchCachedSensorData(me.vehId, me.vehName)
          .then((sensorData) => {
-            splHtmlOut = me.sdataTools.generateSensorDataHtml(sensorData);
+            splHtmlOut = splSensorDataParser.generateSensorDataHtml(sensorData, me.sdataTools);
          })
          .catch((reason) => {
             splHtmlOut = reason;

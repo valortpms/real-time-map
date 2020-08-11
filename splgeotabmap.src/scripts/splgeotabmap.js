@@ -65,13 +65,13 @@ geotab.addin.splgeotabmap = (elt, service) => {
       },
       sensorsSearchingMsg: "Searching for SpartanLync Sensors...",
       sensorsFoundMsg: "SpartanLync sensors detected",
-      sensorsFoundMenuItemMsg: "( Click 'Show SpartanLync Sensors' for more details )",
+      sensorsFoundMenuItemMsg: "( Click 'Show SpartanLync Sensors' for more details in THE RIGHT-SIDE PANEL ===> )",
       sensorsNotFoundMsg: "SpartanLync Sensors Not Found",
     },
 
     menuItemSettings: {
-      sensorsSearchingMsg: "Searching for SpartanLync Sensors...",
-      sensorsNotFoundMsg: "No SpartanLync Sensors Found for this Vehicle",
+      sensorsSearchingMsg: "Searching [ <b>{veh}</b> ]<br />for Temptrac / TPMS Sensors...<br />Please wait until you see SpartanLync Sensor search results on the Vehicle Map tooltip",
+      sensorsNotFoundMsg: "No Temptrac / TPMS Sensors Found on Vehicle [ <b>{veh}</b> ]",
     },
 
     // App Objects / Methods

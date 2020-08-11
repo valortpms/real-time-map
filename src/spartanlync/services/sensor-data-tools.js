@@ -425,18 +425,23 @@ export const INITSplSensorDataTools = function (goLib, cache) {
 
          if (sdata.hasOwnProperty(type) && Object.keys(sdata[type]).length) {
             Object.keys(sdata[type]).forEach(function (loc) {
-               console.log("6a>----- vehCompId=[", vehCompId, "] type=[ ", type, " ] loc=[ ", loc, " ]");
-               const cacheTime = cache[type][loc].time;
-               console.log("6b>----------------------------------------------------------");
-               const sdataTime = sdata[type][loc].time;
-               console.log("6c>----------------------------------------------------------");
-               if (cacheTime !== sdataTime) {
+               if (typeof cache[type][loc] !== "undefined") {
+                  const cacheTime = cache[type][loc].time;
+                  const sdataTime = sdata[type][loc].time;
+                  if (cacheTime !== sdataTime) {
+                     mergeCount++;
+                     cache[type][loc] = sdata[type][loc];
+                     cache[type][loc].new = true;
+                     newSensorDataFound = true;
+                  }
+               }
+               // AxleTire in sdata does not exist in cache...Insert it
+               else {
                   mergeCount++;
                   cache[type][loc] = sdata[type][loc];
                   cache[type][loc].new = true;
                   newSensorDataFound = true;
                }
-               console.log("6d>----------------------------------------------------------");
             });
             if (mergeCount) {
                const vehCompDesc =

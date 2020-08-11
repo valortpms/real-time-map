@@ -72,7 +72,7 @@ const onLoadInitEvents = function (my) {
   });
 
   my.resetBtnElemObj.addEventListener("click", () => {
-    my.app.reset();
+    my.app.resetApp();
   });
 };
 
@@ -192,13 +192,8 @@ const SplGeotabMapUtils = function (my) {
         // Update moment() with User-defined Timezone
         moment.tz.setDefault(my.storage.splStore.timezone);
 
-        // Reset Sensor data search flag for all vehicles in cache
-        for (const vehId in my.sdataTools._cache) {
-          if (my.sdataTools._cache[vehId].searching) {
-            console.log(`--- Startup() Resetting search status on VehId[${vehId}]`);
-            my.sdataTools._cache[vehId].searching = false;
-          }
-        }
+        // Reset sensor data search for all vehicles
+        me.resetSearch();
 
         // Set initial UI message
         my.ui.showMsg("Hover over or click on a vehicle to view SpartanLync sensor information");
@@ -350,7 +345,7 @@ const SplGeotabMapUtils = function (my) {
       getSensorData: function (vehId, vehName) {
         console.log(`=== getSensorData() ======================= FETCHING VEH [ ${vehName} / ${vehId} ]`); //DEBUG
         if (my.storage.sensorData.searchInProgress) {
-          console.log(`------------- SEARCH IN PROGRESS FOR Vehicle [ ${my.storage.sensorData.searchInProgress} ]...Launching an Async Instance`); //DEBUG
+          console.log(`=== getSensorData() ======================= LAUNCHING ASYNC SEARCH FOR Vehicle [ ${vehId} ], as SEARCH IN PROGRESS ON Vehicle [ ${my.storage.sensorData.searchInProgress} ]`); //DEBUG
           const aSyncGoLib = INITGeotabTpmsTemptracLib(
             my.service.api,
             my.sensorSearchRetryRangeInDays,
@@ -361,32 +356,33 @@ const SplGeotabMapUtils = function (my) {
           aSyncSdataTools.setSensorDataNotFoundMsg(my.sensorDataNotFoundMsg);
           aSyncSdataTools.setVehComponents(my.vehComponents);
           aSyncSdataTools.fetchCachedSensorData(vehId, vehName)
-            .then((sensorData) => {
-              console.log(`=== getSensorData(2) ======================= SUCCESS: sensorData[${vehName} / ${vehId}] = `, sensorData); //DEBUG
-
-              // Backup the found Sensor data
-              my.localStore.save();
-            })
-            .catch((reason) => {
+            .then((sensorData) => me.postGetSensorData(vehId, vehName, sensorData))
+            .catch((reason) => console.log(`--- getSensorData(ASYNC) Error fetching sensor data for [ ${vehName} / ${vehId} ]: `, reason))
+            .finally(() => {
               my.storage.sensorData.searchInProgress = "";
-              console.log(`--- getSensorData(2) Error fetching sensor data for [ ${vehName} / ${vehId} ]: `, reason); //DEBUG
             });
         }
         else {
           my.storage.sensorData.searchInProgress = vehId;
           my.sdataTools.fetchCachedSensorData(vehId, vehName)
-            .then((sensorData) => {
-              console.log(`=== getSensorData(1) ======================= SUCCESS: sensorData[ ${vehName} / ${vehId} ] = `, sensorData); //DEBUG
+            .then((sensorData) => me.postGetSensorData(vehId, vehName, sensorData))
+            .catch((reason) => console.log(`--- getSensorData() Error fetching sensor data for [ ${vehName} / ${vehId} ]: `, reason))
+            .finally(() => {
               my.storage.sensorData.searchInProgress = "";
-
-              // Backup the found Sensor data
-              my.localStore.save();
-            })
-            .catch((reason) => {
-              my.storage.sensorData.searchInProgress = "";
-              console.log(`--- getSensorData(1) Error fetching sensor data for [ ${vehName} / ${vehId} ]: `, reason); //DEBUG
             });
         }
+      },
+
+      /**
+       * postGetSensorData() Operations perfromed after fetching sensor data into cache
+       *
+       * @return void
+       */
+      postGetSensorData: function (vehId, vehName, sensorData) {
+        console.log(`=== postGetSensorData() ======================= SUCCESS: sensorData[ ${vehName} / ${vehId} ] = `, sensorData); //DEBUG
+        // Reset search status and Backup found sensor data
+        my.storage.sensorData.searchInProgress = "";
+        my.localStore.save();
       },
 
       /**
@@ -435,6 +431,7 @@ const SplGeotabMapUtils = function (my) {
       *  @returns object / string (on Error)
       */
       fetchVehSensorDataAsync: function (vehId, vehComp, firstTimeCallOverride) {
+        console.log("=== fetchVehSensorDataAsync(2) ======================= firstTimeCallOverride =", firstTimeCallOverride); //DEBUG
         const vehComponent = vehComp || "";
         const overrideFirstTimeCall = typeof firstTimeCallOverride === "undefined" ? null : firstTimeCallOverride;
         return new Promise((resolve, reject) => {
@@ -453,22 +450,40 @@ const SplGeotabMapUtils = function (my) {
         });
       },
 
+
       /**
-       * reset() Clear and reset all App data
+       * resetSearch() Clear sensor data search metadata
        *
        * @return void
        */
-      reset: function () {
+      resetSearch: function () {
+        my.storage.sensorData.vehRegistry.tooltip = "";
+        my.storage.sensorData.vehRegistry.menuItem = "";
+        if (my.storage.sensorData.searchInProgress) {
+          console.log(`--- resetSearch() Clearing stale search on VehId [ ${my.storage.sensorData.searchInProgress} ]`);
+          my.storage.sensorData.searchInProgress = "";
+        }
+        for (const vehId in my.sdataTools._cache) {
+          if (my.sdataTools._cache[vehId].searching) {
+            console.log(`--- resetSearch() Resetting search status for VehId [ ${vehId} ]`);
+            my.sdataTools._cache[vehId].searching = false;
+          }
+        }
+      },
+
+      /**
+       * resetApp() Clear and reset all App data
+       *
+       * @return void
+       */
+      resetApp: function () {
         if (my.sdataTools.resetCache()) {
           my.localStore.clear(() => {
             my.resetBtnElemObj.blur();
 
             my.storage.splStore = null;
             my.storage.sensorData.cache = {};
-            my.storage.sensorData.searchInProgress = "";
-            my.storage.sensorData.vehRegistry.tooltip = "";
-            my.storage.sensorData.vehRegistry.menuItem = "";
-
+            me.resetSearch();
             me.init(() => {
               my.ui.showMsg("SENSOR DATA HAS BEEN RESET");
             });
@@ -476,7 +491,7 @@ const SplGeotabMapUtils = function (my) {
         } else {
           my.ui.showError("Cannot Reset while a sensor data search is in progress..Please try again later.");
         }
-      },
+      }
     };
     return me;
   }.bind(this)();
@@ -859,6 +874,7 @@ const INITSplSessionMgr = function (myApi, credentials) {
  *  StartanLync library for searching Geotab for TempTrac / TPMS sensor data
  */
 /* eslint-disable complexity */
+/* eslint-disable camelcase */
 const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSearchRange) {
   return function () {
     const me = {
@@ -3556,10 +3572,12 @@ const INITSplSensorDataTools = function (goLib, cache) {
         let debugSensorData = "";
 
         //Splunk for sensor data
+        console.log(`=== _fetchData(0A) ======================= CACHE[ ${vehId} ] =`, JSON.stringify(me._cache[vehId])); //DEBUG
         me._fetchData(vehId)
           .then((sensorData) => {
             me._cache[vehId].searching = false;
             console.log("----- _fetchData(FINAL-RESULT) = ", sensorData);
+            console.log(`=== _fetchData(0B) ======================= CACHE[ ${vehId} ] =`, JSON.stringify(me._cache[vehId])); //DEBUG
 
             // Save Vehicle Name
             sensorData.vehName = vehName;
@@ -3836,6 +3854,7 @@ const INITSplSensorDataTools = function (goLib, cache) {
             sensorData.vehCfg.ids
               .filter(compId => { return (compId !== vehCompFound); })
               .map(compId => {
+                console.log(`=== fetchVehSensorDataAsync(1) ======================= CACHE[ ${vehId} ] =`, JSON.stringify(me._cache[vehId])); //DEBUG
                 fetchVehSensorDataAsync(vehId, compId, me._cache[vehId].firstTime)
                   .then((sdata) => {
                     data[compId] = {
@@ -3918,18 +3937,23 @@ const INITSplSensorDataTools = function (goLib, cache) {
 
       if (sdata.hasOwnProperty(type) && Object.keys(sdata[type]).length) {
         Object.keys(sdata[type]).forEach(function (loc) {
-          console.log("6a>----- vehCompId=[", vehCompId, "] type=[ ", type, " ] loc=[ ", loc, " ]");
-          const cacheTime = cache[type][loc].time;
-          console.log("6b>----------------------------------------------------------");
-          const sdataTime = sdata[type][loc].time;
-          console.log("6c>----------------------------------------------------------");
-          if (cacheTime !== sdataTime) {
+          if (typeof cache[type][loc] !== "undefined") {
+            const cacheTime = cache[type][loc].time;
+            const sdataTime = sdata[type][loc].time;
+            if (cacheTime !== sdataTime) {
+              mergeCount++;
+              cache[type][loc] = sdata[type][loc];
+              cache[type][loc].new = true;
+              newSensorDataFound = true;
+            }
+          }
+          // AxleTire in sdata does not exist in cache...Insert it
+          else {
             mergeCount++;
             cache[type][loc] = sdata[type][loc];
             cache[type][loc].new = true;
             newSensorDataFound = true;
           }
-          console.log("6d>----------------------------------------------------------");
         });
         if (mergeCount) {
           const vehCompDesc =

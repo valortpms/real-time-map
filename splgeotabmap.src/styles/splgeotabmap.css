@@ -58,6 +58,12 @@
   color: #d65858;
   font-size: 12px;
 }
+#SplGeotabMapContainer .title label {
+  font-size: 12px;
+}
+#SplGeotabMapContainer .title label.info {
+  font-size: 13px;
+}
 
 #SplGeotabMapContainer .splTable {
   margin: 5px 0px 0px 0px;

@@ -219,7 +219,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
     //
     switch (contentStatus) {
       case "BUSY":
-        me.showMsg(my.menuItemSettings.sensorsSearchingMsg);
+        me.showMsg(my.menuItemSettings.sensorsSearchingMsg.replace("{veh}", vehName));
         break;
 
       case "BUSY-NEW":
@@ -233,7 +233,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
           lastReadTimestamp: moment().format(my.timeFormat),
         });
 
-        me.clearError();
+        me.clearMsgState();
         labelEl.innerHTML = "SpartanLync Sensors For:";
         vehNameEl.innerHTML = vehName;
         vehSpeedEl.innerHTML = vehSpeed ? vehSpeed + " km/h" : "";
@@ -241,7 +241,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
         break;
 
       case "NOTFOUND":
-        me.showMsg(my.menuItemSettings.sensorsNotFoundMsg);
+        me.showMsg(my.menuItemSettings.sensorsNotFoundMsg.replace("{veh}", vehName));
         break;
     }
   };
@@ -250,7 +250,10 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
     const me = this;
     const labelEl = me._panelLabelObj;
 
-    me.clearError();
+    me.clearMsgState();
+    if (!labelEl.classList.contains("info")) {
+      labelEl.classList.add("info");
+    }
     labelEl.innerHTML = msg;
   };
 
@@ -270,19 +273,24 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
     errorEl.innerHTML = `Error:<br />${msg}`;
   };
 
-  this.clearError = function () {
+  this.clearMsgState = function () {
     const me = this;
     const errorEl = me._vehNameObj;
     const labelEl = me._panelLabelObj;
+    const contentEl = me._contentElemObj;
 
     // Remove error class then any content in element
     if (errorEl.classList.contains("error")) {
       errorEl.classList.remove("error");
     }
+    if (labelEl.classList.contains("info")) {
+      labelEl.classList.remove("info");
+    }
     if (labelEl.classList.contains("hidden")) {
       labelEl.classList.remove("hidden");
     }
     errorEl.innerHTML = "";
+    contentEl.innerHTML = "";
   };
 
   // Update Lib with reference to dynamically loaded Elements

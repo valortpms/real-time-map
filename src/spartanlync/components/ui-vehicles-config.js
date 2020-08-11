@@ -55,6 +55,8 @@ export class SplSensorDataTypesButton extends Component {
       );
       me.sdataTools = new INITSplSensorDataTools(me.goLib);
       me.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
+      me.sdataTools.setSensorDataNotFoundMsg(splSrv.sensorDataNotFoundMsg);
+      me.sdataTools.setVehComponents(splSrv.vehComponents);
 
       // Fetch SpartanLync Sensor Types installed into vehicle
       me.fetchSensorTypes();
@@ -142,7 +144,7 @@ export class SplSensorDataTypesButton extends Component {
          me.sdataTools.resetCache();
          me.sdataTools.fetchCachedSensorData(me.vehId, me.vehName)
             .then((sensorData) => {
-               splHtmlOut = splSensorDataParser.generateSensorDataHtml(sensorData, me.sdataTools);
+               splHtmlOut = splSensorDataParser.generateSensorDataHtml(sensorData, me.vehId, me.sdataTools);
                me.startContentRefresh();  // Start content update timer
             })
             .catch((reason) => {
@@ -181,7 +183,7 @@ export class SplSensorDataTypesButton extends Component {
       let splHtmlOut = "";
       me.sdataTools.fetchCachedSensorData(me.vehId, me.vehName)
          .then((sensorData) => {
-            splHtmlOut = splSensorDataParser.generateSensorDataHtml(sensorData, me.sdataTools);
+            splHtmlOut = splSensorDataParser.generateSensorDataHtml(sensorData, me.vehId, me.sdataTools);
          })
          .catch((reason) => {
             splHtmlOut = reason;

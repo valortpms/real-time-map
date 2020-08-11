@@ -9,7 +9,7 @@ import { fetchVehSensorDataAsync } from "../services/api/temptrac-tpms/utils";
 /**
  *  Manage / Generate cached Vehicle Sensor data for UI
  */
-export const INITSplSensorDataTools = function (goLib) {
+export const INITSplSensorDataTools = function (goLib, cache) {
 
    /**
     *  Private Variables
@@ -20,8 +20,8 @@ export const INITSplSensorDataTools = function (goLib) {
    this._goLib = null;
    this._cache = null;
 
-   this._firstTime = true;
-   this._noSensorDataFound = true;
+   this._sensorDataNotFoundMsg = "";
+   this._vehComponents = {};
 
    /**
     * Fetch vehicle sensor data from cache or API
@@ -35,6 +35,8 @@ export const INITSplSensorDataTools = function (goLib) {
          if (typeof me._cache[vehId] === "undefined") {
             me._cache[vehId] = {
                searching: false,
+               firstTime: true,
+               noSensorDataFound: false,
                expiry: moment().utc().add(me._sensorDataLifetime, "seconds").unix(),
                data: null
             };
@@ -45,7 +47,7 @@ export const INITSplSensorDataTools = function (goLib) {
          }
          else if (me._cache[vehId].data === null || me._cache[vehId].expiry < moment().utc().unix()) {
             me._cache[vehId].searching = true;
-            me._noSensorDataFound = true;
+            me._cache[vehId].noSensorDataFound = true;
 
             // On first-time search of a vehicle
             // In Geotab library, reset the Sensor Search Parameters to a new Vehicle configuration
@@ -72,7 +74,7 @@ export const INITSplSensorDataTools = function (goLib) {
                   // Report on what we found on the initial search only,
                   // Reporting on Repeat searches will be handled by the data merging code
                   if (me._cache[vehId].data === null) {
-                     me._noSensorDataFound = false;
+                     me._cache[vehId].noSensorDataFound = false;
 
                      if (sensorData.vehCfg.total === 1) {
                         console.log("--- NEW SENSOR DATA FOUND after the last search.  " +
@@ -84,7 +86,7 @@ export const INITSplSensorDataTools = function (goLib) {
                      else {
                         sensorData.vehCfg.ids.map(compId => {
                            console.log("--- NEW SENSOR DATA FOUND on " +
-                              splSrv.vehComponents[compId].toUpperCase() + " after the last search.  " +
+                              me._vehComponents[compId].toUpperCase() + " after the last search.  " +
                               "Temptrac [" + Object.keys(sensorData[compId].temptrac).length + "]  " +
                               "TPMS Temperature [" + Object.keys(sensorData[compId].tpmstemp).length + "]  " +
                               "TPMS Pressure [" + Object.keys(sensorData[compId].tpmspress).length + "]"
@@ -185,7 +187,7 @@ export const INITSplSensorDataTools = function (goLib) {
                   }
 
                   // Notify if no sensor data was found
-                  if (me._noSensorDataFound) {
+                  if (me._cache[vehId].noSensorDataFound) {
                      console.log("NO NEW SENSOR DATA FOUND for this date range");
                   }
 
@@ -204,7 +206,7 @@ export const INITSplSensorDataTools = function (goLib) {
                      reject(reason);
                   }
                   else {
-                     if (reason === splSrv.sensorDataNotFoundMsg) {
+                     if (reason === me._sensorDataNotFoundMsg) {
                         console.log("NO NEW SENSOR DATA FOUND for this date range.");
                      }
                      else {
@@ -253,15 +255,41 @@ export const INITSplSensorDataTools = function (goLib) {
    };
 
    /**
-    * Getters/Setters for _firstTime
+    * Getters/Setters for firstTime
     */
-   this.getFirstTime = function () {
+   this.getFirstTime = function (vehId) {
       const me = this;
-      return me._firstTime;
+      return typeof me._cache[vehId].firstTime === "undefined" ? true : me._cache[vehId].firstTime;
    };
-   this.setFirstTime = function (firstTime) {
+   this.setFirstTime = function (vehId, firstTime) {
       const me = this;
-      me._firstTime = firstTime;
+      if (typeof me._cache[vehId].firstTime !== "undefined") {
+         me._cache[vehId].firstTime = firstTime;
+      }
+   };
+
+   /**
+    * Getters/Setters for _vehComponents
+    */
+   this.getVehComponents = function () {
+      const me = this;
+      return me._vehComponents;
+   };
+   this.setVehComponents = function (comLib) {
+      const me = this;
+      me._vehComponents = comLib;
+   };
+
+   /**
+    * Getters/Setters for _sensorDataNotFoundMsg
+    */
+   this.getSensorDataNotFoundMsg = function () {
+      const me = this;
+      return me._sensorDataNotFoundMsg;
+   };
+   this.setSensorDataNotFoundMsg = function (msg) {
+      const me = this;
+      me._sensorDataNotFoundMsg = msg;
    };
 
    /**
@@ -278,8 +306,6 @@ export const INITSplSensorDataTools = function (goLib) {
          }
       }
       me._cache = {};
-      me._firstTime = true;
-      me._noSensorDataFound = true;
       return true;
    };
 
@@ -293,7 +319,7 @@ export const INITSplSensorDataTools = function (goLib) {
       return new Promise((resolve, reject) => {
          me._goLib.getData(vehId, "", function (sensorData) {
             if (sensorData === null) {
-               reject(splSrv.sensorDataNotFoundMsg);
+               reject(me._sensorDataNotFoundMsg);
             }
             else {
                // Single-Vehicle Component found (normally TRACTOR, but we should not assume)
@@ -317,7 +343,7 @@ export const INITSplSensorDataTools = function (goLib) {
                   sensorData.vehCfg.ids
                      .filter(compId => { return (compId !== vehCompFound); })
                      .map(compId => {
-                        fetchVehSensorDataAsync(vehId, compId, me._firstTime)
+                        fetchVehSensorDataAsync(vehId, compId, me._cache[vehId].firstTime)
                            .then((sdata) => {
                               data[compId] = {
                                  temptrac: sdata.temptrac,
@@ -415,7 +441,7 @@ export const INITSplSensorDataTools = function (goLib) {
             if (mergeCount) {
                const vehCompDesc =
                   typeof vehCompId !== "undefined" && vehCompId ?
-                     splSrv.vehComponents[vehCompId].toUpperCase() :
+                     me._vehComponents[vehCompId].toUpperCase() :
                      "";
 
                console.log("--- Found and Merged [ " + mergeCount + " ] " +
@@ -429,7 +455,7 @@ export const INITSplSensorDataTools = function (goLib) {
          }
       });
       if (newSensorDataFound) {
-         me._noSensorDataFound = false;
+         me._cache[vehId].noSensorDataFound = false;
          me._resetSensorDataInCache(vehId, true);
       }
       return cache;
@@ -440,14 +466,19 @@ export const INITSplSensorDataTools = function (goLib) {
     *
     *  @returns void
     */
-   this._configure = function (goLib) {
+   this._configure = function (goLib, cache) {
       if (goLib && typeof goLib === "object") {
          this._goLib = goLib;
       }
-      this._cache = {};
+      if (typeof cache !== "undefined" && cache && typeof goLib === "object") {
+         this._cache = cache;
+      }
+      else {
+         this._cache = {};
+      }
    };
 
-   this._configure(goLib);
+   this._configure(goLib, cache);
 };
 
 
@@ -463,12 +494,12 @@ export const splSensorDataParser = {
     *
     *  @returns string
     */
-   generateSensorDataHtml: function (sdata, sdataToolsLib) {
+   generateSensorDataHtml: function (sdata, vehId, sdataToolsLib) {
       if (typeof sdata.vehCfg === "undefined") { return ""; }
 
       const me = this;
       const htmlEntities = new Html5Entities();
-      const data = me.do(sdata, !sdataToolsLib.getFirstTime());
+      const data = me.do(sdata, !sdataToolsLib.getFirstTime(vehId));
       let headerTopHtml = "";
       let headerHtml = "";
       let contentHtml = "";
@@ -487,7 +518,7 @@ export const splSensorDataParser = {
             headerHtml += me._getTpmsHtml("header-press");
          }
       }
-      sdataToolsLib.setFirstTime(false);
+      sdataToolsLib.setFirstTime(vehId, false);
 
       // Render Content
       data.compIds.map(compId => {

@@ -17,7 +17,7 @@ export const splSensorsOnMap = {
       return new Promise((resolve, reject) => {
          splSrv.sdataTools.fetchCachedSensorData(vehId, vehName)
             .then((sensorData) => {
-               const splHtml = splSensorDataParser.generateSensorDataHtml(sensorData, splSrv.sdataTools);
+               const splHtml = splSensorDataParser.generateSensorDataHtml(sensorData, vehId, splSrv.sdataTools);
                resolve(splHtml ? `<p class="SPL-popupSensor"> ${splHtml} </p>` : "");
             })
             .catch((reason) => {

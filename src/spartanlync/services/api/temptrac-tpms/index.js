@@ -1,6 +1,7 @@
 import moment from "moment-timezone";
 
 /* eslint-disable complexity */
+/* eslint-disable camelcase */
 export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearchRange) {
    return function () {
       const me = {
@@ -51,6 +52,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
          * @param {string} devId    - Geotab Device Id
          * @param {string} devComp  - Vehicle component (null = all/any, tractor, trailer1, dolly, trailer2)
          * @param {string} callback - Callback func to invoke upon retrieval of data
+         * @param {boolean} firstTimeCallOverride - Manually override firstTime/repeat behaviour
          *
          * If first call, start with a search over last 24 hours.
          * - If nothing found, retry with 2 days, then 1 week, 1 month, 2 months, then we give up

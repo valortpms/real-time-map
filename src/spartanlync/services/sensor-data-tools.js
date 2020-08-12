@@ -54,9 +54,6 @@ export const INITSplSensorDataTools = function (goLib, cache) {
             if (me._cache[vehId].data === null) {
                me._goLib.resetAsFirstTime();
             }
-            else {
-               console.log("----- session expired ------", me._cache[vehId].data);
-            }
 
             // DEBUG TEMP
             let debugCacheData = "";
@@ -66,7 +63,6 @@ export const INITSplSensorDataTools = function (goLib, cache) {
             me._fetchData(vehId)
                .then((sensorData) => {
                   me._cache[vehId].searching = false;
-                  console.log("----- _fetchData(FINAL-RESULT) = ", sensorData);
 
                   // Save Vehicle Name
                   sensorData.vehName = vehName;
@@ -97,7 +93,6 @@ export const INITSplSensorDataTools = function (goLib, cache) {
 
                   // If cache is EMPTY, populate with new sensor data
                   if (me._cache[vehId].data === null) {
-                     console.log("----- _fetchData(MERGING DATA): EMPTY CACHE - NOTHING TO MERGE");
                      if (sensorData.vehCfg.total === 1) {
                         sensorData[sensorData.vehCfg.active] = {
                            temptrac: sensorData.temptrac,
@@ -118,7 +113,6 @@ export const INITSplSensorDataTools = function (goLib, cache) {
 
                      // Merge with Single-Component cached data
                      if (me._cache[vehId].data.vehCfg.total === 1) {
-                        console.log("----- _fetchData(MERGING DATA): NEW Single-Component <=> CACHED Single-Component");
                         debugCacheData = JSON.stringify(me._cache[vehId].data[me._cache[vehId].data.vehCfg.active]); //DEBUG
                         debugSensorData = JSON.stringify(sensorData); //DEBUG
                         me._cache[vehId].data[me._cache[vehId].data.vehCfg.active] =
@@ -131,7 +125,6 @@ export const INITSplSensorDataTools = function (goLib, cache) {
                      }
                      // Merge with Multi-Component cached data
                      else {
-                        console.log("----- _fetchData(MERGING DATA): NEW Single-Component <=> CACHED Multi-Component");
                         me._cache[vehId].data.vehCfg.ids.map(cacheCompId => {
                            if (cacheCompId === sensorData.vehCfg.active) {
                               debugCacheData = JSON.stringify(me._cache[vehId].data[cacheCompId]); //DEBUG
@@ -154,7 +147,6 @@ export const INITSplSensorDataTools = function (goLib, cache) {
 
                      // Merge with Single-Component cached data
                      if (me._cache[vehId].data.vehCfg.total === 1) {
-                        console.log("----- _fetchData(MERGING DATA): NEW Multi-Component <=> CACHED Single-Component");
                         sensorData.vehCfg.ids.map(compId => {
                            if (compId === me._cache[vehId].data.vehCfg.active) {
                               console.log("----------------- compId = ", compId, " cache = ", me._cache[vehId].data[compId], " sdata = ", sensorData[compId]);
@@ -172,7 +164,6 @@ export const INITSplSensorDataTools = function (goLib, cache) {
                      }
                      // Merge with Multi-Component cached data
                      else {
-                        console.log("----- _fetchData(MERGING DATA): NEW Multi-Component <=> CACHED Multi-Component");
                         sensorData.vehCfg.ids.map(compId => {
                            debugCacheData = JSON.stringify(me._cache[vehId].data[compId]); //DEBUG
                            debugSensorData = JSON.stringify(sensorData[compId]); //DEBUG
@@ -328,7 +319,6 @@ export const INITSplSensorDataTools = function (goLib, cache) {
                }
                // Multi-Vehicle Component(s) found (any combination of "tractor", "trailer1", "trailer2", "trailer3")
                else {
-                  console.log("--------------------------------- _fetchData(RESULT) = ", sensorData);
                   const vehCompFound = sensorData.vehCfg.active;
                   let ids = sensorData.vehCfg.ids.filter((id) => { return id !== vehCompFound; });
                   const data = {
@@ -363,7 +353,7 @@ export const INITSplSensorDataTools = function (goLib, cache) {
                      });
                }
             }
-         });
+         }, typeof me._cache[vehId].firstTime !== "undefined" ? me._cache[vehId].firstTime : null);
       });
    };
 

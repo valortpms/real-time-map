@@ -396,9 +396,8 @@ const SplGeotabMapUtils = function (my) {
        * @return void
        */
       getSensorData: function (vehId, vehName) {
-        console.log(`=== getSensorData() ======================= FETCHING VEH [ ${vehName} / ${vehId} ]`); //DEBUG
         if (my.storage.sensorData.searchInProgress) {
-          console.log(`=== getSensorData() ======================= LAUNCHING ASYNC SEARCH FOR Vehicle [ ${vehId} ], as SEARCH IN PROGRESS ON Vehicle [ ${my.storage.sensorData.searchInProgress} ]`); //DEBUG
+          console.log(`=== getSensorData() ======================= ASYNC FETCH FOR Vehicle [ ${vehId} ], as SEARCH IN PROGRESS ON Vehicle [ ${my.storage.sensorData.searchInProgress} ]`); //DEBUG
           const aSyncGoLib = INITGeotabTpmsTemptracLib(
             my.service.api,
             my.sensorSearchRetryRangeInDays,
@@ -416,6 +415,7 @@ const SplGeotabMapUtils = function (my) {
             });
         }
         else {
+          console.log(`=== getSensorData() ======================= FETCHING VEH [ ${vehName} / ${vehId} ]`); //DEBUG
           my.storage.sensorData.searchInProgress = vehId;
           my.sdataTools.fetchCachedSensorData(vehId, vehName)
             .then((sensorData) => me.postGetSensorData(vehId, vehName))
@@ -435,7 +435,11 @@ const SplGeotabMapUtils = function (my) {
         console.log(`=== postGetSensorData() ======================= SUCCESS [ ${vehName} / ${vehId} ]`); //DEBUG
         // Reset search status and Backup found sensor data
         my.storage.sensorData.searchInProgress = "";
-        my.localStore.save();
+
+        // Only when Sensor data IS FOUND, then perform SAVE operation
+        if (my.sdataTools._cache[vehId].noSensorDataFound === false) {
+          my.localStore.save();
+        }
       },
 
       /**

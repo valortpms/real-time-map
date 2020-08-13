@@ -453,13 +453,24 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
           me._lastReadTimestampUnix = locObj.time;
         }
 
-        // Animate the sensor record if NEW === true
+        // Animate the sensor record under following State conditions:
+        //       State = |   Initial Data    | New Data | Stale Data | Search but no Data Found | New Data Found |
+        // -------------------------------------------------------------------------------------------------------
+        //    IsUpdate = |   FALSE    | TRUE                                                                     |
+        // -------------------------------------------------------------------------------------------------------
+        // LOC-OBJ.NEW = |     UNDEFINED     |   TRUE   |    FALSE   |           NULL           |      FALSE     |
+        //               |     UNDEFINED                |    FALSE   |                                           |
+        // -------------------------------------------------------------------------------------------------------
+        //        Glow = | FLASH-ONCE |  NO  | STAY-ON  |     NO     |         FLASH-ONCE       |       NO       |
+        // -------------------------------------------------------------------------------------------------------
+        const glowStayOn = isUpdate === true && typeof locObj.new !== "undefined" && locObj.new === true ? true : false;
         let animationClassName = " glow-" +
           (locObj.type === "Temptrac" ?
-            (isUpdate ? "stay-on-" : "") + "temptrac" :
-            (isUpdate ? "stay-on-" : "") + "tpms"
+            (glowStayOn ? "stay-on-" : "") + "temptrac" :
+            (glowStayOn ? "stay-on-" : "") + "tpms"
           );
-        if (typeof locObj.new !== "undefined" && locObj.new === false) {
+        if ((typeof locObj.new !== "undefined" && locObj.new === false) ||
+          (isUpdate === true && typeof locObj.new === "undefined")) {
           animationClassName = "";
         }
 

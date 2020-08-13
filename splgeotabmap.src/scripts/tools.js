@@ -121,6 +121,7 @@ const InitLocalStorage = function (my, storageKeyId, storageSecret) {
     const my = me._my;
     const storageCfgKey = me._storageKey + "_CFG";
     const storageCacheKey = me._storageKey + "_CACHE";
+    const saveWaitTime = typeof callback === "string" && callback.toUpperCase() === "NOW" ? 0 : me._setWaitTime;
     me._callback = callback && typeof callback === "function" ? callback : me._callback !== null ? me._callback : null;
 
     // Wait till activity settles down
@@ -142,7 +143,7 @@ const InitLocalStorage = function (my, storageKeyId, storageSecret) {
           });
         });
         me._setTimerHandle = null;
-      }, me._setWaitTime);
+      }, saveWaitTime);
     }
   };
 
@@ -256,8 +257,23 @@ const SplGeotabMapUtils = function (my) {
         // Reset sensor data search for all vehicles
         me.resetSearch();
 
-        // Set initial UI message
-        my.ui.showMsg("Hover over or click on a vehicle to view SpartanLync sensor information");
+        // Restore Vehicle Sensor Data Panel
+        const vehId = my.storage.sensorData.vehRegistry.menuItem;
+        if (vehId && typeof my.storage.sensorData.cache[vehId] !== "undefined") {
+          const vehName = my.storage.sensorData.cache[vehId].data.vehName;
+          my.service.api.call("Get", {
+            typeName: "DeviceStatusInfo",
+            search: { deviceSearch: { id: vehId } }
+          }).then(([dsi]) => {
+            const vehSpeed = dsi.speed;
+            my.ui.renderMenuItemHTML(vehId, vehName, vehSpeed, me.getCachedSensorDataStatusForVeh(vehId, vehName));
+            my.ui.updateService.start();
+          });
+        }
+        // Otherwise, set initial UI message
+        else {
+          my.ui.showMsg(my.uiUserInstruction);
+        }
 
         // Invoke callback if provided
         if (me._callback) {
@@ -519,7 +535,6 @@ const SplGeotabMapUtils = function (my) {
        */
       resetSearch: function () {
         my.storage.sensorData.vehRegistry.tooltip = "";
-        my.storage.sensorData.vehRegistry.menuItem = "";
         if (my.storage.sensorData.searchInProgress) {
           console.log(`--- resetSearch() Clearing stale search on VehId [ ${my.storage.sensorData.searchInProgress} ]`);
           my.storage.sensorData.searchInProgress = "";
@@ -548,7 +563,7 @@ const SplGeotabMapUtils = function (my) {
             my.sdataTools.resetCache();
             my.storage.sensorData.cache = {};
             me.init(() => {
-              my.ui.showMsg("SENSOR DATA HAS BEEN RESET");
+              my.ui.showMsg("SENSOR DATA HAS BEEN RESET<p>" + my.uiUserInstruction);
             });
           });
         } else {

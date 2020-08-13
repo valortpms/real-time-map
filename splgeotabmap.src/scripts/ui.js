@@ -120,6 +120,9 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
 
     // Invoke UI Tooltip / Panel Update Task
     my.ui.updateService.start();
+
+    // Save Panel change immediately
+    my.localStore.save("NOW");
   };
 
   this.showError = function (msg) {
@@ -521,12 +524,14 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
 
       start: function () {
         if (me._setIntervalHandle === null) {
+          console.log("--- updateService() STARTED");//DEBUG
           me._setIntervalHandle = setInterval(me._doUpdate, me._servicePollTime);
         }
       },
 
       stop: function () {
         if (me._setIntervalHandle !== null) {
+          console.log("--- updateService() STOPPED");//DEBUG
           clearInterval(me._setIntervalHandle);
           me._setIntervalHandle = null;
         }

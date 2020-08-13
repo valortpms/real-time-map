@@ -12,6 +12,7 @@ geotab.addin.splgeotabmap = (elt, service) => {
   const sensorDataNotFoundMsg = "No Sensors Found";                   // Message shows when no SpartanLync sensors were found for a vehicle search
 
   const uiUpdatePollingTime = 30;                                     // How frequently to update the ToolTip / MenuItem UI (In seconds)
+  const uiUserInstruction = "Hover over or click on a vehicle to view the latest SpartanLync sensor information";
 
   const addInLocalStorageKeyName = "splGeotabMapStore";               // Lookup key to use when saving/retrieving/removing data from Browser Local Storage
   const addInLocalStorageSecret = "DKrKcInKvtb9wRB0le1qI7arr12yVTHU"; // Secret Passphrase used to encrypt/decryt storage data saved to Browser
@@ -89,6 +90,7 @@ geotab.addin.splgeotabmap = (elt, service) => {
     timeFormat: splHumanTimeFormat,
     vehComponents: vehComponents,
     storeLifetime: cachedStoreLifetime,
+    uiUserInstruction: uiUserInstruction,
     uiUpdatePollingTime: uiUpdatePollingTime,
     sensorDataLifetime: sensorDataLifetime,
     sensorDataNotFoundMsg: sensorDataNotFoundMsg,

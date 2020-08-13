@@ -55,15 +55,22 @@ const onLoadInitEvents = function (my) {
   // Event: User focuses on SplMap Deeper add-in (Show What I Know)
   my.service.page.attach("focus", () => {
     console.log("--- Focus Occured"); //DEBUG
-    my.localStore.load(() => {
+    // Don't LOAD if SAVE operation is Pending
+    if (my.localStore.isSavePending()) {
       my.app.init();
-    });
+    }
+    else {
+      my.localStore.load(() => {
+        my.app.init();
+      });
+    }
   });
 
   // Event: User focuses away from SplMap Deeper add-in (may not trigger on MyGeotab page switch)
   my.service.page.attach("blur", () => {
     console.log("--- Blur Occured"); //DEBUG
-    my.localStore.save(); // Save What I Have
+    // Cancel all Pending Tasks in App
+    my.app.cancelPendingTasks();
   });
 
   // Event: The state of the page has changed
@@ -74,73 +81,103 @@ const onLoadInitEvents = function (my) {
   my.resetBtnElemObj.addEventListener("click", () => {
     my.app.resetApp();
   });
+
+  //DEBUG
+  my.elt.querySelector("#debugBtn").addEventListener("click", () => {
+    console.log("================================================== my.storage.sensorData = ", JSON.stringify(my.storage.sensorData)); //DEBUG
+  });
 };
 
 /**********************************************************************************
  * App data storage and backup routines
  */
-const InitLocalStorage = function (my, storageKeyId) {
+const InitLocalStorage = function (my, storageKeyId, storageSecret) {
   /**
    *  Private Variables
    */
   this._my = null;
   this._storageKey = "";
+  this._storageSecret = "";
   this._callback = null;
 
   // queue up multiple save requests into a single save() operation
   this._setTimerHandle = null;
-  this._setWaitTime = 2000;    // Time to wait before performing the save() operation
-
-
-  /**
-   *  Get storage data from localStorage
-   *  @returns {*} An object with a property as JS object
-   */
-  this.load = function (callback) {
-    const me = this;
-    const my = me._my;
-
-    me._callback = callback && typeof callback === "function" ? callback : me._callback !== null ? me._callback : null;
-
-    my.service.localStorage.get(me._storageKey).then((data) => {
-      if (data !== null) {
-        my.storage = data;
-
-        // Set Sensor Data Cache
-        my.sdataTools._cache = my.storage.sensorData.cache;
-
-        console.log("--- Successfully restored data from Local Storage: ");
-      } else {
-        console.log("--- Local Storage Empty");
-      }
-      if (me._callback) {
-        me._callback(data); // Invoke callback if provided
-        me._callback = null;
-      }
-    });
-  };
+  this._setWaitTime = 5000;    // Time to wait before performing the save() operation
 
   /**
-   *  Save storage data to localStorage
+   *  Encrypt sensitive storage data and Save all of storage to localStorage
    *  @param {data} data The data object
    */
   this.save = function (callback) {
     const me = this;
     const my = me._my;
-
+    const storageCfgKey = me._storageKey + "_CFG";
+    const storageCacheKey = me._storageKey + "_CACHE";
     me._callback = callback && typeof callback === "function" ? callback : me._callback !== null ? me._callback : null;
 
+    // Wait till activity settles down
     if (me._setTimerHandle === null) {
       me._setTimerHandle = setTimeout(function () {
-        my.service.localStorage.set(me._storageKey, my.storage).then(() => {
-          console.log("--- Successfully Saved data to Local Storage");
-          if (me._callback) {
-            me._callback(); // Invoke callback if provided
-            me._callback = null;
-          }
+        // Encrypt everything but /sensorData property
+        const dataBak = JSON.parse(JSON.stringify(my.storage)); // clone storage object... can't modify the original
+        delete dataBak.sensorData;
+        const encryptedStorageCfgObj = JSON.parse(sjcl.encrypt(me._storageSecret, JSON.stringify(dataBak)));
+        const unencryptedSensorDataObj = JSON.parse(JSON.stringify(my.storage.sensorData));
+
+        my.service.localStorage.set(storageCfgKey, encryptedStorageCfgObj).then(() => {
+          my.service.localStorage.set(storageCacheKey, unencryptedSensorDataObj).then(() => {
+            console.log("--- Successfully Saved data to Local Storage");
+            if (me._callback) {
+              me._callback(); // Invoke callback if provided
+              me._callback = null;
+            }
+          });
         });
+        me._setTimerHandle = null;
       }, me._setWaitTime);
     }
+  };
+
+  /**
+   *  Get encrypted storage data from localStorage, then decrypt the encryted parts and restore the whole
+   *  @returns {*} An object with a property as JS object
+   */
+  this.load = function (callback) {
+    const me = this;
+    const my = me._my;
+    const storageCfgKey = me._storageKey + "_CFG";
+    const storageCacheKey = me._storageKey + "_CACHE";
+    me._callback = callback && typeof callback === "function" ? callback : me._callback !== null ? me._callback : null;
+
+    Promise.all([
+      my.service.localStorage.get(storageCfgKey),
+      my.service.localStorage.get(storageCacheKey),
+    ]).then(([encryptedStorageCfgObj, unencryptedSensorDataObj]) => {
+      // Storage data is paired, so both must exist
+      if (encryptedStorageCfgObj !== null && unencryptedSensorDataObj !== null) {
+        // Decrypt & Save
+        my.storage = JSON.parse(sjcl.decrypt(me._storageSecret, JSON.stringify(encryptedStorageCfgObj)));
+        my.storage.sensorData = unencryptedSensorDataObj;
+
+        // Set Sensor Data Cache
+        my.sdataTools._cache = my.storage.sensorData.cache;
+        console.log("--- Successfully restored data from Local Storage: ");
+      }
+      // Delete one if the other is missing
+      else {
+        if (encryptedStorageCfgObj !== null) {
+          my.service.localStorage.remove(storageCfgKey);
+        }
+        if (unencryptedSensorDataObj !== null) {
+          my.service.localStorage.remove(storageCacheKey);
+        }
+        console.log("--- Local Storage Empty");
+      }
+      if (me._callback) {
+        me._callback(my.storage); // Invoke callback if provided
+        me._callback = null;
+      }
+    });
   };
 
   /**
@@ -149,26 +186,42 @@ const InitLocalStorage = function (my, storageKeyId) {
   this.clear = function (callback) {
     const me = this;
     const my = me._my;
-
+    const storageCfgKey = me._storageKey + "_CFG";
+    const storageCacheKey = me._storageKey + "_CACHE";
     me._callback = callback && typeof callback === "function" ? callback : me._callback !== null ? me._callback : null;
 
-    my.service.localStorage.remove(me._storageKey).then(() => {
-      console.log("--- Successful purged data from Local Storage");
-      if (me._callback) {
-        me._callback(); // Invoke callback if provided
-        me._callback = null;
-      }
+    my.service.localStorage.remove(storageCfgKey).then(() => {
+      my.service.localStorage.remove(storageCacheKey).then(() => {
+        console.log("--- Successful purged data from Local Storage");
+        if (me._callback) {
+          me._callback(); // Invoke callback if provided
+          me._callback = null;
+        }
+      });
     });
   };
 
-  this.configure = function (my, storageKeyId) {
+  /**
+  *  Report on pending SAVE operation
+  *
+  * @return boolean
+  */
+  this.isSavePending = function () {
+    const me = this;
+    return me._setTimerHandle === null ? false : true;
+  };
+
+
+
+  this.configure = function (my, storageKeyId, storageSecret) {
     const me = this;
     me._my = my;
     me._storageKey = storageKeyId;
+    me._storageSecret = storageSecret;
   };
 
   // configure when an instance gets created
-  this.configure(my, storageKeyId);
+  this.configure(my, storageKeyId, storageSecret);
 };
 
 /**********************************************************************************
@@ -314,12 +367,12 @@ const SplGeotabMapUtils = function (my) {
           }
         }
         else if (my.sdataTools._cache[vehId].data === null) {
-          if (typeof my.sdataTools[vehId].noSensorDataFound === "undefined") {
+          if (typeof my.sdataTools._cache[vehId].noSensorDataFound === "undefined") {
             me.getSensorData(vehId, vehName);
             return "BUSY";
           }
           else {
-            if (my.sdataTools[vehId].noSensorDataFound) {
+            if (my.sdataTools._cache[vehId].noSensorDataFound) {
               return "NOTFOUND";
             }
             else {
@@ -356,7 +409,7 @@ const SplGeotabMapUtils = function (my) {
           aSyncSdataTools.setSensorDataNotFoundMsg(my.sensorDataNotFoundMsg);
           aSyncSdataTools.setVehComponents(my.vehComponents);
           aSyncSdataTools.fetchCachedSensorData(vehId, vehName)
-            .then((sensorData) => me.postGetSensorData(vehId, vehName, sensorData))
+            .then((sensorData) => me.postGetSensorData(vehId, vehName))
             .catch((reason) => console.log(`--- getSensorData(ASYNC) Error fetching sensor data for [ ${vehName} / ${vehId} ]: `, reason))
             .finally(() => {
               my.storage.sensorData.searchInProgress = "";
@@ -365,7 +418,7 @@ const SplGeotabMapUtils = function (my) {
         else {
           my.storage.sensorData.searchInProgress = vehId;
           my.sdataTools.fetchCachedSensorData(vehId, vehName)
-            .then((sensorData) => me.postGetSensorData(vehId, vehName, sensorData))
+            .then((sensorData) => me.postGetSensorData(vehId, vehName))
             .catch((reason) => console.log(`--- getSensorData() Error fetching sensor data for [ ${vehName} / ${vehId} ]: `, reason))
             .finally(() => {
               my.storage.sensorData.searchInProgress = "";
@@ -378,8 +431,8 @@ const SplGeotabMapUtils = function (my) {
        *
        * @return void
        */
-      postGetSensorData: function (vehId, vehName, sensorData) {
-        console.log(`=== postGetSensorData() ======================= SUCCESS: sensorData[ ${vehName} / ${vehId} ] = `, sensorData); //DEBUG
+      postGetSensorData: function (vehId, vehName) {
+        console.log(`=== postGetSensorData() ======================= SUCCESS [ ${vehName} / ${vehId} ]`); //DEBUG
         // Reset search status and Backup found sensor data
         my.storage.sensorData.searchInProgress = "";
         my.localStore.save();
@@ -431,7 +484,6 @@ const SplGeotabMapUtils = function (my) {
       *  @returns object / string (on Error)
       */
       fetchVehSensorDataAsync: function (vehId, vehComp, firstTimeCallOverride) {
-        console.log("=== fetchVehSensorDataAsync(2) ======================= firstTimeCallOverride =", firstTimeCallOverride); //DEBUG
         const vehComponent = vehComp || "";
         const overrideFirstTimeCall = typeof firstTimeCallOverride === "undefined" ? null : firstTimeCallOverride;
         return new Promise((resolve, reject) => {
@@ -450,7 +502,6 @@ const SplGeotabMapUtils = function (my) {
         });
       },
 
-
       /**
        * resetSearch() Clear sensor data search metadata
        *
@@ -463,12 +514,13 @@ const SplGeotabMapUtils = function (my) {
           console.log(`--- resetSearch() Clearing stale search on VehId [ ${my.storage.sensorData.searchInProgress} ]`);
           my.storage.sensorData.searchInProgress = "";
         }
-        for (const vehId in my.sdataTools._cache) {
-          if (my.sdataTools._cache[vehId].searching) {
+        for (const vehId in my.storage.sensorData.cache) {
+          if (my.storage.sensorData.cache[vehId].searching) {
             console.log(`--- resetSearch() Resetting search status for VehId [ ${vehId} ]`);
-            my.sdataTools._cache[vehId].searching = false;
+            my.storage.sensorData.cache[vehId].searching = false;
           }
         }
+        my.sdataTools._cache = my.storage.sensorData.cache;
       },
 
       /**
@@ -481,9 +533,10 @@ const SplGeotabMapUtils = function (my) {
           my.localStore.clear(() => {
             my.resetBtnElemObj.blur();
 
-            my.storage.splStore = null;
-            my.storage.sensorData.cache = {};
             me.resetSearch();
+            my.storage.splStore = null;
+            my.sdataTools.resetCache();
+            my.storage.sensorData.cache = {};
             me.init(() => {
               my.ui.showMsg("SENSOR DATA HAS BEEN RESET");
             });
@@ -491,6 +544,27 @@ const SplGeotabMapUtils = function (my) {
         } else {
           my.ui.showError("Cannot Reset while a sensor data search is in progress..Please try again later.");
         }
+      },
+
+      /**
+       * cancelPendingTasks() Cancel all Pending Tasks in App
+       *
+       * @return void
+       */
+      cancelPendingTasks: function () {
+        // Stop Update Polling Task
+
+      },
+
+      /**
+       * Convert from Unix timestamp to Human-readable time
+       * eg. Sa Aug 17, 2020 7:00 PM EDT
+       *
+       *  @returns string
+       */
+      convertUnixToTzHuman: function (unixTime) {
+        const me = this;
+        return isNaN(unixTime) ? null : moment.unix(unixTime).format(my.timeFormat);
       }
     };
     return me;
@@ -924,6 +998,7 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
        * @param {string} devId    - Geotab Device Id
        * @param {string} devComp  - Vehicle component (null = all/any, tractor, trailer1, dolly, trailer2)
        * @param {string} callback - Callback func to invoke upon retrieval of data
+       * @param {boolean} firstTimeCallOverride - Manually override firstTime/repeat behaviour
        *
        * If first call, start with a search over last 24 hours.
        * - If nothing found, retry with 2 days, then 1 week, 1 month, 2 months, then we give up
@@ -3563,21 +3638,15 @@ const INITSplSensorDataTools = function (goLib, cache) {
         if (me._cache[vehId].data === null) {
           me._goLib.resetAsFirstTime();
         }
-        else {
-          console.log("----- session expired ------", me._cache[vehId].data);
-        }
 
         // DEBUG TEMP
         let debugCacheData = "";
         let debugSensorData = "";
 
         //Splunk for sensor data
-        console.log(`=== _fetchData(0A) ======================= CACHE[ ${vehId} ] =`, JSON.stringify(me._cache[vehId])); //DEBUG
         me._fetchData(vehId)
           .then((sensorData) => {
             me._cache[vehId].searching = false;
-            console.log("----- _fetchData(FINAL-RESULT) = ", sensorData);
-            console.log(`=== _fetchData(0B) ======================= CACHE[ ${vehId} ] =`, JSON.stringify(me._cache[vehId])); //DEBUG
 
             // Save Vehicle Name
             sensorData.vehName = vehName;
@@ -3608,7 +3677,6 @@ const INITSplSensorDataTools = function (goLib, cache) {
 
             // If cache is EMPTY, populate with new sensor data
             if (me._cache[vehId].data === null) {
-              console.log("----- _fetchData(MERGING DATA): EMPTY CACHE - NOTHING TO MERGE");
               if (sensorData.vehCfg.total === 1) {
                 sensorData[sensorData.vehCfg.active] = {
                   temptrac: sensorData.temptrac,
@@ -3629,7 +3697,6 @@ const INITSplSensorDataTools = function (goLib, cache) {
 
               // Merge with Single-Component cached data
               if (me._cache[vehId].data.vehCfg.total === 1) {
-                console.log("----- _fetchData(MERGING DATA): NEW Single-Component <=> CACHED Single-Component");
                 debugCacheData = JSON.stringify(me._cache[vehId].data[me._cache[vehId].data.vehCfg.active]); //DEBUG
                 debugSensorData = JSON.stringify(sensorData); //DEBUG
                 me._cache[vehId].data[me._cache[vehId].data.vehCfg.active] =
@@ -3642,7 +3709,6 @@ const INITSplSensorDataTools = function (goLib, cache) {
               }
               // Merge with Multi-Component cached data
               else {
-                console.log("----- _fetchData(MERGING DATA): NEW Single-Component <=> CACHED Multi-Component");
                 me._cache[vehId].data.vehCfg.ids.map(cacheCompId => {
                   if (cacheCompId === sensorData.vehCfg.active) {
                     debugCacheData = JSON.stringify(me._cache[vehId].data[cacheCompId]); //DEBUG
@@ -3665,7 +3731,6 @@ const INITSplSensorDataTools = function (goLib, cache) {
 
               // Merge with Single-Component cached data
               if (me._cache[vehId].data.vehCfg.total === 1) {
-                console.log("----- _fetchData(MERGING DATA): NEW Multi-Component <=> CACHED Single-Component");
                 sensorData.vehCfg.ids.map(compId => {
                   if (compId === me._cache[vehId].data.vehCfg.active) {
                     console.log("----------------- compId = ", compId, " cache = ", me._cache[vehId].data[compId], " sdata = ", sensorData[compId]);
@@ -3683,7 +3748,6 @@ const INITSplSensorDataTools = function (goLib, cache) {
               }
               // Merge with Multi-Component cached data
               else {
-                console.log("----- _fetchData(MERGING DATA): NEW Multi-Component <=> CACHED Multi-Component");
                 sensorData.vehCfg.ids.map(compId => {
                   debugCacheData = JSON.stringify(me._cache[vehId].data[compId]); //DEBUG
                   debugSensorData = JSON.stringify(sensorData[compId]); //DEBUG
@@ -3839,7 +3903,6 @@ const INITSplSensorDataTools = function (goLib, cache) {
           }
           // Multi-Vehicle Component(s) found (any combination of "tractor", "trailer1", "trailer2", "trailer3")
           else {
-            console.log("--------------------------------- _fetchData(RESULT) = ", sensorData);
             const vehCompFound = sensorData.vehCfg.active;
             let ids = sensorData.vehCfg.ids.filter((id) => { return id !== vehCompFound; });
             const data = {
@@ -3854,7 +3917,6 @@ const INITSplSensorDataTools = function (goLib, cache) {
             sensorData.vehCfg.ids
               .filter(compId => { return (compId !== vehCompFound); })
               .map(compId => {
-                console.log(`=== fetchVehSensorDataAsync(1) ======================= CACHE[ ${vehId} ] =`, JSON.stringify(me._cache[vehId])); //DEBUG
                 fetchVehSensorDataAsync(vehId, compId, me._cache[vehId].firstTime)
                   .then((sdata) => {
                     data[compId] = {
@@ -3875,7 +3937,7 @@ const INITSplSensorDataTools = function (goLib, cache) {
               });
           }
         }
-      });
+      }, typeof me._cache[vehId].firstTime !== "undefined" ? me._cache[vehId].firstTime : null);
     });
   };
 

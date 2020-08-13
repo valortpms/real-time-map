@@ -2,29 +2,31 @@ geotab.addin.splgeotabmap = (elt, service) => {
   //
   // App Settings
   //
-  const splApiUrl = "https://help.spartansense.com/geotab/api/"; // API Endpoint for SpartanLync Backend Services
-  const splHumanTimeFormat = "dd MMM DD, YYYY LT z"; // moment() format for converting from UNIX timestamp to Human format in User's Timezone
+  const splApiUrl = "https://help.spartansense.com/geotab/api/";  // API Endpoint for SpartanLync Backend Services
+  const splHumanTimeFormat = "dd MMM DD, YYYY LT z";              // moment() format for converting from UNIX timestamp to Human format in User's Timezone
 
-  const sensorDataLifetime = 180; // (Default: 180 seconds) Afer this period, cached data is refreshed from API (in seconds)
-  const cachedStoreLifetime = 3600; // (Default: 3600 seconds / 1 hour) Afer this period, cached credentials & SplTools settings in Local Store is refreshed from API (in seconds)
-  const sensorSearchRetryRangeInDays = [1, 2, 7, 30, 60, 90]; // Days from now to search for sensors (on App Start)
-  const sensorSearchTimeRangeForRepeatSearchesInSeconds = 3600; // (Default: 1 Hour) 3600 Seconds from now to use for repeating sensor search's
-  const sensorDataNotFoundMsg = "No Sensors Found"; // Message shows when no SpartanLync sensors were found for a vehicle search
+  const sensorDataLifetime = 180;                                 // (Default: 180 seconds) Afer this period, cached data is refreshed from API (in seconds)
+  const cachedStoreLifetime = 3600;                               // (Default: 3600 seconds / 1 hour) Afer this period, cached credentials & SplTools settings in Local Store is refreshed from API (in seconds)
+  const sensorSearchRetryRangeInDays = [1, 2, 7, 30, 60, 90];     // Days from now to search for sensors (on App Start)
+  const sensorSearchTimeRangeForRepeatSearchesInSeconds = 3600;   // (Default: 1 Hour) 3600 Seconds from now to use for repeating sensor search's
+  const sensorDataNotFoundMsg = "No Sensors Found";               // Message shows when no SpartanLync sensors were found for a vehicle search
 
-  const addInLocalStorageKeyName = "splGeotabMapStore"; // Lookup key to use when saving/retrieving/removing data from Browser Local Storage
-  const vehComponents = {                               // Id's and Description's of supported Vehicles components
+  const addInLocalStorageKeyName = "splGeotabMapStore";               // Lookup key to use when saving/retrieving/removing data from Browser Local Storage
+  const addInLocalStorageSecret = "DKrKcInKvtb9wRB0le1qI7arr12yVTHU"; // Secret Passphrase used to encrypt/decryt storage data saved to Browser
+
+  const vehComponents = {                                             // Id's and Description's of supported Vehicles components
     "tractor": "Tractor",
     "trailer1": "Trailer 1",
     "trailer2": "Dolly",
     "trailer3": "Trailer 2"
   };
 
-  const splSelContainer = "#SplGeotabMapContainer"; // Dom selector for splGeotabMap AddIn HTML container
-  const splSelResetBtn = "#SplGeotabMapResetBtn"; // Dom selector for splGeotabMap Reset button
-  const splSelSensorContent = "#SplGeotabMapSensorData"; // Dom selector for splGeotabMap AddIn sensor data HTML content
-  const splSelLabel = "#SplGeotabMapContainer .title label"; // Dom selector for Panel Label in output HTML
-  const splSelVehName = "#SplGeotabMapContainer .title strong"; // Dom selector for Vehicle Name in output HTML
-  const splSelVehSpeed = "#SplGeotabMapContainer .title div"; // Dom selector for Vehicle Speed in output HTML
+  const splSelContainer = "#SplGeotabMapContainer";               // Dom selector for splGeotabMap AddIn HTML container
+  const splSelResetBtn = "#SplGeotabMapResetBtn button";          // Dom selector for splGeotabMap Reset button
+  const splSelSensorContent = "#SplGeotabMapSensorData";          // Dom selector for splGeotabMap AddIn sensor data HTML content
+  const splSelLabel = "#SplGeotabMapContainer .title label";      // Dom selector for Panel Label in output HTML
+  const splSelVehName = "#SplGeotabMapContainer .title strong";   // Dom selector for Vehicle Name in output HTML
+  const splSelVehSpeed = "#SplGeotabMapContainer .title div";     // Dom selector for Vehicle Speed in output HTML
 
   // Private Vars
   const my = {
@@ -94,7 +96,7 @@ geotab.addin.splgeotabmap = (elt, service) => {
   // Initialize App Objects
   my.goLib = INITGeotabTpmsTemptracLib(my.service.api, my.sensorSearchRetryRangeInDays, my.sensorSearchTimeRangeForRepeatSearchesInSeconds);
   my.ui = new InitOutputUI(my, elt, splSelContainer, splSelSensorContent, splSelLabel, splSelVehName, splSelVehSpeed);
-  my.localStore = new InitLocalStorage(my, addInLocalStorageKeyName);
+  my.localStore = new InitLocalStorage(my, addInLocalStorageKeyName, addInLocalStorageSecret);
   my.sdataTools = new INITSplSensorDataTools(my.goLib, my.storage.sensorData.cache);
   my.sdataTools.setSensorDataLifetimeInSec(my.sensorDataLifetime);
   my.sdataTools.setSensorDataNotFoundMsg(my.sensorDataNotFoundMsg);

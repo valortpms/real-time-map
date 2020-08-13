@@ -443,6 +443,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
     const keysSorted = Object.keys(sdata).sort();
     let outHtml = "";
 
+    // eslint-disable-next-line complexity
     keysSorted.forEach(function (loc) {
       if (sdata.hasOwnProperty(loc)) {
         const locObj = sdata[loc];
@@ -458,12 +459,12 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
         // -------------------------------------------------------------------------------------------------------
         //    IsUpdate = |   FALSE    | TRUE                                                                     |
         // -------------------------------------------------------------------------------------------------------
-        // LOC-OBJ.NEW = |     UNDEFINED     |   TRUE   |    FALSE   |           NULL           |      FALSE     |
+        // LOC-OBJ.NEW = |     UNDEFINED     |   TRUE   |    FALSE   |            NULL          |      FALSE     |
         //               |     UNDEFINED                |    FALSE   |                                           |
         // -------------------------------------------------------------------------------------------------------
-        //        Glow = | FLASH-ONCE |  NO  | STAY-ON  |     NO     |         FLASH-ONCE       |       NO       |
+        //        Glow = | FLASH-ONCE |  NO  | STAY-ON  |     NO     |          STAY-ON         |       NO       |
         // -------------------------------------------------------------------------------------------------------
-        const glowStayOn = isUpdate === true && typeof locObj.new !== "undefined" && locObj.new === true ? true : false;
+        const glowStayOn = (isUpdate === true && typeof locObj.new !== "undefined" && (locObj.new === true || locObj.new === null) ? true : false);
         let animationClassName = " glow-" +
           (locObj.type === "Temptrac" ?
             (glowStayOn ? "stay-on-" : "") + "temptrac" :

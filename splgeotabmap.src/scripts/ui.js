@@ -61,6 +61,17 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
     console.log("--- UI INIT DONE"); //DEBUG
   };
 
+  this.showMsg = function (msg) {
+    const me = this;
+    const labelEl = me._panelLabelObj;
+
+    me.clearMsgState();
+    if (!labelEl.classList.contains("info")) {
+      labelEl.classList.add("info");
+    }
+    labelEl.innerHTML = msg;
+  };
+
   this.showTooltip = function (vehId, vehName) {
     const me = this;
     const my = me._my;
@@ -100,26 +111,15 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
   this.showMenuItem = function (vehId, vehName, vehSpeed) {
     const me = this;
     const my = me._my;
-    const vehSpeedHTML = vehSpeed ? vehSpeed + " km/h" : "";
 
     // Register Event
     my.storage.sensorData.vehRegistry.menuItem = vehId;
 
     // Update UI
-    me.renderHTML(vehId, vehName, vehSpeed, my.app.getCachedSensorDataStatusForVeh(vehId, vehName));
+    me.renderMenuItemHTML(vehId, vehName, vehSpeed, my.app.getCachedSensorDataStatusForVeh(vehId, vehName));
 
-    // Invoke Panel Update Task
-  };
-
-  this.showMsg = function (msg) {
-    const me = this;
-    const labelEl = me._panelLabelObj;
-
-    me.clearMsgState();
-    if (!labelEl.classList.contains("info")) {
-      labelEl.classList.add("info");
-    }
-    labelEl.innerHTML = msg;
+    // Invoke UI Tooltip / Panel Update Task
+    my.ui.updateService.start();
   };
 
   this.showError = function (msg) {
@@ -158,7 +158,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
     contentEl.innerHTML = "";
   };
 
-  this.renderHTML = function (vehId, vehName, vehSpeed, contentStatus) {
+  this.renderMenuItemHTML = function (vehId, vehName, vehSpeed, contentStatus) {
     const me = this;
     const my = me._my;
     const labelEl = me._panelLabelObj;
@@ -506,6 +506,67 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
     });
     return outHtml;
   };
+
+  /**
+   * Task / Service for updating the UI for data from cache
+   *
+   *  @returns string
+   */
+  this.updateService = function () {
+    const me = {
+      _parent: this,
+
+      _setIntervalHandle: null,
+      _servicePollTime: my.uiUpdatePollingTime * 1000,     // Poll Time to wait before performing UI UPDATE operation
+
+      start: function () {
+        if (me._setIntervalHandle === null) {
+          me._setIntervalHandle = setInterval(me._doUpdate, me._servicePollTime);
+        }
+      },
+
+      stop: function () {
+        if (me._setIntervalHandle !== null) {
+          clearInterval(me._setIntervalHandle);
+          me._setIntervalHandle = null;
+        }
+      },
+
+      _doUpdate: function () {
+        const vehReg = my.storage.sensorData.vehRegistry;
+        const ui = me._parent;
+
+        // Invoke per-Vehicle updates via API, when cached sensor data has expired
+        for (const vehId in my.storage.sensorData.cache) {
+          if (!my.storage.sensorData.cache[vehId].searching) {
+            const vehName = my.storage.sensorData.cache[vehId].data.vehName;
+            my.app.getCachedSensorDataStatusForVeh(vehId, vehName);
+          }
+        }
+
+        // Update MenuItem Panel
+        if (vehReg.menuItem && typeof my.storage.sensorData.cache[vehReg.menuItem] !== "undefined") {
+          const vehId = vehReg.menuItem;
+          const vehName = my.storage.sensorData.cache[vehId].data.vehName;
+          my.service.api.call("Get", {
+            typeName: "DeviceStatusInfo",
+            search: { deviceSearch: { id: vehId } }
+          }).then(([dsi]) => {
+            const vehSpeed = dsi.speed;
+            ui.renderMenuItemHTML(vehId, vehName, vehSpeed, my.app.getCachedSensorDataStatusForVeh(vehId, vehName));
+          });
+        }
+
+        // Update Tooltip (if Open)
+        if (vehReg.tooltip && typeof my.storage.sensorData.cache[vehReg.tooltip] !== "undefined") {
+          const vehId = vehReg.tooltip;
+          const vehName = my.storage.sensorData.cache[vehId].data.vehName;
+          ui.showTooltip(vehId, vehName);
+        }
+      },
+    };
+    return me;
+  }.bind(this)();
 
   /**
   * Convert Location Title/Label to ShortName equivelant

@@ -31,24 +31,32 @@ const onLoadInitEvents = function (my) {
     });
   });
 
-  // Event: Mouse-Over Vehicle on map event
-  my.service.events.attach("over", (data) => {
-    if (data.type === "device") {
+  // Event: User moves mouse over Vehicle on the map
+  my.service.events.attach("over", (evt) => {
+    if (evt.type === "device") {
       my.service.api
         .call("Get", {
           typeName: "Device",
-          search: { id: data.entity.id },
+          search: { id: evt.entity.id },
         })
         .then(function (result) {
           if (result[0]) {
             const vehObj = result[0];
-            my.ui.showTooltip(data.entity.id, vehObj.name);
+            my.ui.showTooltip(evt.entity.id, vehObj.name);
           }
           //
           else {
-            console.log(`--- VehId [ ${data.entity.id} ] Location could not be found!`);
+            console.log(`--- VehId [ ${evt.entity.id} ] Location could not be found!`);
           }
         });
+    }
+  });
+
+  // Event: User moves mouse out of a Vehicle on the map
+  my.service.events.attach("out", (evt) => {
+    // Remove this Vehicle from ToolTip registry to disable update attempt by the uiUpdateService
+    if (evt.type === "device" && my.storage.sensorData.vehRegistry.tooltip === evt.entity.id) {
+      my.storage.sensorData.vehRegistry.tooltip = "";
     }
   });
 
@@ -436,10 +444,8 @@ const SplGeotabMapUtils = function (my) {
         // Reset search status and Backup found sensor data
         my.storage.sensorData.searchInProgress = "";
 
-        // Only when Sensor data IS FOUND, then perform SAVE operation
-        if (my.sdataTools._cache[vehId].noSensorDataFound === false) {
-          my.localStore.save();
-        }
+        // Perform SAVE operation, to backup sensor search changes
+        my.localStore.save();
       },
 
       /**
@@ -556,8 +562,8 @@ const SplGeotabMapUtils = function (my) {
        * @return void
        */
       cancelPendingTasks: function () {
-        // Stop Update Polling Task
-
+        // Stop UI Update Polling Service / Task
+        my.ui.updateService.stop();
       },
 
       /**

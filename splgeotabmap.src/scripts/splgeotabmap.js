@@ -2,10 +2,12 @@ geotab.addin.splgeotabmap = (elt, service) => {
   //
   // App Settings
   //
+  const addInJSONName = "SplGeotabMap";                            // Name of this Add-In within SystemSettings in MyGeotab Database
+  const addInBuildMetadataFilename = "build.meta";                         // Filename residing in deployment directory containg build metadata, shown when hovering over SpartanLync Watermark / Logo
+
   const splApiUrl = "https://help.spartansense.com/geotab/api/";      // API Endpoint for SpartanLync Backend Services
   const splHumanTimeFormat = "dd MMM DD, YYYY LT z";                  // moment() format for converting from UNIX timestamp to Human format in User's Timezone
 
-  const sensorDataLifetime = 180;                                     // (Default: 180 seconds) Afer this period, cached data is refreshed from API (in seconds)
   const cachedStoreLifetime = 3600;                                   // (Default: 3600 seconds / 1 hour) Afer this period, cached credentials & SplTools settings in Local Store is refreshed from API (in seconds)
   const sensorSearchRetryRangeInDays = [1, 2, 7, 30, 60, 90];         // Days from now to search for sensors (on App Start)
   const sensorSearchTimeRangeForRepeatSearchesInSeconds = 3600;       // (Default: 1 Hour) 3600 Seconds from now to use for repeating sensor search's
@@ -17,6 +19,18 @@ geotab.addin.splgeotabmap = (elt, service) => {
   const addInLocalStorageKeyName = "splGeotabMapStore";               // Lookup key to use when saving/retrieving/removing data from Browser Local Storage
   const addInLocalStorageSecret = "DKrKcInKvtb9wRB0le1qI7arr12yVTHU"; // Secret Passphrase used to encrypt/decryt storage data saved to Browser
 
+  const defaultLanguage = "en";
+  const supportedLanguages = [{
+                                code: "en",
+                                label: "English",
+                              },{
+                                code: "fr",
+                                label: "Fran&ccedil;ais",
+                              },{
+                                code: "es",
+                                label: "Espa&ntilde;ol",
+                              }];
+
   const vehComponents = {                                             // Id's and Description's of supported Vehicles components
     "tractor": "Tractor",
     "trailer1": "Trailer 1",
@@ -26,6 +40,7 @@ geotab.addin.splgeotabmap = (elt, service) => {
 
   const splSelContainer = "#SplGeotabMapContainer";                   // Dom selector for splGeotabMap AddIn HTML container
   const splSelResetBtn = "#SplGeotabMapResetBtn button";              // Dom selector for splGeotabMap Reset button
+  const splSelGeotabMapLogo = "#SplGeotabMapLogo";                    // Dom selector for splGeotabMap Logo
   const splSelSensorContent = "#SplGeotabMapSensorData";              // Dom selector for splGeotabMap AddIn sensor data HTML content
   const splSelLabel = "#SplGeotabMapContainer .title label";          // Dom selector for Panel Label in output HTML
   const splSelVehName = "#SplGeotabMapContainer .title strong";       // Dom selector for Vehicle Name in output HTML
@@ -81,8 +96,9 @@ geotab.addin.splgeotabmap = (elt, service) => {
 
     // App Objects / Methods
     elt: elt,
-    ui: null,
     app: null,
+    ui: null,
+    logo: null,
     sdataTools: null,
     resetBtnElemObj: elt.querySelector(splSelResetBtn),
 
@@ -92,7 +108,10 @@ geotab.addin.splgeotabmap = (elt, service) => {
     storeLifetime: cachedStoreLifetime,
     uiUserInstruction: uiUserInstruction,
     uiUpdatePollingTime: uiUpdatePollingTime,
-    sensorDataLifetime: sensorDataLifetime,
+    supportedLanguages: supportedLanguages,
+    defaultLanguage: defaultLanguage,
+    addInJSONName: addInJSONName,
+    addInBuildMetadataFilename: addInBuildMetadataFilename,
     sensorDataNotFoundMsg: sensorDataNotFoundMsg,
     sensorSearchRetryRangeInDays: sensorSearchRetryRangeInDays,
     sensorSearchTimeRangeForRepeatSearchesInSeconds: sensorSearchTimeRangeForRepeatSearchesInSeconds,
@@ -103,9 +122,9 @@ geotab.addin.splgeotabmap = (elt, service) => {
   my.ui = new InitOutputUI(my, elt, splSelContainer, splSelSensorContent, splSelLabel, splSelVehName, splSelVehSpeed);
   my.localStore = new InitLocalStorage(my, addInLocalStorageKeyName, addInLocalStorageSecret);
   my.sdataTools = new INITSplSensorDataTools(my.goLib, my.storage.sensorData.cache);
-  my.sdataTools.setSensorDataLifetimeInSec(my.sensorDataLifetime);
   my.sdataTools.setSensorDataNotFoundMsg(my.sensorDataNotFoundMsg);
   my.sdataTools.setVehComponents(my.vehComponents);
+  my.logo = new InitLogoUI(my, elt, splSelGeotabMapLogo);
   my.splApi = new INITSplAPI(splApiUrl);
   my.app = SplGeotabMapUtils(my);
   onLoadInitEvents(my);

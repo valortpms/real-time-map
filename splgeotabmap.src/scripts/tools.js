@@ -86,13 +86,9 @@ const onLoadInitEvents = function (my) {
     console.log("--- StateChange Occured", JSON.stringify(evt)); //DEBUG
   });
 
+  // Event: Reset Button clicked
   my.resetBtnElemObj.addEventListener("click", () => {
     my.app.resetApp();
-  });
-
-  //DEBUG
-  my.elt.querySelector("#debugBtn").addEventListener("click", () => {
-    console.log("================================================== my.storage.sensorData = ", JSON.stringify(my.storage.sensorData)); //DEBUG
   });
 };
 
@@ -256,6 +252,12 @@ const SplGeotabMapUtils = function (my) {
 
         // Reset sensor data search for all vehicles
         me.resetSearch();
+
+        // Apply "sensorInfoRefreshRate" setting from SplTools
+        my.sdataTools.setSensorDataLifetimeInSec(my.storage.splStore.sensorInfoRefreshRate);
+
+        // Init About Info in Logo / Watermark
+        my.logo.init();
 
         // Restore Vehicle Sensor Data Panel
         const vehId = my.storage.sensorData.vehRegistry.menuItem;
@@ -428,7 +430,7 @@ const SplGeotabMapUtils = function (my) {
             my.sensorSearchTimeRangeForRepeatSearchesInSeconds,
           );
           const aSyncSdataTools = new INITSplSensorDataTools(aSyncGoLib, my.storage.sensorData.cache);
-          aSyncSdataTools.setSensorDataLifetimeInSec(my.sensorDataLifetime);
+          aSyncSdataTools.setSensorDataLifetimeInSec(my.storage.splStore.sensorInfoRefreshRate);
           aSyncSdataTools.setSensorDataNotFoundMsg(my.sensorDataNotFoundMsg);
           aSyncSdataTools.setVehComponents(my.vehComponents);
           aSyncSdataTools.fetchCachedSensorData(vehId, vehName)

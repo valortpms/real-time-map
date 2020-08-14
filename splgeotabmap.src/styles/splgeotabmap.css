@@ -7,6 +7,77 @@
 }
 
 /*
+ *	-- SpartanLync Logo / Watermark
+*/
+
+#SplGeotabMapLogo {
+  position: absolute;
+  top: 50px;
+  right: 0px;
+  z-index: 9;
+  cursor: pointer;
+}
+
+#SplGeotabMapLogo:before  {
+  display: inline-block;
+  vertical-align: middle;
+  width: 30px;
+  height: 30px;
+  transform: translate(0px, -8px);
+
+  content: '';
+  background: url('../images/spartanlync-logo.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+
+  -webkit-filter: drop-shadow( 0 0 3px rgba(47, 60, 67,.6));
+  filter: drop-shadow( 0 0 3px rgba(47, 60, 67,.6));
+}
+#SplGeotabMapLogo > div {
+  display: none;
+  position: absolute;
+  top: 25px;
+  right: 25px;
+  z-index: 100;
+  width: 150px;
+
+  font-family: 'Roboto', sans-serif;
+  margin: 0px;
+  padding: 5px;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e2e3;
+  border-radius: 4px;
+  -webkit-filter: drop-shadow( 2px 2px 3px rgba(47, 60, 67,.6));
+  filter: drop-shadow( 2px 2px 3px rgba(47, 60, 67,.6));
+}
+#SplGeotabMapLogo:hover > div {
+  display: inline-block;
+}
+#SplGeotabMapLogo label,
+#SplGeotabMapLogo > div > div,
+#SplGeotabMapLogo > div > div > span {
+  margin: 0px;
+  padding: 0px;
+}
+#SplGeotabMapLogo label {
+  font-size: 11px;
+  font-weight: bold;
+}
+#SplGeotabMapLogo > div > div {
+  display: grid;
+}
+#SplGeotabMapLogo > div > div > strong {
+  font-size: 9px;
+}
+#SplGeotabMapLogo > div > div > span {
+  font-size: 8px;
+}
+#SplGeotabMapLogo > div > div > p {
+  font-size: 10px;
+  text-align: center;
+}
+
+/*
  *	-- Sensor Data Tooltip
 */
 
@@ -285,9 +356,21 @@
     right: 0px;
 
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     margin-bottom: 7px;
   }
+
+  #SplGeotabMapLogo {
+    position: relative;
+    top: 12px;
+    right: 0px;
+  }
+
+  #SplGeotabMapLogo > div {
+    top: -8px;
+    left: 35px;
+  }
+
 }
 
 /* -------------------------------------------------------------------

@@ -1,5 +1,8 @@
 /* eslint-disable no-unused-vars */
 
+/**********************************************************************************
+ *  App UI Lib
+ */
 const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, panelLabelId, vehNameId, vehSpeedId) {
   /**
    *  Private Variables
@@ -336,7 +339,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
         return `
             <div class="splTableRow">
                 <div class="splTableCell title">
-                    <label>SpartanLync Sensors For:</label>
+                    <label></label>
                     <strong></strong>
                     <div></div>
                 </div>
@@ -606,4 +609,168 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
 
   // configure when an instance gets created
   this.configure(my, rootDomObj, containerId, sensorContentId, panelLabelId, vehNameId, vehSpeedId);
+};
+
+/**********************************************************************************
+ *  SpartanLync Logo / Watermark Lib
+ */
+const InitLogoUI = function (my, rootDomObj, containerId) {
+  /**
+   *  Private Variables
+   */
+
+  this._my = null;
+  this._rootElemObj = null;
+  this._containerElemObj = null;
+
+  this._buildVersion = null;
+  this._buildDate = null;
+
+  this._labelAppName = "SpartanLync MyGeotab Map";
+  this._labelTimezone = "Date & Time Timezone";
+  this._labelRefresh = "Sensor Info Refresh Rate";
+  this._labelLang = "Language";
+  this._labelBuildVer = "Build Version";
+  this._labelBuildDate = "Build Date";
+
+  this.init = function () {
+    const me = this;
+    const my = me._my;
+    me.refresh();
+  };
+
+  this.refresh = function () {
+    const me = this;
+    const my = me._my;
+    const rootEl = me._containerElemObj;
+    const timeZone = my.storage.splStore.timezone;
+    const refreshRate = my.storage.splStore.sensorInfoRefreshRate;
+    let language = "UnKnown";
+
+    // Fetch Language from SplTools configuration
+    if (typeof my.storage.splStore.lang !== "undefined" && my.storage.splStore.lang) {
+      language = my.supportedLanguages.filter((langObj) => {
+        return langObj.code === my.storage.splStore.lang;
+      })[0].label;
+    }
+
+    me._fetchBuildInfo((build) => {
+      rootEl.innerHTML = me._renderHTML({
+        "timeZone":     timeZone ? timeZone : "UnKnown",
+        "refreshRate":  refreshRate ? (refreshRate / 60) + " min" : "UnKnown",
+        "language":     language,
+        "buildVer":     build.ver,
+        "buildDate":    build.date,
+      });
+    });
+  };
+
+  this._renderHTML = function (prop) {
+    const me = this;
+    const my = me._my;
+    const content = me._getContentObj(prop);
+    return `
+    <div>
+      <label>${content.appName}</label>
+      <div>
+        <strong>${content.labelTimezone}:</strong>
+        <span>${content.contentTimezone}</span>
+        <strong>${content.labelRefresh}:</strong>
+        <span>${content.contentRefresh}</span>
+        <strong>${content.labelLang}:</strong>
+        <span>${content.contentLang}</span>
+        <p>Use SpartanLync Tools to change the above settings</p>
+        <strong>${content.labelBuildVer}:</strong>
+        <span>${content.contentBuildVer}</span>
+        <strong>${content.labelBuildVer}:</strong>
+        <span>${content.contentBuildDate}</span>
+      </div>
+    </div>
+    `;
+  };
+
+  this._getContentObj = function (prop) {
+    const me = this;
+    const my = me._my;
+    return {
+      "appName":          me._labelAppName,
+      "labelTimezone":    me._labelTimezone,
+      "labelRefresh":     me._labelRefresh,
+      "labelLang":        me._labelLang,
+      "labelBuildVer":    me._labelBuildVer,
+      "labelBuildDate":   me._labelBuildDate,
+
+      "contentTimezone":  prop.timeZone,
+      "contentRefresh":   prop.refreshRate,
+      "contentLang":      prop.language,
+      "contentBuildVer":  prop.buildVer,
+      "contentBuildDate": prop.buildDate,
+    };
+  };
+
+  this._fetchBuildInfo = function (callback) {
+    const me = this;
+    const my = me._my;
+    const addInName = my.addInJSONName;
+    const buildMetaFilename = my.addInBuildMetadataFilename;
+
+    if(me._buildVersion === null || me._buildDate === null) {
+      my.service.api.call("Get", {
+        typeName: "SystemSettings"
+      }).then(([settings]) => {
+        const addInJson = JSON.parse(settings.customerPages.filter((jsonTxt) => {
+          return jsonTxt.indexOf(`"name":"${addInName}"`) > -1;
+        }).join(""));
+        const addInDeploymentUrl = me.dirname(addInJson.items[0].mapScript.url);
+        const buildMetaUrl = addInDeploymentUrl + "/" + buildMetaFilename;
+
+        fetch(buildMetaUrl)
+        .then(response => response.text())
+        .then((metadataTxt) => {
+          const [appVer, unixTimestamp] = metadataTxt.trim().split("\n");
+          if (appVer && !isNaN(unixTimestamp)) {
+            me._buildVersion = appVer;
+            me._buildDate = my.app.convertUnixToTzHuman(unixTimestamp);
+            callback({
+              "ver": me._buildVersion,
+              "date": me._buildDate,
+            });
+          }
+        })
+        .catch(err => {
+          me._buildVersion = "UnKnown";
+          me._buildDate = "UnKnown";
+          callback({
+            "ver": me._buildVersion,
+            "date": me._buildDate,
+          });
+        });
+      });
+    }
+    else {
+      callback({
+        "ver": me._buildVersion,
+        "date": me._buildDate,
+      });
+    }
+  };
+
+this.dirname = function (path) {
+  return path.split("/").slice(0,-1).join("/");
+};
+
+this.configure = function (my, rootDomObj, containerId) {
+  const me = this;
+  me._my = my;
+  me._rootElemObj = rootDomObj;
+  me._containerElemObj = me._rootElemObj.querySelector(containerId);
+
+  //DEBUG
+  me._containerElemObj.addEventListener("click", () => {
+    console.log(JSON.stringify(my.storage.sensorData)); //DEBUG
+  });
+};
+
+// configure when an instance gets created
+this.configure(my, rootDomObj, containerId);
 };

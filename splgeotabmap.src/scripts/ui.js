@@ -768,7 +768,7 @@ this.configure = function (my, rootDomObj, containerId) {
 
   //DEBUG
   me._containerElemObj.addEventListener("click", () => {
-    console.log(JSON.stringify(my.storage.sensorData)); //DEBUG
+    console.log(JSON.stringify(my.storage)); //DEBUG
   });
 };
 

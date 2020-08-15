@@ -310,8 +310,21 @@ const SplGeotabMapUtils = function (my) {
         my.ui.init(() => {
           const now = moment().utc().unix();
           const cachedStoreExpiry = my.storage.splStoreFetchedUnix ? moment.unix(my.storage.splStoreFetchedUnix).add(my.storeLifetime, "seconds").unix() : now;
-          if (!my.storage.credentials.sessionId || !my.storage.splStore || cachedStoreExpiry < now) {
-            me.getSplSettings() // Refresh SplServices if missing or stale
+
+          // Refresh SplService configuration(s) if:
+          // 1. Missing
+          // 2. Stale (older than expiry date as defined in "cachedStoreLifetime" setting)
+          // 3. non-MyGeotab (containes SplMap/SplTools URL pageName reference to proxy instance(s) running on help.spartansense.com)
+          //
+          if (!my.storage.credentials.sessionId ||
+            !my.storage.splStore ||
+            cachedStoreExpiry < now ||
+            (typeof my.storage.splStore.splMap.mapsPageName !== "undefined" &&
+            my.storage.splStore.splMap.mapsPageName.indexOf("help.spartansense.com") > -1) ||
+            (typeof my.storage.splStore.splMap.toolsPageName !== "undefined" &&
+            my.storage.splStore.splMap.toolsPageName.indexOf("help.spartansense.com") > -1)
+            ) {
+              me.getSplSettings()
               .then(() => {
                 me.startup();
               })
@@ -344,11 +357,19 @@ const SplGeotabMapUtils = function (my) {
               my.splSessionMgr = new INITSplSessionMgr(my.splApi, my.storage.credentials);
               my.splSessionMgr.getSettings(
                 (remoteStore) => {
+                  //
+                  // Report Error if settings are:
+                  // 1. Missing
+                  // 2. Stale (older than expiry date as defined in "cachedStoreLifetime" setting)
+                  // 3. non-MyGeotab (containes SplMap/SplTools URL pageName reference to proxy instance(s) running on help.spartansense.com)
+                  //
                   if (remoteStore === null || typeof remoteStore.splMap === "undefined") {
                     reject(my.tr("error_startup_nosettings"));
-                  } else if (typeof remoteStore.splMap.mapsPageName === "undefined" || !remoteStore.splMap.mapsPageName) {
+                  } else if (typeof remoteStore.splMap.mapsPageName === "undefined" || !remoteStore.splMap.mapsPageName ||
+                            remoteStore.splMap.mapsPageName.indexOf("help.spartansense.com") > -1) {
                     reject(my.tr("error_startup_nosplmap"));
-                  } else if (typeof remoteStore.splMap.mapsPageName === "undefined" || !remoteStore.splMap.mapsPageName) {
+                  } else if (typeof remoteStore.splMap.toolsPageName === "undefined" || !remoteStore.splMap.toolsPageName ||
+                            remoteStore.splMap.toolsPageName.indexOf("help.spartansense.com") > -1) {
                     reject(my.tr("error_startup_nospltools"));
                   }
                   my.storage.splStoreFetchedUnix = moment().utc().unix();

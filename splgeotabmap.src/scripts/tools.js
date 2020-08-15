@@ -320,16 +320,16 @@ const SplGeotabMapUtils = function (my) {
             !my.storage.splStore ||
             cachedStoreExpiry < now ||
             (typeof my.storage.splStore.splMap.mapsPageName !== "undefined" &&
-            my.storage.splStore.splMap.mapsPageName.indexOf("help.spartansense.com") > -1) ||
+              my.storage.splStore.splMap.mapsPageName.indexOf("help.spartansense.com") > -1) ||
             (typeof my.storage.splStore.splMap.toolsPageName !== "undefined" &&
-            my.storage.splStore.splMap.toolsPageName.indexOf("help.spartansense.com") > -1)
-            ) {
-              me.getSplSettings()
+              my.storage.splStore.splMap.toolsPageName.indexOf("help.spartansense.com") > -1)) {
+            me.getSplSettings()
               .then(() => {
                 me.startup();
               })
               .catch((reason) => my.ui.showError(reason));
-          } else {
+          }
+          else {
             me.startup();
           }
 
@@ -366,10 +366,10 @@ const SplGeotabMapUtils = function (my) {
                   if (remoteStore === null || typeof remoteStore.splMap === "undefined") {
                     reject(my.tr("error_startup_nosettings"));
                   } else if (typeof remoteStore.splMap.mapsPageName === "undefined" || !remoteStore.splMap.mapsPageName ||
-                            remoteStore.splMap.mapsPageName.indexOf("help.spartansense.com") > -1) {
+                    remoteStore.splMap.mapsPageName.indexOf("help.spartansense.com") > -1) {
                     reject(my.tr("error_startup_nosplmap"));
                   } else if (typeof remoteStore.splMap.toolsPageName === "undefined" || !remoteStore.splMap.toolsPageName ||
-                            remoteStore.splMap.toolsPageName.indexOf("help.spartansense.com") > -1) {
+                    remoteStore.splMap.toolsPageName.indexOf("help.spartansense.com") > -1) {
                     reject(my.tr("error_startup_nospltools"));
                   }
                   my.storage.splStoreFetchedUnix = moment().utc().unix();
@@ -652,12 +652,12 @@ const SplGeotabMapUtils = function (my) {
           ],
 
           _init: function (toLang) {
-            console.log("--- APP LANGUAGE "+(me._appInit ? "USED BY DEFAULT":"SWITCHED TO")+" [ " + toLang + " ]");
+            console.log("--- APP LANGUAGE " + (me._appInit ? "USED BY DEFAULT" : "SWITCHED TO") + " [ " + toLang + " ]");
 
             // Error Handling
-            if ( typeof window.splgeotabmap === "undefined" ||
-                 typeof window.splgeotabmap.lang === "undefined" ||
-                 typeof window.splgeotabmap.lang[toLang] === "undefined") {
+            if (typeof window.splgeotabmap === "undefined" ||
+              typeof window.splgeotabmap.lang === "undefined" ||
+              typeof window.splgeotabmap.lang[toLang] === "undefined") {
               console.log("--- ERROR!!! Cannot switch to language [ " + toLang + " ].... Language Not Found");
               return;
             }
@@ -726,8 +726,8 @@ const SplGeotabMapUtils = function (my) {
             if (!me._langDB) {
               return;
             }
-            html.match(/{(.*?)}/g).map(function(tokenStr){
-              const id = tokenStr.replace("{","").replace("}","");
+            html.match(/{(.*?)}/g).map(function (tokenStr) {
+              const id = tokenStr.replace("{", "").replace("}", "");
               html = html.replace(tokenStr, me.t(id));
             });
             return html;

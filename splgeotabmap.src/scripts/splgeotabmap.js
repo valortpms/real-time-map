@@ -19,29 +19,29 @@ geotab.addin.splgeotabmap = (elt, service) => {
 
   const defaultLanguage = "en";
   const supportedLanguages = [{
-                                code: "en",
-                                label: "English",
-                              },{
-                                code: "fr",
-                                label: "Fran&ccedil;ais",
-                              },{
-                                code: "es",
-                                label: "Espa&ntilde;ol",
-                              }];
+    code: "en",
+    label: "English",
+  }, {
+    code: "fr",
+    label: "Fran&ccedil;ais",
+  }, {
+    code: "es",
+    label: "Espa&ntilde;ol",
+  }];
 
   const vehComponents = {                                             // Id/Description/TranslationCodes for supported Vehicles components
     "toEn": {
-              "tractor": "Tractor",
-              "trailer1": "Trailer 1",
-              "trailer2": "Dolly",
-              "trailer3": "Trailer 2"
-            },
+      "tractor": "Tractor",
+      "trailer1": "Trailer 1",
+      "trailer2": "Dolly",
+      "trailer3": "Trailer 2"
+    },
     "toTr": {
-              "tractor": "veh_comp_tractor",
-              "trailer1": "veh_comp_trailer1",
-              "trailer2": "veh_comp_dolly",
-              "trailer3": "veh_comp_trailer2"
-            }
+      "tractor": "veh_comp_tractor",
+      "trailer1": "veh_comp_trailer1",
+      "trailer2": "veh_comp_dolly",
+      "trailer3": "veh_comp_trailer2"
+    }
   };
 
   const splSelContainer = "#SplGeotabMapContainer";                   // Dom selector for splGeotabMap AddIn HTML container

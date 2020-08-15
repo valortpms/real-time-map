@@ -14,6 +14,7 @@ BUILD_RELATIVE_PATH="../_Builds"
 BUILD_DIST_RELATIVE_PATH="./dist"
 BUILD_DEPLOY_RELATIVE_PATH="../../src/public"
 MAPS_ARCHIVE_RELATIVE_PATH="../../src/map.src"
+SPLGEOTABMAP_PUBLIC_DIR="splgeotabmap"
 ZIP_CMD="/usr/bin/7z"
 RSYNC_CMD="/usr/bin/rsync"
 
@@ -22,7 +23,7 @@ UNIX_TIMESTAMP=`date +%s`
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 BUILD_ROOT_PATH="${CURRENT_DIR}/$BUILD_RELATIVE_PATH"
 BUILD_TEMPLATE_PATH="$BUILD_ROOT_PATH/$BUILD_TEMPLATE_DIR"
-BUILD_PUBLIC_PATH="${BUILD_DEPLOY_RELATIVE_PATH}/$BUILD_PUBLIC_DIR"
+BUILD_PUBLIC_PATH="${BUILD_DEPLOY_RELATIVE_PATH}/${BUILD_PUBLIC_DIR}"
 BUILD_DEV_PUBLIC_PATH="${BUILD_DEPLOY_RELATIVE_PATH}/$BUILD_DEV_PUBLIC_DIR"
 LARAVEL_APP_CONFIG_PATH="${CURRENT_DIR}/../../src/config/app.php"
 VERSION=`grep "version" $LARAVEL_APP_CONFIG_PATH | tr -d '[:space:]' | cut -f4 -d"'"`
@@ -32,6 +33,7 @@ BUILD_UNIX_TIMESTAMP_PATH="${BUILD_PUBLIC_PATH}/${BUILD_UNIX_TIMESTAMP_FILE}"
 ADDIN_CONFIG_JSON_FILE_PATH="${BUILD_PUBLIC_PATH}/config.json"
 ADDIN_DEV_CONFIG_JSON_FILE_PATH="${BUILD_DEV_PUBLIC_PATH}/config.json"
 MAPS_ARCHIVE_PATH="${CURRENT_DIR}/${MAPS_ARCHIVE_RELATIVE_PATH}"
+SPLGEOTABMAP_UNIX_TIMESTAMP_PATH="${BUILD_DEPLOY_RELATIVE_PATH}/${SPLGEOTABMAP_PUBLIC_DIR}/${BUILD_UNIX_TIMESTAMP_FILE}"
 
 # Generate new build
 echo "---- BUILDING SpartanLync v${VERSION} SplMap App ----"
@@ -61,6 +63,8 @@ rm -rf "${ADDIN_CONFIG_JSON_FILE_PATH}.bak"
 echo "---- Creating SplMap Build Metadata File [ ${BUILD_UNIX_TIMESTAMP_PATH} ] ---"
 echo "SpartanLync v${VERSION}" > ${BUILD_UNIX_TIMESTAMP_PATH}
 echo "${UNIX_TIMESTAMP}" >> ${BUILD_UNIX_TIMESTAMP_PATH}
+echo "---- Copying Build Metadata File to SplGeotabMap deployment folder [ ${SPLGEOTABMAP_UNIX_TIMESTAMP_PATH} ] ---"
+cp -a "${BUILD_UNIX_TIMESTAMP_PATH}" "${SPLGEOTABMAP_UNIX_TIMESTAMP_PATH}"
 
 # Sync LIVE deployment folder with DEV folder
 echo -ne "---- Copying LIVE folder [ ${BUILD_PUBLIC_PATH} ] to DEV folder [ ${BUILD_DEV_PUBLIC_PATH} ] ---\n"
@@ -74,11 +78,10 @@ sed -i "s/Map\"/Map${ADDIN_DEV_CONFIG_JSON_TITLE_SUFFIX}\"/g" ${ADDIN_DEV_CONFIG
 sed -i "s/\"path\": \"\"/\"path\": \"${ADDIN_DEV_CONFIG_JSON_MENU_PATH}\"/g" ${ADDIN_DEV_CONFIG_JSON_FILE_PATH}
 
 # Create DEV build ZIP file
-echo -ne "---- Zipping DEV Folder [ ${BUILD_DEV_PUBLIC_PATH} ]\n\t\tTO file [ ${BUILD_DEV_ZIP_FILE_PATH} ]\n"
+echo -ne "---- Zipping Folder(s) [ ${BUILD_DEV_PUBLIC_PATH} ] and [ ${SPLGEOTABMAP_PUBLIC_DIR} ]\n\t       TO file [ ${BUILD_DEV_ZIP_FILE_PATH} ]\n"
 rm -rf ${BUILD_DEV_ZIP_FILE_PATH}
-(cd ${BUILD_DEPLOY_RELATIVE_PATH} && ${ZIP_CMD} a -r ${BUILD_DEV_ZIP_FILE} ${BUILD_DEV_PUBLIC_DIR} > /dev/null)
+(cd ${BUILD_DEPLOY_RELATIVE_PATH} && ${ZIP_CMD} a -r ${BUILD_DEV_ZIP_FILE} ${BUILD_DEV_PUBLIC_DIR} ${SPLGEOTABMAP_PUBLIC_DIR} > /dev/null)
 
-#
 # Sync "Geotab\Real-Time-Maps\valor_src" working dev source code (hosted on Github https://github.com/valortpms/real-time-map repo)
 # with
 # "Geotab\src\map.src" (SpartanLync Map source code archive folder for hosting on Bitbucket, with GIT and NPM folders excluded)

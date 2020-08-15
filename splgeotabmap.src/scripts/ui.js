@@ -61,7 +61,6 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
       me._callback();
       me._callback = null;
     }
-    console.log("--- UI INIT DONE"); //DEBUG
   };
 
   this.showMsg = function (msg) {
@@ -92,18 +91,18 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
     //
     switch (my.app.getCachedSensorDataStatusForVeh(vehId, vehName)) {
       case "BUSY":
-        tipCfg.main = my.toolTipSettings.sensorsSearchingMsg;
+        tipCfg.main = my.tr("sensors_tooltip_searching_msg");
         break;
 
       case "BUSY-NEW":
       case "FOUND":
-        tipCfg.main = my.toolTipSettings.sensorsFoundMsg;
+        tipCfg.main = my.tr("sensors_tooltip_found_msg");
         tipCfg.secondary = my.app.fetchSensorTypes(vehId);
-        tipCfg.additional = [my.toolTipSettings.sensorsFoundMenuItemMsg];
+        tipCfg.additional = [my.tr("sensors_tooltip_found_menuitem_msg")];
         break;
 
       case "NOTFOUND":
-        tipCfg.main = my.toolTipSettings.sensorsNotFoundMsg;
+        tipCfg.main = my.tr("sensors_tooltip_not_found_msg");
         break;
     }
 
@@ -140,8 +139,8 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
     if (!labelEl.classList.contains("hidden")) {
       labelEl.classList.add("hidden");
     }
-    console.log("SplGeotabMap Error: " + msg.replace(/\<br \/\>/g, " "));
-    errorEl.innerHTML = `Error:<br />${msg}`;
+    console.log(my.tr("error_app_title") + ": " + msg.replace(/\<br \/\>/g, " "));
+    errorEl.innerHTML = my.tr("error_title") + ":<br />" + msg;
   };
 
   this.clearMsgState = function () {
@@ -181,20 +180,20 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
     //
     switch (contentStatus) {
       case "BUSY":
-        me.showMsg(my.menuItemSettings.sensorsSearchingMsg.replace("{veh}", vehName));
+        me.showMsg(my.tr("sensors_menuitm_searching_msg").replace("{veh}", vehName));
         break;
 
       case "BUSY-NEW":
       case "FOUND":
         me.clearMsgState();
-        labelEl.innerHTML = "SpartanLync Sensors For:";
+        labelEl.innerHTML = my.tr("panel_title");
         vehNameEl.innerHTML = vehName;
         vehSpeedEl.innerHTML = vehSpeed ? vehSpeed + " km/h" : "";
         contentEl.innerHTML = me.getHtmlFromSensorData(vehId, vehName);
         break;
 
       case "NOTFOUND":
-        me.showMsg(my.menuItemSettings.sensorsNotFoundMsg.replace("{veh}", vehName));
+        me.showMsg(my.tr("sensors_menuitm_not_Found_msg").replace("{veh}", vehName));
         break;
     }
   };
@@ -293,7 +292,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
     const me = this;
     const my = me._my;
     const firstComponentHeaderClass = compId === data.compIds[0] ? "first" : "";
-    const headerTitle = showHeader ? my.vehComponents[compId] : "";
+    const headerTitle = showHeader ? my.tr(my.vehComponents.toTr[compId]) : "";
     const compHeaderHtml = headerTitle ? me._getContent("component-header", {
       "firstComponentHeaderClass": firstComponentHeaderClass,
       "headerTitle": headerTitle
@@ -350,9 +349,11 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
         break;
 
       case "skeleton-body":
+        const SplToolsSwitchTitle = my.tr("panel_switchto_spltools_instruction");
+        const LastReadingTitle = my.tr("panel_last_reading");
         return `
             <div class="splTable">
-                <div class="splTableRow pointer" aria-label="View In SpartanLync Tools" data-microtip-position="bottom" role="tooltip" onclick="navigateToSplTools('${content.vehId}','${content.vehName}')">
+                <div class="splTableRow pointer" aria-label="${SplToolsSwitchTitle}" data-microtip-position="bottom" role="tooltip" onclick="navigateToSplTools('${content.vehId}','${content.vehName}')">
                     ${content.headerTopHtml}
                 </div>
                 <div class="splTableRow">
@@ -360,7 +361,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
                 </div>
                     ${content.contentHtml}
                 <div class="splTableRow footer">
-                    <div class="splTableCell"><label>Last Reading:</label>${content.lastReadTimestamp}</div>
+                    <div class="splTableCell"><label>${LastReadingTitle}:</label>${content.lastReadTimestamp}</div>
                 </div>
             </div>
             `;
@@ -447,6 +448,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
     const me = this;
     const my = me._my;
     const keysSorted = Object.keys(sdata).sort();
+    const sensorTimeTitle = my.tr("panel_sensor_timestamp");
     let outHtml = "";
 
     // eslint-disable-next-line complexity
@@ -485,7 +487,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
         if (locObj.type === "Temptrac") {
           const locHtml = me._convertLocToShortName(locObj.zone);
           outHtml += `
-            <div class="sensor-timestamp${animationClassName}" aria-label="Sensor Timestamp: ${sensorTime}" data-microtip-position="top" data-microtip-size="medium" --microtip-font-size="12px" role="tooltip">
+            <div class="sensor-timestamp${animationClassName}" aria-label="${sensorTimeTitle}: ${sensorTime}" data-microtip-position="top" data-microtip-size="medium" --microtip-font-size="12px" role="tooltip">
               <div class="val-loc">${locHtml}</div>
               <div class="val-temp">${locObj.val.c}<span>&#8451;</span><p>${locObj.val.f}<span>&#8457;</span></p></div>
             </div>`;
@@ -494,7 +496,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
         else if (locObj.type === "Tire Temperature") {
           const locHtml = me._convertLocToShortName(locObj.axle);
           outHtml += `
-            <div class="sensor-timestamp${animationClassName}" aria-label="Sensor Timestamp: ${sensorTime}" data-microtip-position="top" data-microtip-size="medium" --microtip-font-size="12px" role="tooltip">
+            <div class="sensor-timestamp${animationClassName}" aria-label="${sensorTimeTitle}: ${sensorTime}" data-microtip-position="top" data-microtip-size="medium" --microtip-font-size="12px" role="tooltip">
               <div class="val-loc">${locHtml}</div>
               <div class="val-temp">${locObj.val.c}<span>&#8451;</span><p>${locObj.val.f}<span>&#8457;</span></p></div>
             </div>`;
@@ -503,7 +505,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
         else if (locObj.type === "Tire Pressure") {
           const locHtml = me._convertLocToShortName(locObj.axle);
           outHtml += `
-            <div class="sensor-timestamp${animationClassName}" aria-label="Sensor Timestamp: ${sensorTime}" data-microtip-position="top" data-microtip-size="medium" --microtip-font-size="12px" role="tooltip">
+            <div class="sensor-timestamp${animationClassName}" aria-label="${sensorTimeTitle}: ${sensorTime}" data-microtip-position="top" data-microtip-size="medium" --microtip-font-size="12px" role="tooltip">
               <div class="val-loc">${locHtml}</div>
               <div class="val-pres">${locObj.val.psi}<span>Psi</span><p>${locObj.val.kpa}<span>kPa</span></p><p>${locObj.val.bar}<span>Bar</span></p></div>
             </div>`;
@@ -553,7 +555,8 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
         }
 
         // Update MenuItem Panel
-        if (vehReg.menuItem && typeof my.storage.sensorData.cache[vehReg.menuItem] !== "undefined") {
+        if (vehReg.menuItem && typeof my.storage.sensorData.cache[vehReg.menuItem] !== "undefined" &&
+            typeof my.storage.sensorData.cache[vehReg.menuItem].data.vehName !== "undefined") {
           const vehId = vehReg.menuItem;
           const vehName = my.storage.sensorData.cache[vehId].data.vehName;
           my.service.api.call("Get", {
@@ -626,12 +629,13 @@ const InitLogoUI = function (my, rootDomObj, containerId) {
   this._buildVersion = null;
   this._buildDate = null;
 
-  this._labelAppName = "SpartanLync MyGeotab Map";
-  this._labelTimezone = "Date & Time Timezone";
-  this._labelRefresh = "Sensor Info Refresh Rate";
-  this._labelLang = "Language";
-  this._labelBuildVer = "Build Version";
-  this._labelBuildDate = "Build Date";
+  this._labelAppName      = "about_appname";
+  this._labelTimezone     = "about_timezone";
+  this._labelRefresh      = "about_refresh";
+  this._labelLang         = "about_lang";
+  this._labelBuildVer     = "about_buildver";
+  this._labelBuildDate    = "about_builddate";
+  this._settingsChangeMsg = "about_instruction";
 
   this.init = function () {
     const me = this;
@@ -679,7 +683,7 @@ const InitLogoUI = function (my, rootDomObj, containerId) {
         <span>${content.contentRefresh}</span>
         <strong>${content.labelLang}:</strong>
         <span>${content.contentLang}</span>
-        <p>Use SpartanLync Tools to change the above settings</p>
+        <p>${content.settingsChangeMsg}</p>
         <strong>${content.labelBuildVer}:</strong>
         <span>${content.contentBuildVer}</span>
         <strong>${content.labelBuildVer}:</strong>
@@ -693,18 +697,19 @@ const InitLogoUI = function (my, rootDomObj, containerId) {
     const me = this;
     const my = me._my;
     return {
-      "appName":          me._labelAppName,
-      "labelTimezone":    me._labelTimezone,
-      "labelRefresh":     me._labelRefresh,
-      "labelLang":        me._labelLang,
-      "labelBuildVer":    me._labelBuildVer,
-      "labelBuildDate":   me._labelBuildDate,
+      "appName":            my.tr(me._labelAppName),
+      "labelTimezone":      my.tr(me._labelTimezone),
+      "labelRefresh":       my.tr(me._labelRefresh),
+      "labelLang":          my.tr(me._labelLang),
+      "labelBuildVer":      my.tr(me._labelBuildVer),
+      "labelBuildDate":     my.tr(me._labelBuildDate),
+      "settingsChangeMsg":  my.tr(me._settingsChangeMsg),
 
-      "contentTimezone":  prop.timeZone,
-      "contentRefresh":   prop.refreshRate,
-      "contentLang":      prop.language,
-      "contentBuildVer":  prop.buildVer,
-      "contentBuildDate": prop.buildDate,
+      "contentTimezone":    prop.timeZone,
+      "contentRefresh":     prop.refreshRate,
+      "contentLang":        prop.language,
+      "contentBuildVer":    prop.buildVer,
+      "contentBuildDate":   prop.buildDate,
     };
   };
 

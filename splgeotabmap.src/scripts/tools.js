@@ -1,35 +1,9 @@
 /* eslint-disable no-unused-vars */
 
 /**********************************************************************************
- * Register App Add-In Event Handlers in Geotab Map API
+ * Register these Add-In Event Handlers with Geotab Map API on APP Load
  */
 const onLoadInitEvents = function (my) {
-  // Register Vehicle Menu-Item on map
-  my.service.actionList.attachMenu("vehicleMenu", (_, rest) => {
-    return Promise.resolve([
-      {
-        title: "Show SpartanLync Sensors",
-        clickEvent: "ShowSplDeviceInfo",
-        data: rest.device,
-      },
-    ]);
-  });
-
-  // Event: Clicked Vehicle Menu-Item on map
-  my.service.actionList.attach("ShowSplDeviceInfo", ({ id }) => {
-    Promise.all([
-      my.service.api.call("Get", {
-        typeName: "Device",
-        search: { id },
-      }),
-      my.service.api.call("Get", {
-        typeName: "DeviceStatusInfo",
-        search: { deviceSearch: { id } },
-      }),
-    ]).then(([[device], [dsi]]) => {
-      my.ui.showMenuItem(id, device.name, dsi.speed);
-    });
-  });
 
   // Event: User moves mouse over Vehicle on the map
   my.service.events.attach("over", (evt) => {
@@ -89,6 +63,39 @@ const onLoadInitEvents = function (my) {
   // Event: Reset Button clicked
   my.resetBtnElemObj.addEventListener("click", () => {
     my.app.resetApp();
+  });
+};
+
+/**********************************************************************************
+ * Register these Add-In Event Handlers with Geotab Map API after TR initialization
+ */
+const loadInitEventsPostTr = function (my) {
+
+  // Register Vehicle Menu-Item on map
+  my.service.actionList.attachMenu("vehicleMenu", (_, rest) => {
+    return Promise.resolve([
+      {
+        title: my.tr("map_menuitm_label"),
+        clickEvent: "ShowSplDeviceInfo",
+        data: rest.device,
+      },
+    ]);
+  });
+
+  // Event: Clicked Vehicle Menu-Item on map
+  my.service.actionList.attach("ShowSplDeviceInfo", ({ id }) => {
+    Promise.all([
+      my.service.api.call("Get", {
+        typeName: "Device",
+        search: { id },
+      }),
+      my.service.api.call("Get", {
+        typeName: "DeviceStatusInfo",
+        search: { deviceSearch: { id } },
+      }),
+    ]).then(([[device], [dsi]]) => {
+      my.ui.showMenuItem(id, device.name, dsi.speed);
+    });
   });
 };
 
@@ -250,11 +257,20 @@ const SplGeotabMapUtils = function (my) {
         // Update moment() with User-defined Timezone
         moment.tz.setDefault(my.storage.splStore.timezone);
 
+        // Switch to User-defined Language
+        if (my.storage.splStore.lang !== my.defaultLanguage) {
+          me.tr.switchTo(my.storage.splStore.lang);
+        }
+
+        // Complete App API Event Registration(s)
+        loadInitEventsPostTr(my);
+
         // Reset sensor data search for all vehicles
         me.resetSearch();
 
-        // Apply "sensorInfoRefreshRate" setting from SplTools
-        my.sdataTools.setSensorDataLifetimeInSec(my.storage.splStore.sensorInfoRefreshRate);
+        // Apply run-time settings to sensor data search library
+        my.sdataTools.setSensorDataLifetimeInSec(my.storage.splStore.sensorInfoRefreshRate); // "sensorInfoRefreshRate" from SplTools
+        my.sdataTools.setSensorDataNotFoundMsg(my.tr("sensors_not_found"));
 
         // Init About Info in Logo / Watermark
         my.logo.init();
@@ -274,7 +290,7 @@ const SplGeotabMapUtils = function (my) {
         }
         // Otherwise, set initial UI message
         else {
-          my.ui.showMsg(my.uiUserInstruction);
+          my.ui.showMsg(my.tr("panel_user_instruction"));
         }
 
         // Invoke callback if provided
@@ -329,20 +345,20 @@ const SplGeotabMapUtils = function (my) {
               my.splSessionMgr.getSettings(
                 (remoteStore) => {
                   if (remoteStore === null || typeof remoteStore.splMap === "undefined") {
-                    reject("getSplSettings() FAILED:<br />Invalid or missing SpartanLync Tools/Map Settings");
+                    reject(my.tr("error_startup_nosettings"));
                   } else if (typeof remoteStore.splMap.mapsPageName === "undefined" || !remoteStore.splMap.mapsPageName) {
-                    reject("getSplSettings() FAILED:<br />Missing SpartanLync Map configuration.<br />Please run Spartanlync Map first");
+                    reject(my.tr("error_startup_nosplmap"));
                   } else if (typeof remoteStore.splMap.mapsPageName === "undefined" || !remoteStore.splMap.mapsPageName) {
-                    reject("getSplSettings() FAILED:<br />Missing SpartanLync Tools configuration.<br />Please run Spartanlync Tools first");
+                    reject(my.tr("error_startup_nospltools"));
                   }
                   my.storage.splStoreFetchedUnix = moment().utc().unix();
                   my.storage.splStore = remoteStore;
                   resolve(); // Notify on successful Load
                 },
-                (reason) => reject("getSplSettings() FAILED: " + reason)
+                (reason) => reject(my.tr("error_startup_general") + " " + reason)
               );
             })
-            .catch((reason) => reject("getSplSettings() FAILED: " + reason));
+            .catch((reason) => reject(my.tr("error_startup_general") + " " + reason));
         });
       },
 
@@ -363,13 +379,12 @@ const SplGeotabMapUtils = function (my) {
                   switchToVehId: vehId,
                   switchToVehName: vehName,
                 })
-                .catch((reason) => my.ui.showError("Failed switching to SpartanLync Tools: " + reason));
+                .catch((reason) => my.ui.showError(my.tr("error_spltools_switch_failed") + " " + reason));
             } else {
-              const msgAlert = "SplMap Error: Your MyGeotab Account does not have sufficient permissions to allow switching to SpartanLync Tools...Please run SpartanLync Tools manually.";
-              my.ui.showError(msgAlert);
+              my.ui.showError(my.tr("error_spltools_switch_noprivsfound"));
             }
           })
-          .catch((reason) => my.ui.showError("Failed to get MyGeotab permissions for switching to SpartanLync Tools: " + reason));
+          .catch((reason) => my.ui.showError(my.tr("error_spltools_switch_getnoprivs") + " " + reason));
       },
 
       /**
@@ -431,10 +446,10 @@ const SplGeotabMapUtils = function (my) {
           );
           const aSyncSdataTools = new INITSplSensorDataTools(aSyncGoLib, my.storage.sensorData.cache);
           aSyncSdataTools.setSensorDataLifetimeInSec(my.storage.splStore.sensorInfoRefreshRate);
-          aSyncSdataTools.setSensorDataNotFoundMsg(my.sensorDataNotFoundMsg);
-          aSyncSdataTools.setVehComponents(my.vehComponents);
+          aSyncSdataTools.setSensorDataNotFoundMsg(my.tr("sensors_not_found"));
+          aSyncSdataTools.setVehComponents(my.vehComponents.toEn);
           aSyncSdataTools.fetchCachedSensorData(vehId, vehName)
-            .then((sensorData) => me.postGetSensorData(vehId, vehName))
+            .then(() => me.postGetSensorData(vehId, vehName))
             .catch((reason) => console.log(`--- getSensorData(ASYNC) Error fetching sensor data for [ ${vehName} / ${vehId} ]: `, reason))
             .finally(() => {
               my.storage.sensorData.searchInProgress = "";
@@ -444,7 +459,7 @@ const SplGeotabMapUtils = function (my) {
           console.log(`=== getSensorData() ======================= FETCHING VEH [ ${vehName} / ${vehId} ]`); //DEBUG
           my.storage.sensorData.searchInProgress = vehId;
           my.sdataTools.fetchCachedSensorData(vehId, vehName)
-            .then((sensorData) => me.postGetSensorData(vehId, vehName))
+            .then(() => me.postGetSensorData(vehId, vehName))
             .catch((reason) => console.log(`--- getSensorData() Error fetching sensor data for [ ${vehName} / ${vehId} ]: `, reason))
             .finally(() => {
               my.storage.sensorData.searchInProgress = "";
@@ -522,7 +537,7 @@ const SplGeotabMapUtils = function (my) {
           );
           aSyncGoLib.getData(vehId, vehComponent, function (sensorData) {
             if (sensorData === null) {
-              reject(my.sensorDataNotFoundMsg);
+              reject(my.tr("sensors_not_found"));
             } else {
               resolve(sensorData);
             }
@@ -560,16 +575,18 @@ const SplGeotabMapUtils = function (my) {
           my.localStore.clear(() => {
             my.resetBtnElemObj.blur();
 
+            me.cancelPendingTasks();
             me.resetSearch();
             my.storage.splStore = null;
             my.sdataTools.resetCache();
             my.storage.sensorData.cache = {};
+            my.storage.sensorData.vehRegistry.menuItem = "";
             me.init(() => {
-              my.ui.showMsg("SENSOR DATA HAS BEEN RESET<p>" + my.uiUserInstruction);
+              my.ui.showMsg(my.tr("reset_btn_msg") + "<p>" + my.tr("panel_user_instruction"));
             });
           });
         } else {
-          my.ui.showError("Cannot Reset while a sensor data search is in progress..Please try again later.");
+          my.ui.showError(my.tr("reset_failed_busy"));
         }
       },
 
@@ -592,7 +609,118 @@ const SplGeotabMapUtils = function (my) {
       convertUnixToTzHuman: function (unixTime) {
         const me = this;
         return isNaN(unixTime) ? null : moment.unix(unixTime).format(my.timeFormat);
-      }
+      },
+
+      /**
+       * Language Translation Tools
+       *
+       *  @returns void
+       */
+      tr: function () {
+        const me = {
+          _appRootId: "#SplGeotabMapResetBtn",
+
+          _appInit: true,
+          _appRootElemObj: null,
+
+          _langDB: null,
+          _toLang: null,
+
+          _autoTrIds: [
+            "reset_btn_title",
+          ],
+
+          _init: function (toLang) {
+            console.log("--- APP LANGUAGE "+(me._appInit ? "USED BY DEFAULT":"SWITCHED TO")+" [ " + toLang + " ]");
+
+            // Error Handling
+            if ( typeof window.splgeotabmap === "undefined" ||
+                 typeof window.splgeotabmap.lang === "undefined" ||
+                 typeof window.splgeotabmap.lang[toLang] === "undefined") {
+              console.log("--- ERROR!!! Cannot switch to language [ " + toLang + " ].... Language Not Found");
+              return;
+            }
+
+            me._toLang = toLang;
+            me._langDB = window.splgeotabmap.lang[toLang];
+            me._appRootElemObj = my.elt.querySelector(me._appRootId);
+          },
+
+          _translateInlineElements: function () {
+            if (!me._langDB) {
+              return;
+            }
+            me._appRootElemObj.querySelectorAll("[translate]").forEach((el) => {
+              const trVal = el.getAttribute("translate");
+              const trArr = trVal.split("|");
+              const elAttrName = trArr[0];
+              const trId = trArr[1];
+
+              // Translate element attribute value
+              el.setAttribute(elAttrName, me.t(trId));
+            });
+          },
+
+          _translateStaticHTML: function () {
+            if (!me._langDB) {
+              return;
+            }
+            for (const i in me._autoTrIds) {
+              const id = me._autoTrIds[i];
+              const trVal = me.t(id);
+              const el = me._appRootElemObj.querySelector("#" + id);
+              if (el && trVal) {
+                el.innerHTML = trVal;
+              }
+            }
+          },
+
+          t: function (id) {
+            // Lib has not been switched(), therefore use default language
+            if (!me._langDB && me._appInit) {
+              me._init(my.defaultLanguage);
+              if (!me._langDB) {
+                return "";
+              }
+              return me.t(id);
+            }
+
+            // If token found, look for something to search/replace in translation
+            const args = Array.prototype.slice.call(arguments);
+            const trVal = typeof me._langDB[id] !== "undefined" ? me._langDB[id] : "";
+            args.shift(); // Remove id from arguments
+            if (args.length && trVal && trVal.indexOf("{") > -1) {
+              args.forEach(arg => {
+                if (arg.length === 2) {
+                  const tokenKey = arg[0];
+                  const tokenVal = arg[1];
+                  trVal = trVal.replace(tokenKey, tokenVal);
+                }
+              });
+            }
+            return trVal;
+          },
+
+          langTokens: function (html) {
+            if (!me._langDB) {
+              return;
+            }
+            html.match(/{(.*?)}/g).map(function(tokenStr){
+              const id = tokenStr.replace("{","").replace("}","");
+              html = html.replace(tokenStr, me.t(id));
+            });
+            return html;
+          },
+
+          switchTo: function (toLang) {
+            me._appInit = false;
+            me._init(toLang);
+            me._translateInlineElements();
+            me._translateStaticHTML();
+          }
+        };
+        return me;
+      }.bind(this)()
     };
     return me;
   }.bind(this)();

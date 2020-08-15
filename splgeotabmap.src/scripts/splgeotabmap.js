@@ -2,8 +2,8 @@ geotab.addin.splgeotabmap = (elt, service) => {
   //
   // App Settings
   //
-  const addInJSONName = "SplGeotabMap";                            // Name of this Add-In within SystemSettings in MyGeotab Database
-  const addInBuildMetadataFilename = "build.meta";                         // Filename residing in deployment directory containg build metadata, shown when hovering over SpartanLync Watermark / Logo
+  const addInJSONName = "SplGeotabMap";                               // Name of this Add-In within SystemSettings in MyGeotab Database
+  const addInBuildMetadataFilename = "build.meta";                    // Filename residing in deployment directory containg build metadata, shown when hovering over SpartanLync Watermark / Logo
 
   const splApiUrl = "https://help.spartansense.com/geotab/api/";      // API Endpoint for SpartanLync Backend Services
   const splHumanTimeFormat = "dd MMM DD, YYYY LT z";                  // moment() format for converting from UNIX timestamp to Human format in User's Timezone
@@ -11,10 +11,8 @@ geotab.addin.splgeotabmap = (elt, service) => {
   const cachedStoreLifetime = 3600;                                   // (Default: 3600 seconds / 1 hour) Afer this period, cached credentials & SplTools settings in Local Store is refreshed from API (in seconds)
   const sensorSearchRetryRangeInDays = [1, 2, 7, 30, 60, 90];         // Days from now to search for sensors (on App Start)
   const sensorSearchTimeRangeForRepeatSearchesInSeconds = 3600;       // (Default: 1 Hour) 3600 Seconds from now to use for repeating sensor search's
-  const sensorDataNotFoundMsg = "No Sensors Found";                   // Message shows when no SpartanLync sensors were found for a vehicle search
 
-  const uiUpdatePollingTime = 30;                                     // How frequently to update the ToolTip / MenuItem UI (In seconds)
-  const uiUserInstruction = "Hover over or click on a vehicle to view the latest SpartanLync sensor information";
+  const uiUpdatePollingTime = 30;                                     // How frequently does update service refresh ToolTip / MenuItem UI (In seconds)
 
   const addInLocalStorageKeyName = "splGeotabMapStore";               // Lookup key to use when saving/retrieving/removing data from Browser Local Storage
   const addInLocalStorageSecret = "DKrKcInKvtb9wRB0le1qI7arr12yVTHU"; // Secret Passphrase used to encrypt/decryt storage data saved to Browser
@@ -31,11 +29,19 @@ geotab.addin.splgeotabmap = (elt, service) => {
                                 label: "Espa&ntilde;ol",
                               }];
 
-  const vehComponents = {                                             // Id's and Description's of supported Vehicles components
-    "tractor": "Tractor",
-    "trailer1": "Trailer 1",
-    "trailer2": "Dolly",
-    "trailer3": "Trailer 2"
+  const vehComponents = {                                             // Id/Description/TranslationCodes for supported Vehicles components
+    "toEn": {
+              "tractor": "Tractor",
+              "trailer1": "Trailer 1",
+              "trailer2": "Dolly",
+              "trailer3": "Trailer 2"
+            },
+    "toTr": {
+              "tractor": "veh_comp_tractor",
+              "trailer1": "veh_comp_trailer1",
+              "trailer2": "veh_comp_dolly",
+              "trailer3": "veh_comp_trailer2"
+            }
   };
 
   const splSelContainer = "#SplGeotabMapContainer";                   // Dom selector for splGeotabMap AddIn HTML container
@@ -82,22 +88,14 @@ geotab.addin.splgeotabmap = (elt, service) => {
         main: "",
         secondary: [],
         additional: [],
-      },
-      sensorsSearchingMsg: "Searching for SpartanLync Sensors...",
-      sensorsFoundMsg: "SpartanLync sensors detected",
-      sensorsFoundMenuItemMsg: "( Click 'Show SpartanLync Sensors' for more details in THE RIGHT-SIDE PANEL ===> )",
-      sensorsNotFoundMsg: "SpartanLync Sensors Not Found",
-    },
-
-    menuItemSettings: {
-      sensorsSearchingMsg: "Searching [ <b>{veh}</b> ]<br />for Temptrac / TPMS Sensors...<br />Please wait until you see SpartanLync Sensor search results on the Vehicle Map tooltip",
-      sensorsNotFoundMsg: "No Temptrac / TPMS Sensors Found on Vehicle [ <b>{veh}</b> ]",
+      }
     },
 
     // App Objects / Methods
     elt: elt,
-    app: null,
     ui: null,
+    tr: null,
+    app: null,
     logo: null,
     sdataTools: null,
     resetBtnElemObj: elt.querySelector(splSelResetBtn),
@@ -106,13 +104,11 @@ geotab.addin.splgeotabmap = (elt, service) => {
     timeFormat: splHumanTimeFormat,
     vehComponents: vehComponents,
     storeLifetime: cachedStoreLifetime,
-    uiUserInstruction: uiUserInstruction,
     uiUpdatePollingTime: uiUpdatePollingTime,
     supportedLanguages: supportedLanguages,
     defaultLanguage: defaultLanguage,
     addInJSONName: addInJSONName,
     addInBuildMetadataFilename: addInBuildMetadataFilename,
-    sensorDataNotFoundMsg: sensorDataNotFoundMsg,
     sensorSearchRetryRangeInDays: sensorSearchRetryRangeInDays,
     sensorSearchTimeRangeForRepeatSearchesInSeconds: sensorSearchTimeRangeForRepeatSearchesInSeconds,
   };
@@ -122,10 +118,10 @@ geotab.addin.splgeotabmap = (elt, service) => {
   my.ui = new InitOutputUI(my, elt, splSelContainer, splSelSensorContent, splSelLabel, splSelVehName, splSelVehSpeed);
   my.localStore = new InitLocalStorage(my, addInLocalStorageKeyName, addInLocalStorageSecret);
   my.sdataTools = new INITSplSensorDataTools(my.goLib, my.storage.sensorData.cache);
-  my.sdataTools.setSensorDataNotFoundMsg(my.sensorDataNotFoundMsg);
-  my.sdataTools.setVehComponents(my.vehComponents);
+  my.sdataTools.setVehComponents(my.vehComponents.toEn);
   my.logo = new InitLogoUI(my, elt, splSelGeotabMapLogo);
   my.splApi = new INITSplAPI(splApiUrl);
   my.app = SplGeotabMapUtils(my);
+  my.tr = my.app.tr.t;
   onLoadInitEvents(my);
 };

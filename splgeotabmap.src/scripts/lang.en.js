@@ -26,7 +26,9 @@ window.splgeotabmap.lang.en = {
 
   "map_menuitm_label":                  "Show SpartanLync Sensors",
   "panel_title":                        "SpartanLync Sensors For:",
+  "panel_sensor_timestamp":             "Sensor Timestamp",
   "panel_last_reading":                 "Last Reading",
+  "panel_switchto_spltools_instruction":"View In SpartanLync Tools",
   "panel_user_instruction":             "Hover over or click on a vehicle to view the latest SpartanLync sensor information",
 
   "error_title":                        "Error",

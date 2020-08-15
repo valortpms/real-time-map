@@ -721,7 +721,7 @@ const InitLogoUI = function (my, rootDomObj, containerId) {
         const addInJson = JSON.parse(settings.customerPages.filter((jsonTxt) => {
           return jsonTxt.indexOf(`"name":"${addInName}"`) > -1;
         }).join(""));
-        const addInDeploymentUrl = me.dirname(addInJson.items[0].mapScript.url);
+        const addInDeploymentUrl = addInJson.items[0].mapScript.url.split("/").slice(0,-1).join("/");
         const buildMetaUrl = addInDeploymentUrl + "/" + buildMetaFilename;
 
         fetch(buildMetaUrl)
@@ -754,10 +754,6 @@ const InitLogoUI = function (my, rootDomObj, containerId) {
       });
     }
   };
-
-this.dirname = function (path) {
-  return path.split("/").slice(0,-1).join("/");
-};
 
 this.configure = function (my, rootDomObj, containerId) {
   const me = this;

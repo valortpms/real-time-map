@@ -26,6 +26,7 @@ const SpartanLyncServices = {
    alertsDefaultStartupDelay: 8,                            // (Default: 8 seconds) UI will start showing alerts XX seconds after App loads in Browser
    alertsDefaultLabelPrefix: "SpartanLync Alert",           // Using showMsg.alert(); Unles overidden, what message to prefix the specified alert
 
+   addInJSONName: "SpartanLync Map",                        // Name of this Add-In within SystemSettings in MyGeotab Database
    buildMetadataFilename: "build.meta",                     // Filename residing in deployment directory containg build metadata, shown when hovering over SpartanLync Map Watermark
 
    vehComponents: {                                         // Id's and Description's of supported Vehicles components

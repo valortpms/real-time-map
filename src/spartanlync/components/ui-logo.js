@@ -1,9 +1,10 @@
 // eslint-disable-next-line no-unused-vars
 import React, { Component } from "react";
+import splCfg from "../config";
 import splSrv from "../services";
-import prodSplCfg from "../config/prod";
 // eslint-disable-next-line no-unused-vars
 import { SplGeotabMapInstallationStatusBtn } from "../components/ui-geotab-map-install-widget";
+import { makeAPICall } from "../../services/api/helpers";
 
 /**
  *  Renders a SpartanLync Logo Icon meant to show SplMap meta-data
@@ -15,7 +16,6 @@ export class SplLogo extends Component {
    constructor(props) {
       super(props);
 
-      this.buildUrlAttempt = 0;
       this.state = {
          buildVersion: "",
          buildDateUnix: null,
@@ -34,31 +34,40 @@ export class SplLogo extends Component {
       // Register a callback, invoked when SplTools is successfully initialized
       splSrv.events.register("onLoadSplServices", me.fetchSettings, false);
 
-      // Get build info from Backend server
-      me.fetchBuildDate((metadataTxt) => {
-         const [appVer, unixTimestamp] = metadataTxt.trim().split("\n");
-         if (appVer && !isNaN(unixTimestamp)) {
+      // Get build data from deployment folder on Backend Server
+      me.fetchBuildMetaData((metadataTxt) => {
+         if (metadataTxt) {
+            const [appVer, unixTimestamp] = metadataTxt.trim().split("\n");
+            if (appVer && !isNaN(unixTimestamp)) {
+               me.setState({
+                  buildVersion: appVer,
+                  buildDateUnix: unixTimestamp
+               });
+            }
+         }
+         else {
             me.setState({
-               buildVersion: appVer,
-               buildDateUnix: unixTimestamp
+               buildVersion: null,
+               buildDateUnix: null
             });
          }
       });
    }
 
-   fetchBuildDate(callback) {
+   fetchBuildMetaData(callback) {
       const me = this;
-      const buildUrl = me.getBuildUrl();
-      if (buildUrl) {
-         fetch(buildUrl)
-            .then(response => response.text())
-            .then(data => callback(data))
-            // eslint-disable-next-line no-unused-vars
-            .catch(err => me.fetchBuildDate(callback));  //console.log("---- Failed to Load URL ", buildUrl, " Error: ", err.stack)
-      }
-      else {
-         console.log("-------- SplLogo: Failed to load " + splSrv.buildMetadataFilename + "! GIVING UP!! --------");
-      }
+      me.getBuildMetaDataUrl((buildUrl) => {
+         if (buildUrl) {
+            fetch(buildUrl)
+               .then(response => response.text())
+               .then(data => callback(data))
+               .catch(() => callback(null));
+         }
+         else {
+            console.log(`--- SplLogo: fetchBuildMetaData(): Failed to load buildMetadata [ ${splSrv.buildMetadataFilename} ]`);
+            callback(null);
+         }
+      });
    }
 
    fetchSettings() {
@@ -70,21 +79,61 @@ export class SplLogo extends Component {
       });
    }
 
-   getBuildUrl() {
+   //
+   getBuildMetaDataUrl(callback) {
       const me = this;
-      me.buildUrlAttempt++;
-      switch (me.buildUrlAttempt) {
-         case 1:
-            return prodSplCfg.splApiUrl.replace("/api/", "/splmap.dev/" + splSrv.buildMetadataFilename);
-            break;
+      let addInPageName = "";
 
-         case 2:
-            return prodSplCfg.splApiUrl.replace("/api/", "/splmap/" + splSrv.buildMetadataFilename);
-            break;
-
-         default:
-            return null;
+      // If DEV hardcode the MyGeotab PageName to DEV version of SplMap
+      if (splCfg.appEnv === "dev") {
+         addInPageName = "#addin-spartanlync_map_dev-index"; // DEV Page Name
       }
+      // Otherwise, If PROXY-MODE (Running outside MyGeotab on SpartanLync servers) hardcode the page name to PROD version of SplMap
+      else if (splSrv.runningOnSpartanLyncDomain) {
+         addInPageName = "#addin-spartanlync_maps-index";   // PROD Page Name
+      }
+      // On MyGeotab, dynamic discover running version of SplMap
+      else {
+         addInPageName = window.location.hash.indexOf("?") > -1 ? window.location.hash.split("?")[0] : window.location.hash;
+      }
+
+      makeAPICall("Get",
+         { "typeName": "SystemSettings" })
+         .then(([settings]) => {
+            let addInJson = null;
+            settings.customerPages.map((jsonTxt) => {
+               const jsonObj = JSON.parse(jsonTxt);
+               const myGeotabPageName = me.convertAddInNameToMyGeotabPageName(jsonObj.name);
+               if (addInPageName.indexOf(myGeotabPageName) > -1) {
+                  addInJson = jsonObj;
+               }
+            });
+            if (addInJson) {
+               const addInDeploymentUrl = addInJson.items[0].url.split("/").slice(0, -1).join("/");
+               const buildMetaUrl = addInDeploymentUrl + "/" + splSrv.buildMetadataFilename;
+               callback(buildMetaUrl);
+               return;
+            }
+            callback(null);
+         })
+         .catch(reason => {
+            console.log(`--- SplLogo: getBuildMetaDataUrl(): Error getting buildMetadata URL: ${reason}`);
+            callback(null);
+         });
+   }
+
+   //
+   // Convert from Add-In Name in JSON to MyGeotab Page Name format
+   //
+   // Examples:
+   //    SpartanLync Map (Dev) => #addin-spartanlync_map_dev-index
+   //    SpartanLync Maps      => #addin-spartanlync_maps-index
+   //
+   convertAddInNameToMyGeotabPageName(addInName) {
+      if (typeof addInName === "string") {
+         return "addin-" + addInName.toLowerCase().replace(/[\W_]+/g, "_").replace(/^\_|\_$/g, "");
+      }
+      return "";
    }
 
    render() {
@@ -106,6 +155,7 @@ export class SplLogo extends Component {
                   <span>{sensorInfoRefreshRate ? (sensorInfoRefreshRate / 60) + " min" : "UnKnown"}</span>
                   <strong>Language:</strong>
                   <span dangerouslySetInnerHTML={{ __html: lang }}></span>
+                  <p>Use SpartanLync Tools to change the above settings</p>
                   <SplGeotabMapInstallationStatusBtn />
                   <strong>Build Version:</strong>
                   <span>{buildVersion}</span>

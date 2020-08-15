@@ -120,7 +120,12 @@
 #RTM-ViewContainer .spl-watermark > div > div > span {
    font-size: 8px;
 }
-
+#RTM-ViewContainer .spl-watermark > div > div > p {
+   font-size: 10px;
+   font-weight: bold;
+   text-align: center;
+   margin-bottom: 0px;
+ }
 
 /*
  *	-- Vehicle Configuration Tab

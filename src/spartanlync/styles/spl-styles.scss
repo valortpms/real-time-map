@@ -90,13 +90,20 @@
    -webkit-filter: drop-shadow( 0 0 3px rgba(47, 60, 67,.6));
    filter: drop-shadow( 0 0 3px rgba(47, 60, 67,.6));
 }
-#RTM-ViewContainer .spl-watermark:hover {
-   top: 85px;
-}
 #RTM-ViewContainer .spl-watermark > div {
+   position: absolute;
    display: none;
+   top: 0px;
+   left: 35px;
+   width: 225px;
+
    margin: 0px;
-   padding: 0px;
+   padding: 5px;
+   background-color: rgba(245, 245, 245, 0.75);
+   border: 1px solid #e0e2e3;
+   border-radius: 4px;
+   -webkit-filter: drop-shadow( 2px 2px 3px rgba(47, 60, 67,.6));
+   filter: drop-shadow( 2px 2px 3px rgba(47, 60, 67,.6));
 }
 #RTM-ViewContainer .spl-watermark:hover > div {
    display: inline-block;

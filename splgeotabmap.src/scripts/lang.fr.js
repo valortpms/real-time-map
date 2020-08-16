@@ -48,4 +48,5 @@ window.splgeotabmap.lang.fr = {
   "about_lang":                         "Langue",
   "about_buildver":                     "Version de construction",
   "about_builddate":                    "Date de construction",
+  "about_unknown":                      "Inconnue",
 }

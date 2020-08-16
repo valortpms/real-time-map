@@ -556,7 +556,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
 
         // Update MenuItem Panel
         if (vehReg.menuItem && typeof my.storage.sensorData.cache[vehReg.menuItem] !== "undefined" &&
-            typeof my.storage.sensorData.cache[vehReg.menuItem].data.vehName !== "undefined") {
+          typeof my.storage.sensorData.cache[vehReg.menuItem].data.vehName !== "undefined") {
           const vehId = vehReg.menuItem;
           const vehName = my.storage.sensorData.cache[vehId].data.vehName;
           my.service.api.call("Get", {
@@ -629,17 +629,19 @@ const InitLogoUI = function (my, rootDomObj, containerId) {
   this._buildVersion = null;
   this._buildDate = null;
 
-  this._labelAppName      = "about_appname";
-  this._labelTimezone     = "about_timezone";
-  this._labelRefresh      = "about_refresh";
-  this._labelLang         = "about_lang";
-  this._labelBuildVer     = "about_buildver";
-  this._labelBuildDate    = "about_builddate";
+  this._labelAppName = "about_appname";
+  this._labelTimezone = "about_timezone";
+  this._labelRefresh = "about_refresh";
+  this._labelLang = "about_lang";
+  this._labelBuildVer = "about_buildver";
+  this._labelBuildDate = "about_builddate";
   this._settingsChangeMsg = "about_instruction";
+  this._unknownValue = "";
 
   this.init = function () {
     const me = this;
     const my = me._my;
+    me._unknownValue = my.tr("about_unknown");
     me.refresh();
   };
 
@@ -649,7 +651,7 @@ const InitLogoUI = function (my, rootDomObj, containerId) {
     const rootEl = me._containerElemObj;
     const timeZone = my.storage.splStore.timezone;
     const refreshRate = my.storage.splStore.sensorInfoRefreshRate;
-    let language = "UnKnown";
+    let language = me._unknownValue;
 
     // Fetch Language from SplTools configuration
     if (typeof my.storage.splStore.lang !== "undefined" && my.storage.splStore.lang) {
@@ -660,11 +662,11 @@ const InitLogoUI = function (my, rootDomObj, containerId) {
 
     me._fetchBuildInfo((build) => {
       rootEl.innerHTML = me._renderHTML({
-        "timeZone":     timeZone ? timeZone : "UnKnown",
-        "refreshRate":  refreshRate ? (refreshRate / 60) + " min" : "UnKnown",
-        "language":     language,
-        "buildVer":     build.ver,
-        "buildDate":    build.date,
+        "timeZone": timeZone ? timeZone : me._unknownValue,
+        "refreshRate": refreshRate ? (refreshRate / 60) + " min" : me._unknownValue,
+        "language": language,
+        "buildVer": build.ver,
+        "buildDate": build.date,
       });
     });
   };
@@ -697,19 +699,19 @@ const InitLogoUI = function (my, rootDomObj, containerId) {
     const me = this;
     const my = me._my;
     return {
-      "appName":            my.tr(me._labelAppName),
-      "labelTimezone":      my.tr(me._labelTimezone),
-      "labelRefresh":       my.tr(me._labelRefresh),
-      "labelLang":          my.tr(me._labelLang),
-      "labelBuildVer":      my.tr(me._labelBuildVer),
-      "labelBuildDate":     my.tr(me._labelBuildDate),
-      "settingsChangeMsg":  my.tr(me._settingsChangeMsg),
+      "appName": my.tr(me._labelAppName),
+      "labelTimezone": my.tr(me._labelTimezone),
+      "labelRefresh": my.tr(me._labelRefresh),
+      "labelLang": my.tr(me._labelLang),
+      "labelBuildVer": my.tr(me._labelBuildVer),
+      "labelBuildDate": my.tr(me._labelBuildDate),
+      "settingsChangeMsg": my.tr(me._settingsChangeMsg),
 
-      "contentTimezone":    prop.timeZone,
-      "contentRefresh":     prop.refreshRate,
-      "contentLang":        prop.language,
-      "contentBuildVer":    prop.buildVer,
-      "contentBuildDate":   prop.buildDate,
+      "contentTimezone": prop.timeZone,
+      "contentRefresh": prop.refreshRate,
+      "contentLang": prop.language,
+      "contentBuildVer": prop.buildVer,
+      "contentBuildDate": prop.buildDate,
     };
   };
 
@@ -719,37 +721,37 @@ const InitLogoUI = function (my, rootDomObj, containerId) {
     const addInName = my.addInJSONName;
     const buildMetaFilename = my.addInBuildMetadataFilename;
 
-    if(me._buildVersion === null || me._buildDate === null) {
+    if (me._buildVersion === null || me._buildDate === null) {
       my.service.api.call("Get", {
         typeName: "SystemSettings"
       }).then(([settings]) => {
         const addInJson = JSON.parse(settings.customerPages.filter((jsonTxt) => {
           return jsonTxt.indexOf(`"name":"${addInName}"`) > -1;
         }).join(""));
-        const addInDeploymentUrl = addInJson.items[0].mapScript.url.split("/").slice(0,-1).join("/");
+        const addInDeploymentUrl = addInJson.items[0].mapScript.url.split("/").slice(0, -1).join("/");
         const buildMetaUrl = addInDeploymentUrl + "/" + buildMetaFilename;
 
         fetch(buildMetaUrl)
-        .then(response => response.text())
-        .then((metadataTxt) => {
-          const [appVer, unixTimestamp] = metadataTxt.trim().split("\n");
-          if (appVer && !isNaN(unixTimestamp)) {
-            me._buildVersion = appVer;
-            me._buildDate = my.app.convertUnixToTzHuman(unixTimestamp);
+          .then(response => response.text())
+          .then((metadataTxt) => {
+            const [appVer, unixTimestamp] = metadataTxt.trim().split("\n");
+            if (appVer && !isNaN(unixTimestamp)) {
+              me._buildVersion = appVer;
+              me._buildDate = my.app.convertUnixToTzHuman(unixTimestamp);
+              callback({
+                "ver": me._buildVersion,
+                "date": me._buildDate,
+              });
+            }
+          })
+          .catch(err => {
+            me._buildVersion = me._unknownValue;
+            me._buildDate = me._unknownValue;
             callback({
               "ver": me._buildVersion,
               "date": me._buildDate,
             });
-          }
-        })
-        .catch(err => {
-          me._buildVersion = "UnKnown";
-          me._buildDate = "UnKnown";
-          callback({
-            "ver": me._buildVersion,
-            "date": me._buildDate,
           });
-        });
       });
     }
     else {
@@ -760,18 +762,18 @@ const InitLogoUI = function (my, rootDomObj, containerId) {
     }
   };
 
-this.configure = function (my, rootDomObj, containerId) {
-  const me = this;
-  me._my = my;
-  me._rootElemObj = rootDomObj;
-  me._containerElemObj = me._rootElemObj.querySelector(containerId);
+  this.configure = function (my, rootDomObj, containerId) {
+    const me = this;
+    me._my = my;
+    me._rootElemObj = rootDomObj;
+    me._containerElemObj = me._rootElemObj.querySelector(containerId);
 
-  //DEBUG
-  me._containerElemObj.addEventListener("click", () => {
-    console.log(JSON.stringify(my.storage)); //DEBUG
-  });
-};
+    //DEBUG
+    me._containerElemObj.addEventListener("click", () => {
+      console.log(JSON.stringify(my.storage)); //DEBUG
+    });
+  };
 
-// configure when an instance gets created
-this.configure(my, rootDomObj, containerId);
+  // configure when an instance gets created
+  this.configure(my, rootDomObj, containerId);
 };

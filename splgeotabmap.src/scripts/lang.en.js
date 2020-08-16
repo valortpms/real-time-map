@@ -48,4 +48,5 @@ window.splgeotabmap.lang.en = {
   "about_lang":                         "Language",
   "about_buildver":                     "Build Version",
   "about_builddate":                    "Build Date",
+  "about_unknown":                      "UnKnown",
 }

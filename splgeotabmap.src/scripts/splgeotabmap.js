@@ -18,16 +18,11 @@ geotab.addin.splgeotabmap = (elt, service) => {
   const addInLocalStorageSecret = "DKrKcInKvtb9wRB0le1qI7arr12yVTHU"; // Secret Passphrase used to encrypt/decryt storage data saved to Browser
 
   const defaultLanguage = "en";
-  const supportedLanguages = [{
-    code: "en",
-    label: "English",
-  }, {
-    code: "fr",
-    label: "Fran&ccedil;ais",
-  }, {
-    code: "es",
-    label: "Espa&ntilde;ol",
-  }];
+  const supportedLanguages = {                                        // Languages supported by SplGeotabMap
+    "en": "English",
+    "fr": "Fran&#231;ais",
+    "es": "Espa&#241;ol"
+  };
 
   const vehComponents = {                                             // Id/Description/TranslationCodes for supported Vehicles components
     "toEn": {

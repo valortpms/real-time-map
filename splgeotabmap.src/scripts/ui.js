@@ -96,8 +96,9 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
 
       case "BUSY-NEW":
       case "FOUND":
+        const secondaryArr = my.app.fetchSensorTypes(vehId);
         tipCfg.main = my.tr("sensors_tooltip_found_msg");
-        tipCfg.secondary = my.app.fetchSensorTypes(vehId);
+        tipCfg.secondary = secondaryArr.concat(my.app.fetchAdditionalComponents(vehId));
         tipCfg.additional = [my.tr("sensors_tooltip_found_menuitem_msg")];
         break;
 
@@ -125,6 +126,23 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
 
     // Save Panel change immediately
     my.localStore.save("NOW");
+  };
+
+  this.closeMenuItem = function () {
+    const me = this;
+    if (my.storage.sensorData.vehRegistry.menuItem) {
+      // Stop Panel Update Polling Service / Task
+      my.ui.updateService.stop();
+
+      // Reset UI
+      my.storage.sensorData.vehRegistry.menuItem = "";
+      me.clear(() => {
+        me.showMsg(my.tr("panel_user_instruction"));
+      });
+
+      // Save Panel change immediately
+      my.localStore.save("NOW");
+    }
   };
 
   this.showError = function (msg) {
@@ -351,7 +369,9 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
       case "skeleton-body":
         const SplToolsSwitchTitle = my.tr("panel_switchto_spltools_instruction");
         const LastReadingTitle = my.tr("panel_last_reading");
+        const closeBtnLabel = my.tr("panel_btn_close_title");
         return `
+            <button class="vehDetailClose" aria-label="${closeBtnLabel}" data-microtip-position="right" role="tooltip">X</button>
             <div class="splTable">
                 <div class="splTableRow pointer" aria-label="${SplToolsSwitchTitle}" data-microtip-position="bottom" role="tooltip" onclick="navigateToSplTools('${content.vehId}','${content.vehName}')">
                     ${content.headerTopHtml}
@@ -655,9 +675,7 @@ const InitLogoUI = function (my, rootDomObj, containerId) {
 
     // Fetch Language from SplTools configuration
     if (typeof my.storage.splStore.lang !== "undefined" && my.storage.splStore.lang) {
-      language = my.supportedLanguages.filter((langObj) => {
-        return langObj.code === my.storage.splStore.lang;
-      })[0].label;
+      language = my.supportedLanguages[my.storage.splStore.lang];
     }
 
     me._fetchBuildInfo((build) => {

@@ -21,10 +21,12 @@ window.splgeotabmap.lang.es = {
   "sensors_tooltip_found_msg":          "Se detectaron sensores SpartanLync",
   "sensors_tooltip_found_menuitem_msg": "( Haga clic en 'Mostrar sensores SpartanLync' para obtener m&aacute;s detalles en EL PANEL DEL LADO DERECHO ===> )",
   "sensors_tooltip_not_found_msg":      "Sensores SpartanLync no encontrados",
+  "sensors_tooltip_comp_found_msg":     "Capteurs suppl&eacute;mentaires d&eacute;tect&eacute;s sur",
   "sensors_menuitm_searching_msg":      "Buscando [ <b>{veh}</b> ]<br /> para sensores Temptrac / TPMS ...<br />Espere hasta que vea los resultados de la b&uacute;squeda del sensor SpartanLync en la informaci&oacute;n sobre herramientas del mapa del veh&iacute;culo",
   "sensors_menuitm_not_Found_msg":      "No se encontraron sensores Temptrac / TPMS en el veh&iacute;culo [ <b>{veh}</b> ]",
 
   "map_menuitm_label":                  "Mostrar sensores SpartanLync",
+  "panel_btn_close_title":              "Cerca",
   "panel_title":                        "Sensores SpartanLync para:",
   "panel_sensor_timestamp":             "Marca de tiempo del sensor",
   "panel_last_reading":                 "&Uacute;ltima lectura",

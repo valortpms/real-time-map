@@ -60,6 +60,13 @@ const onLoadInitEvents = function (my) {
     console.log("--- StateChange Occured", JSON.stringify(evt)); //DEBUG
   });
 
+  // Create handler for dynamic closeMenuItem() button 'click' event
+  document.addEventListener("click", function (evt) {
+    if (evt.target && evt.target.classList.contains("vehDetailClose")) {
+      my.ui.closeMenuItem();
+    }
+  });
+
   // Event: Reset Button clicked
   my.resetBtnElemObj.addEventListener("click", () => {
     my.app.resetApp();
@@ -71,32 +78,39 @@ const onLoadInitEvents = function (my) {
  */
 const loadInitEventsPostTr = function (my) {
 
-  // Register Vehicle Menu-Item on map
-  my.service.actionList.attachMenu("vehicleMenu", (_, rest) => {
-    return Promise.resolve([
-      {
-        title: my.tr("map_menuitm_label"),
-        clickEvent: "ShowSplDeviceInfo",
-        data: rest.device,
-      },
-    ]);
-  });
+  // Register these events once on page load
+  if (!document.body.getAttribute("splgeotabmap")) {
 
-  // Event: Clicked Vehicle Menu-Item on map
-  my.service.actionList.attach("ShowSplDeviceInfo", ({ id }) => {
-    Promise.all([
-      my.service.api.call("Get", {
-        typeName: "Device",
-        search: { id },
-      }),
-      my.service.api.call("Get", {
-        typeName: "DeviceStatusInfo",
-        search: { deviceSearch: { id } },
-      }),
-    ]).then(([[device], [dsi]]) => {
-      my.ui.showMenuItem(id, device.name, dsi.speed);
+    // Register Vehicle Menu-Item on map
+    my.service.actionList.attachMenu("vehicleMenu", (_, rest) => {
+      return Promise.resolve([
+        {
+          title: my.tr("map_menuitm_label"),
+          clickEvent: "ShowSplDeviceInfo",
+          data: rest.device,
+        },
+      ]);
     });
-  });
+
+    // Event: Clicked Vehicle Menu-Item on map
+    my.service.actionList.attach("ShowSplDeviceInfo", ({ id }) => {
+      Promise.all([
+        my.service.api.call("Get", {
+          typeName: "Device",
+          search: { id },
+        }),
+        my.service.api.call("Get", {
+          typeName: "DeviceStatusInfo",
+          search: { deviceSearch: { id } },
+        }),
+      ]).then(([[device], [dsi]]) => {
+        my.ui.showMenuItem(id, device.name, dsi.speed);
+      });
+    });
+
+    // Set <body splgeotabmap="eventsok"> attribute as flag indicating initialization completed
+    document.body.setAttribute("splgeotabmap", "eventsok");
+  }
 };
 
 /**********************************************************************************
@@ -505,7 +519,7 @@ const SplGeotabMapUtils = function (my) {
       /**
        * fetchSensorTypes() Analyse sensor data looking for Temptrac/TPMS Sensor Types
        *
-       * @return Array() of types "Temptrac" / "TPMS"
+       * @return Array() of strings "Temptrac" / "TPMS"
        */
       fetchSensorTypes: function (vehId) {
         const sensorTypes = [];
@@ -541,6 +555,30 @@ const SplGeotabMapUtils = function (my) {
         }
         return sensorTypes;
       },
+
+      /**
+       * fetchAdditionalComponents() Analyse sensor data looking for Vehicle Components additional to 'tractor'
+       *
+       * @return Array() of strings
+       */
+      fetchAdditionalComponents: function (vehId) {
+        const additionalCompsArr = [];
+        if (typeof my.sdataTools._cache[vehId] !== "undefined") {
+          const sdata = my.sdataTools._cache[vehId].data;
+          if (typeof sdata.vehCfg.ids !== "undefined" && Array.isArray(sdata.vehCfg.ids)) {
+            const comps = sdata.vehCfg.ids.filter((compId) => { return compId !== "tractor"; });
+            if (comps.length) {
+              let additionalCompsTxt = my.tr("sensors_tooltip_comp_found_msg") + ": ";
+              additionalCompsTxt += comps.map((compId) => {
+                return my.tr(my.vehComponents.toTr[compId]);
+              }).join(", ");
+              additionalCompsArr.push(additionalCompsTxt);
+            }
+          }
+        }
+        return additionalCompsArr;
+      },
+
 
       /**
       *  fetchVehSensorDataAsync() Asynchronously fetch Temptrac/TPMS sensor data
@@ -617,7 +655,7 @@ const SplGeotabMapUtils = function (my) {
        * @return void
        */
       cancelPendingTasks: function () {
-        // Stop UI Update Polling Service / Task
+        // Stop Panel Update Polling Service / Task
         my.ui.updateService.stop();
       },
 
@@ -639,6 +677,7 @@ const SplGeotabMapUtils = function (my) {
        */
       tr: function () {
         const me = {
+          _parent: this,
           _appRootId: "#SplGeotabMapResetBtn",
 
           _appInit: true,

@@ -12,16 +12,14 @@ export const initCollapse = () => {
       const button = document.getElementById("collapse-button");
 
       if (content.style.maxWidth === "100%") {
-         //button.title = "Open Configuration Panel";
-         button.setAttribute("data-tip", "Open Configuration Panel");
+         button.setAttribute("data-tip", splmap.tr("splmap_tooltip_configpanel_open"));
          button.classList.remove("closeConfigPanel");
          button.classList.add("openConfigPanel");
          content.style.maxWidth = "0%";
          map.style.maxWidth = "100%";
       }
       else {
-         //button.title = "Collapse Configuration Panel";
-         button.setAttribute("data-tip", "Close Configuration Panel");
+         button.setAttribute("data-tip", splmap.tr("splmap_tooltip_configpanel_close"));
          button.classList.remove("openConfigPanel");
          button.classList.add("closeConfigPanel");
          content.style.maxWidth = "100%";

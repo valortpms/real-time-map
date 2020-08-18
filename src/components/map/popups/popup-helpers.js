@@ -35,12 +35,7 @@ export function retrieveDeviceInfo(deviceID) {
       [
          "id",
          "name",
-         "groups",
-         // "licensePlate",
-         // "licenseState",
-         // "serialNumber",
-         // "vehicleIdentificationNumber",
-         // "comment"
+         "groups"
       ].forEach(prop => devicesPropertyData[deviceID][prop] = deviceData[0][prop]);
 
       return devicesPropertyData[deviceID];
@@ -199,11 +194,13 @@ window.flyToDevice = id => {
 };
 
 export function filterMarkerButton(deviceID, cleanedName = "Go Device") {
-   return `<button class="RTM-FocusMarkerButton" onclick="addDeviceToFilter('${deviceID}','${cleanedName}')" type="button" title="Add Device to Vehicle Filter"></button>`;
+   const tooltipHtml = splmap.tr("splmap_tooltip_map_add_veh_tofilter");
+   return `<button class="RTM-FocusMarkerButton" onclick="addDeviceToFilter('${deviceID}','${cleanedName}')" type="button" title="${tooltipHtml}"></button>`;
 }
 
 export function flytoMarkerButton(deviceID) {
-   return `<button class="RTM-FocusMarkerButton" onclick="flyToDevice('${deviceID}')" type="button" title="Add Device to Vehicle Filter"></button>`;
+   const tooltipHtml = splmap.tr("splmap_tooltip_vehtab_veh_flyto");
+   return `<button class="RTM-FocusMarkerButton" onclick="flyToDevice('${deviceID}')" type="button" title="${tooltipHtml}"></button>`;
 }
 
 export function escapeQuotes(text) {

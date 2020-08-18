@@ -102,7 +102,7 @@ export function realTimefeedRunner() {
 
 export function initHistoricalFeedRunner() {
 
-   showSnackBar("Fetching Historical Data");
+   showSnackBar(splmap.tr("map_fetching_historical_data_inprogress"));
    progressBar.update(0.1);
 
    configStorage.getItem("historicalFeedDataList").then(indexedDBVal => {
@@ -210,7 +210,7 @@ export function historicalFeedDataComplete(historicalFeedDataList) {
    }
 
    progressBar.update(1);
-   showSnackBar("Historical Data Load Complete");
+   showSnackBar(splmap.tr("map_fetching_historical_data_completed"));
 
    storage.dateKeeper$.update();
    resetTransitionAnimation();

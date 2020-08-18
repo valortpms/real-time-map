@@ -20,7 +20,7 @@ export const ExceptionsTab = props => (
             setExceptionsDisplay={props.onClick}
          />
          <div className="config-Header">
-            <p>Selected Exceptions:</p>
+            <p>{splmap.tr("splmap_configpanel_exceptiontab_list_label")}:</p>
             <div className="toggleButtonDiv" id="ToggleExceptionButtons">
                <ExceptionToggleButtons setExceptionsDisplay={props.onClick} />
             </div>

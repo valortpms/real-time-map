@@ -135,7 +135,7 @@ function checkDateInFuture(selectedTime) {
    const liveDate = new Date(getLiveTime());
 
    if (selectedTime > liveDate) {
-      showSnackBar("Selected date is in future!");
+      showSnackBar(splmap.tr("datepicker_date_in_future"));
       return true;
    }
 
@@ -143,5 +143,5 @@ function checkDateInFuture(selectedTime) {
 }
 
 export function onChange() {
-   showSnackBar("Please hit Enter to apply your changes!");
+   showSnackBar(splmap.tr("datepicker_enter_to_apply_change"));
 };

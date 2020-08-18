@@ -25,7 +25,12 @@ export function initMarkerPopup(deviceMarker) {
       offset: [0, 0]
    });
 
-   popup.setContent(filterMarkerButton(deviceID) + "<strong class='loading'>Getting Data</strong>");
+   popup.setContent(
+      filterMarkerButton(deviceID) +
+      "<strong class='loading'>" +
+      splmap.tr("sensor_search_busy_getting_data_msg") +
+      "</strong>"
+   );
 
    mapMarker.bindPopup(popup);
 
@@ -49,7 +54,12 @@ export function initMarkerPopup(deviceMarker) {
 
    mapMarker.on("popupclose", () => {
       splSensorsOnMap.clearCache();
-      popup.setContent(filterMarkerButton(deviceID) + "<strong class='loading'>Getting Data</strong>");
+      popup.setContent(
+         filterMarkerButton(deviceID) +
+         "<strong class='loading'>" +
+         splmap.tr("sensor_search_busy_getting_data_msg") +
+         "</strong>"
+      );
    });
 
    mapMarker.on("mouseover", () => {

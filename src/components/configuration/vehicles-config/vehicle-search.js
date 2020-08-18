@@ -67,7 +67,7 @@ export const deviceSearch = {
       const data = {};
       ["id", "name", "color"].forEach(prop => data[prop] = deviceData[prop]);
       data.visible = true;
-      data.name += " (Group)";
+      data.name += " (" + splmap.tr("splmap_controlspanel_group") + ")";
 
       deviceSearch.deviceResultsCache[data.name] = data;
       return data;
@@ -159,14 +159,14 @@ export const deviceSearch = {
       if (deviceMarker) {
          const newZoomLevel = Math.max(Math.min(storage.map.getZoom() + 1, 18), 15);
          if (typeof deviceMarker.currentlatLng === "undefined") {
-            showSnackBar("Sorry, Cannot fly to this vehicle...please try again in a few minutes");
+            showSnackBar(splmap.tr("error_vehicle_cannot_fly"));
          }
          else {
             storage.map.flyTo(deviceMarker.currentlatLng, newZoomLevel);
          }
       }
       else {
-         showSnackBar("Sorry, no current day GPS data for this vehicle.");
+         showSnackBar(splmap.tr("error_vehicle_no_gps"));
       }
    }
 };

@@ -24,7 +24,6 @@ import {
 } from "./utils/helper";
 import { splToolsHelper } from "./spartanlync/components/ui-components";
 
-
 export function initBeforeLogin() {
    initDateKeeper();
 }
@@ -53,7 +52,6 @@ export function initAfterLogin() {
 
 export function handleBlur() {
    storage.dateKeeper$.pause();
-   console.log("Blurred!");
 }
 
 export function handleFocus(api, state) {

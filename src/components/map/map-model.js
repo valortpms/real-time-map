@@ -70,7 +70,7 @@ export const mapModel = {
                )
                .catch(() => mapModel.mapSetView([]));
          })
-         .catch(() => showSnackBar("Server is unavailable, please try again later."));
+         .catch(() => showSnackBar(splmap.tr("error_server_unavailable")));
    },
 
    mapSetView(latlng) {

@@ -19,7 +19,7 @@ export const VehiclesTab = props => (
             setVehicleDisplay={props.onClick}
          />
          <div className="config-Header">
-            <p>Selected Vehicles:</p>
+            <p>{splmap.tr("splmap_configpanel_vehtab_list_label")}:</p>
             <div className="toggleButtonDiv" id="ToggleDeviceButtons">
                <VehicleToggleButtons setVehicleDisplay={props.onClick} />
             </div>

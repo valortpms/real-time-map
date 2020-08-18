@@ -21,7 +21,6 @@ export const showMsg = {
 
    _defaultStartDelay: 10000, // in ms (default 10 seconds)
    _defaultShowTimeout: 2000, // in ms (default 2 seconds)
-   _defaultLabel: splSrv.alertsDefaultLabelPrefix,
 
    /**
     *  UI Display Handler
@@ -40,7 +39,7 @@ export const showMsg = {
     */
    alert: function (msg, showTimeout, labelTxt) {
       const me = this;
-      const alertMsg = (labelTxt || me._defaultLabel) + ": " + msg;
+      const alertMsg = (labelTxt || splmap.tr("splmap_alert_header")) + ": " + msg;
       me.msg(alertMsg, showTimeout);
    },
 
@@ -209,8 +208,7 @@ window.navigateToSplTools = (vehId, vehName) => {
          switchToSplTools(vehId, vehName);
       }
       else {
-         const msgAlert = "SplMap Error: Your MyGeotab Account does not have sufficient permissions to allow switching to SpartanLync Tools...Please run SpartanLync Tools manually.";
-         showMsg.alert(msgAlert);
+         showMsg.alert(splmap.tr("error_not_enough_privs_to_switch"));
       }
    }
 };
@@ -273,7 +271,7 @@ export const splToolsHelper = {
          switch (cmd) {
             case "flyToVehId":
                const vehLabel = cmds.val("flyToVehName") ? cmds.val("flyToVehName") : cmds.val("flyToVehId");
-               const msg = "Flying To Vehicle<br />'" + vehLabel + "'";
+               const msg = splmap.tr("splmap_veh_flying_msg").replace("{veh}", vehLabel);
 
                if (splCfg.appEnv === "prod" && splSrv._splToolsInstalled) {
                   // Remove page redirect query parameters from browser URL
@@ -290,7 +288,7 @@ export const splToolsHelper = {
                         window.history.replaceState({}, document.title, splSrv._splMapUrl);
 
                         // Inform user to wait while loading vehicle GPS data
-                        showModal.msg("Loading Vehicle GPS Data", "for Flying....");
+                        showModal.msg(splmap.tr("splmap_veh_flying_loading_gps"), splmap.tr("splmap_veh_flying_loading_gps_subtitle"));
                      });
 
                   // Notify user when performing flying operation

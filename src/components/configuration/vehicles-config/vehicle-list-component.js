@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import { deviceSearch } from "./vehicle-search";
 import { SplSensorDataTypesButton } from "../../../spartanlync/components/ui-vehicles-config";
 import storage from "../../../dataStore";
+import splSrv from "../../../spartanlync/services";
 
 export const VehicleListComponent = props => {
    const mapPropsToComponent = props.setVehicleDisplay;
@@ -46,6 +47,7 @@ export const VehicleListComponent = props => {
                   }
                ></span>
                <SplSensorDataTypesButton id={prop.id} name={prop.name} />
+               <img src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' className="loader" onLoad={splSrv.trOnElementLoad.vehicle}></img>
             </li>
          ))
          : [];

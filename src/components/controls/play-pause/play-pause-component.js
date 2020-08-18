@@ -8,7 +8,8 @@ export const PlayPauseButtonComponent = () => (
       id="RTMControlButton"
       onClick={() => pausePlayModel.togglePausePlay()}
       style={splStyles.playBtnStyle}
-      title="Pause"
+      data-tip="Pause"
+      data-for="splTooltip"
    >
    </button>
 );

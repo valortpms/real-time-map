@@ -463,7 +463,7 @@ export const InitSecurityClearanceAPI = function InitSecurityClearanceAPI(myapi,
             }
          }
       }, function (errorString) {
-         out.show("--- Error: InitSecurityClearanceAPI.fetchGroups(): " + errorString);
+         console.log("--- Error: InitSecurityClearanceAPI.fetchGroups(): " + errorString);
       });
    };
 

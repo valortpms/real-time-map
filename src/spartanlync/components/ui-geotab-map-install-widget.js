@@ -20,25 +20,21 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
       this.splDeeperAddInName = splSrv.splDeeperAddIn.name;
       this.splDeeperAddInJSON = splSrv.splDeeperAddIn.json;
 
-      this.initMsg = splSrv.splDeeperAddIn.msgs.initMsg;
-      this.successMsg = splSrv.splDeeperAddIn.msgs.successMsg;
-      this.installBtnLbl = splSrv.splDeeperAddIn.msgs.installBtnLbl;
-      this.unInstallBtnLbl = splSrv.splDeeperAddIn.msgs.unInstallBtnLbl;
-
-      this.addInInstalledMsg = splSrv.splDeeperAddIn.msgs.addInInstalledMsg;
-      this.addInNotInstalledMsg = splSrv.splDeeperAddIn.msgs.addInNotInstalledMsg;
-
-      this.failureMsg = splSrv.splDeeperAddIn.msgs.failureMsg;
-      this.initFailureMsg = splSrv.splDeeperAddIn.msgs.initFailureMsg;
-      this.errFetchUserDataMsg = splSrv.splDeeperAddIn.msgs.errFetchUserDataMsg;
-      this.errFetchSystemDataMsg = splSrv.splDeeperAddIn.msgs.errFetchSystemDataMsg;
-
-      this.featurePreviewEnabledForUser = splSrv.splDeeperAddIn.msgs.featurePreviewEnabledForUser;
-      this.featurePreviewOpSuccessMsg = splSrv.splDeeperAddIn.msgs.featurePreviewOpSuccessMsg;
-      this.featurePreviewOpFailureMsg = splSrv.splDeeperAddIn.msgs.featurePreviewOpFailureMsg;
-
-      this.cannotInstallBtnLbl = splSrv.splDeeperAddIn.msgs.cannotInstallBtnLbl;
-      this.cannotInstallBtnSubLbl = splSrv.splDeeperAddIn.msgs.cannotInstallBtnSubLbl;
+      this.initMsg = "";
+      this.successMsg = "";
+      this.failureMsg = "";
+      this.installBtnLbl = "";
+      this.initFailureMsg = "";
+      this.unInstallBtnLbl = "";
+      this.addInInstalledMsg = "";
+      this.cannotInstallBtnLbl = "";
+      this.errFetchUserDataMsg = "";
+      this.addInNotInstalledMsg = "";
+      this.errFetchSystemDataMsg = "";
+      this.cannotInstallBtnSubLbl = "";
+      this.featurePreviewOpSuccessMsg = "";
+      this.featurePreviewOpFailureMsg = "";
+      this.featurePreviewEnabledForUser = "";
 
       this.init = this.init.bind(this);
       this.onClickHandler = this.onClickHandler.bind(this);
@@ -84,6 +80,10 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
       const me = this;
       let isAddInInstalled = false;
 
+      // Init UI msgs in App Language
+      me.initLangMsgs();
+
+      // Fetch User / SystemSettings configurations
       makeAPIMultiCall(
          [
             ["Get", {
@@ -154,6 +154,34 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
          });
    };
 
+   /**
+    * Init Msg(s) in user-defined Language
+    *
+    *  @returns void
+    */
+   initLangMsgs() {
+      const me = this;
+
+      me.initMsg = splmap.tr("splgeotabmap_init_msg");
+      me.successMsg = splmap.tr("splgeotabmap_success_msg");
+      me.installBtnLbl = splmap.tr("splgeotabmap_install_btnlbl");
+      me.unInstallBtnLbl = splmap.tr("splgeotabmap_uninstall_btnlbl");
+
+      me.addInInstalledMsg = splmap.tr("splgeotabmap_addin_installed_msg");
+      me.addInNotInstalledMsg = splmap.tr("splgeotabmap_addIn_notinstalled_msg");
+
+      me.failureMsg = splmap.tr("splgeotabmap_failure_msg");
+      me.initFailureMsg = splmap.tr("splgeotabmap_init_failure_msg");
+      me.errFetchUserDataMsg = splmap.tr("splgeotabmap_err_fetch_userdata_msg");
+      me.errFetchSystemDataMsg = splmap.tr("splgeotabmap_err_fetch_systemdata_msg");
+
+      me.featurePreviewEnabledForUser = splmap.tr("splgeotabmap_feature_preview_enabled_foruser");
+      me.featurePreviewOpSuccessMsg = splmap.tr("splgeotabmap_feature_preview_op_success_msg");
+      me.featurePreviewOpFailureMsg = splmap.tr("splgeotabmap_feature_preview_op_failure_msg");
+
+      me.cannotInstallBtnLbl = splmap.tr("splgeotabmap_no_install_btnlbl");
+      me.cannotInstallBtnSubLbl = splmap.tr("splgeotabmap_no_install_btnsublbl");
+   };
 
    /**
     * Verify If Admin priviliges to Install SpartanLync Deeper Add-In for Geotab Map
@@ -164,10 +192,10 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
       const me = this;
       return new Promise((resolve, reject) => {
          if (typeof me.user.name === "undefined" || !me.user.name) {
-            reject("Missing or Invalid User Object");
+            reject(splmap.tr("error_invalid_user"));
          }
          if (typeof me.user.name === "undefined" || !me.user.name || !Array.isArray(me.sysSettings.customerPages)) {
-            reject("AddIn / customerPages Array Invalid");
+            reject(splmap.tr("error_invalid_addin_array"));
          }
          me.secClearance = new InitSecurityClearanceAPI(apiConfig.api, me.user, function () {
             if (me.secClearance.userInheritsFrom("Administrator")) {
@@ -199,7 +227,7 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
          if (typeof me.sysSettings.customerPages === "undefined" ||
             typeof me.sysSettings.dataVersion === "undefined" ||
             !Array.isArray(me.sysSettings.customerPages)) {
-            reject("Missing or Invalid SystemSettings Object");
+            reject(splmap.tr("error_systemsettings_missing_invalid"));
          }
          addInFound = typeof me.sysSettings.customerPages.find(a => a.includes(me.splDeeperAddInName)) === "undefined" ? false : true;
          if ((addInFound && operation === "install") || (!addInFound && operation !== "install")) {

@@ -20,7 +20,7 @@ export class MapView extends React.Component {
       return (
          <div id="RTM-Map-Container">
             {storage.isStandAlone ? <button id="RTM-LogoutButton" onClick={() => { apiConfig.api.forget(); }}>Logout</button> : null}
-            <SplLogo app-name="SpartanLync Map" />
+            <SplLogo />
             <div id="RTM-Map">
                <ProgressIndicatorComponent />
                <button

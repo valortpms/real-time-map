@@ -123,7 +123,7 @@ export class SplLogo extends Component {
    }
 
    //
-   // Convert from Add-In Name in JSON to MyGeotab Page Name format
+   // Convert from Add-In Name in JSON to MyGeotab Page Name format (approximately - the parts that should never change)
    //
    // Examples:
    //    SpartanLync Map (Dev) => #addin-spartanlync_map_dev-index
@@ -137,29 +137,30 @@ export class SplLogo extends Component {
    }
 
    render() {
-      const timezone = this.state.spltoolsTimezone ? this.state.spltoolsTimezone : "UnKnown";
-      const lang = this.state.spltoolsLang ? splSrv.splLanguages[this.state.spltoolsLang] : "UnKnown";
+      const unKnownHtml = splmap.tr("about_unknown");
+      const timezone = this.state.spltoolsTimezone ? this.state.spltoolsTimezone : unKnownHtml;
+      const lang = this.state.spltoolsLang ? splSrv.supportedLanguages[this.state.spltoolsLang] : unKnownHtml;
       const sensorInfoRefreshRate = this.state.spltoolsSensorInfoRefreshRate ? this.state.spltoolsSensorInfoRefreshRate : null;
-      const buildVersion = this.state.buildVersion ? this.state.buildVersion : "UnKnown";
-      let buildDateHuman = this.state.buildDateUnix ? splSrv.convertUnixToTzHuman(this.state.buildDateUnix) : "UnKnown";
-      buildDateHuman = buildDateHuman ? buildDateHuman : "UnKnown";
+      const buildVersion = this.state.buildVersion ? this.state.buildVersion : unKnownHtml;
+      let buildDateHuman = this.state.buildDateUnix ? splSrv.convertUnixToTzHuman(this.state.buildDateUnix) : unKnownHtml;
+      buildDateHuman = buildDateHuman ? buildDateHuman : unKnownHtml;
 
       return (
          <span className="spl-watermark">
             <div>
-               <label>{this.props["app-name"]}</label>
+               <label>{splmap.tr("about_appname")}</label>
                <div>
-                  <strong>Date & Time Timezone:</strong>
+                  <strong>{splmap.tr("about_timezone")}:</strong>
                   <span>{timezone}</span>
-                  <strong>Sensor Info Refresh Rate:</strong>
-                  <span>{sensorInfoRefreshRate ? (sensorInfoRefreshRate / 60) + " min" : "UnKnown"}</span>
-                  <strong>Language:</strong>
+                  <strong>{splmap.tr("about_refresh")}:</strong>
+                  <span>{sensorInfoRefreshRate ? (sensorInfoRefreshRate / 60) + " min" : unKnownHtml}</span>
+                  <strong>{splmap.tr("about_lang")}:</strong>
                   <span dangerouslySetInnerHTML={{ __html: lang }}></span>
-                  <p>Use SpartanLync Tools to change the above settings</p>
+                  <p>{splmap.tr("about_instruction")}</p>
                   <SplGeotabMapInstallationStatusBtn />
-                  <strong>Build Version:</strong>
+                  <strong>{splmap.tr("about_buildver")}:</strong>
                   <span>{buildVersion}</span>
-                  <strong>Build Date:</strong>
+                  <strong>{splmap.tr("about_builddate")}:</strong>
                   <span>{buildDateHuman}</span>
                </div>
             </div>

@@ -6,6 +6,7 @@ import { INITGeotabTpmsTemptracLib } from "./api/temptrac-tpms";
 import { INITSplSensorDataTools } from "./sensor-data-tools";
 import { userInfo, apiConfig } from "../../dataStore/api-config";
 import { showMsg, splToolsHelper } from "../components/ui-components";
+import { makeAPICall } from "../../services/api/helpers";
 
 /**
  *
@@ -16,7 +17,7 @@ const SpartanLyncServiceTools = {
 
    /**
    *
-   *  INIT Services at Application Start
+   *  Initialize SpartanLync Services at Application Start
    *
    */
    initServices: function () {
@@ -38,13 +39,18 @@ const SpartanLyncServiceTools = {
       splSrv.sdataTools = new INITSplSensorDataTools(splSrv.goLib);
       splSrv.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
       splSrv.sdataTools.setSensorDataNotFoundMsg(splSrv.sensorDataNotFoundMsg);
-      splSrv.sdataTools.setVehComponents(splSrv.vehComponents);
+      splSrv.sdataTools.setVehComponents(splSrv.vehComponents.toEn);
 
       // Detect if running on SpartanLync Servers in proxy-mode
       if (typeof splSrv.state.inSpartanLyncDomain !== "undefined" &&
          splSrv.state.inSpartanLyncDomain === true) {
          splSrv.runningOnSpartanLyncDomain = true;
       }
+
+      // Set multi-language utility globally
+      window.splmap.defaultLanguage = splSrv.defaultLanguage;
+      window.splmap.onChangeReTrDom = splSrv.tr.onChangeReTrDom;
+      window.splmap.tr = splSrv.tr.t;
    },
 
    /**
@@ -56,7 +62,7 @@ const SpartanLyncServiceTools = {
       const me = this;
       splSrv.sessionMgr.getSettings((remoteStore, dbDeviceIds) => {
          if (remoteStore === null || typeof remoteStore.splMap === "undefined") {
-            showMsg.alert(splSrv.splToolsNotInstalledErrorMsg);
+            showMsg.alert(splmap.tr("error_spltools_notfound"));
             setTimeout(function () {
                me.checkForSplTools();
             }, splSrv.splToolsSearchRetry);
@@ -94,12 +100,32 @@ const SpartanLyncServiceTools = {
          splSrv.events.exec("onLoadSplServices");
 
          // Notify on successful startup
-         showMsg.msg("SpartanLync Map Service Started Successfully");
+         showMsg.msg(splmap.tr("splmap_service_started"));
+
+         // Language translate elements in DOM that needed time to load
+         splSrv.tr.onDomLoaded();
 
       }, (errMsg) => {
-         const msg = "SpartanLync Map Service Startup Failed";
+         const msg = splmap.tr("splmap_service_failed");
          console.log(msg + ": " + errMsg);
          showMsg.msg(msg);
+      });
+   },
+
+   /**
+   *
+   * Fetch / Set as "defaultLanguage" the value of MyGeotab user.language property
+   *
+   */
+   getGeotabUserLanguage: function () {
+      return new Promise((resolve) => {
+         makeAPICall("Get",
+            { "typeName": "User" })
+            .then(([user]) => {
+               splSrv.defaultLanguage = window.splmap.defaultLanguage = user.language;
+            })
+            .catch(reason => console.log(`--- Error fetching Account user.language from MyGeotab: ${reason}`))
+            .finally(() => resolve());
       });
    },
 

@@ -56,7 +56,7 @@ export class SplSensorDataTypesButton extends Component {
       me.sdataTools = new INITSplSensorDataTools(me.goLib);
       me.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
       me.sdataTools.setSensorDataNotFoundMsg(splSrv.sensorDataNotFoundMsg);
-      me.sdataTools.setVehComponents(splSrv.vehComponents);
+      me.sdataTools.setVehComponents(splSrv.vehComponents.toEn);
 
       // Fetch SpartanLync Sensor Types installed into vehicle
       me.fetchSensorTypes();
@@ -136,18 +136,18 @@ export class SplSensorDataTypesButton extends Component {
 
          // Set the Loading Page
          me.setState({
-            html: "<strong class='loading'>Getting Data</strong>",
+            html: "<strong class='loading'>" + splmap.tr("sensor_search_busy_getting_data_msg") + "</strong>",
             loading: true
          });
 
          //Splunk for sensor data
          me.sdataTools.resetCache();
          me.sdataTools.fetchCachedSensorData(me.vehId, me.vehName)
-            .then((sensorData) => {
+            .then(sensorData => {
                splHtmlOut = splSensorDataParser.generateSensorDataHtml(sensorData, me.vehId, me.sdataTools);
                me.startContentRefresh();  // Start content update timer
             })
-            .catch((reason) => {
+            .catch(reason => {
                splHtmlOut = reason;
             })
             .finally(() => {
@@ -242,6 +242,8 @@ export class SplSensorDataTypesButton extends Component {
       const sensorBtnHandleClass = me.state.buttons.length ?
          (me.state.buttons.length > 1 ?
             "both-sensors" : "") : "hidden";
+      const vehicleComponentsTitle = splmap.tr("splmap_vehpanel_component_title");
+      const viewSensorDataTooltip = splmap.tr("splmap_vehpanel_splsensors_btn_tooltip");
 
       if (me.state.buttons.length) {
          setTimeout(() => {
@@ -254,7 +256,7 @@ export class SplSensorDataTypesButton extends Component {
                className={`spl-vehcfg-sensor-data-btn-wrapper ${sensorBtnWrapperClass}`}
                {...(me.state.buttons.length && {
                   "onClick": me.onClickHandler,
-                  "data-tip": "View SpartanLync Sensor Data for this Vehicle",
+                  "data-tip": viewSensorDataTooltip,
                   "data-for": "splTooltip"
                })}>
                <div className="spl-vehcfg-sensor-data-button">
@@ -264,8 +266,8 @@ export class SplSensorDataTypesButton extends Component {
                <div className={`btn-components ${sensorBtnComponentsClass}`}
                   {...(me.state.components.length && {
                      "data-tip":
-                        "<div class='veh-components-popup'><span>Vehicle Components</span>" +
-                        me.state.components.map(component => "<li>" + splSrv.vehComponents[component] + "</li>").join("") +
+                        "<div class='veh-components-popup'><span>" + vehicleComponentsTitle + "</span>" +
+                        me.state.components.map(component => "<li>" + splmap.tr(splSrv.vehComponents.toTr[component]) + "</li>").join("") +
                         "</div>",
                      "data-for": "splTooltip"
                   })}>

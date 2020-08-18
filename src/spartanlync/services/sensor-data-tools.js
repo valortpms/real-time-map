@@ -495,6 +495,8 @@ export const splSensorDataParser = {
       const me = this;
       const htmlEntities = new Html5Entities();
       const data = me.do(sdata, !sdataToolsLib.getFirstTime(vehId));
+      const lastReadingLabel = splmap.tr("sensor_search_last_reading");
+      const splToolsSwitchTooltip = splmap.tr("sensor_search_switchto_spltools_instruction");
       let headerTopHtml = "";
       let headerHtml = "";
       let contentHtml = "";
@@ -528,7 +530,7 @@ export const splSensorDataParser = {
          renderToString((
             <Fragment>
                <div className="splTable">
-                  <div className="splTableRow pointer" data-tip="View In SpartanLync Tools" data-for="splTooltip" myclick={`navigateToSplTools('${data.vehId}','${data.vehName}')`}>
+                  <div className="splTableRow pointer" data-tip={`${splToolsSwitchTooltip}`} data-for="splTooltip" myclick={`navigateToSplTools('${data.vehId}','${data.vehName}')`}>
                      {`${headerTopHtml}`}
                   </div>
                   <div className="splTableRow">
@@ -536,7 +538,7 @@ export const splSensorDataParser = {
                   </div>
                   {`${contentHtml}`}
                   <div className="splTableRow footer">
-                     <div className="splTableCell"><label>Last Reading:</label>{`${data.lastReadTimestamp}`}</div>
+                     <div className="splTableCell"><label>{`${lastReadingLabel}`}:</label>{`${data.lastReadTimestamp}`}</div>
                   </div>
                </div>
                <script type="text/javascript">
@@ -553,7 +555,7 @@ export const splSensorDataParser = {
       const me = this;
       const htmlEntities = new Html5Entities();
       const firstComponentHeaderClass = compId === data.compIds[0] ? "first" : "";
-      const headerTitle = showHeader ? splSrv.vehComponents[compId] : "";
+      const headerTitle = showHeader ? splmap.tr(splSrv.vehComponents.toTr[compId]) : "";
       const compHeaderHtml = headerTitle ? htmlEntities.decode(renderToString((
          <div className="splTableRow">
             <div className={`splTableCell component-header ${firstComponentHeaderClass}`}>
@@ -712,6 +714,7 @@ export const splSensorDataParser = {
       const me = this;
       const keysSorted = Object.keys(sdata).sort();
       const htmlEntities = new Html5Entities();
+      const sensorTimeLabel = splmap.tr("sensor_search_sensor_timestamp");
       let outHtml = "";
 
       keysSorted.forEach(function (loc) {
@@ -738,7 +741,7 @@ export const splSensorDataParser = {
             if (locObj.type === "Temptrac") {
                const locHtml = me._convertLocToShortName(locObj.zone);
                outHtml += htmlEntities.decode(renderToString((
-                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'><p style='margin: 0px; padding: 0px;'>Sensor Timestamp:</p>${sensorTime}</div>`} data-for="splTooltip">
+                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'><p style='margin: 0px; padding: 0px;'>${sensorTimeLabel}:</p>${sensorTime}</div>`} data-for="splTooltip">
                      <div className="val-loc">{`${locHtml}`}</div>
                      <div className="val-temp">{`${locObj.val.c}`} <span>&#8451;</span><p>{`${locObj.val.f}`} <span>&#8457;</span></p></div>
                   </div>
@@ -748,7 +751,7 @@ export const splSensorDataParser = {
             else if (locObj.type === "Tire Temperature") {
                const locHtml = me._convertLocToShortName(locObj.axle);
                outHtml += htmlEntities.decode(renderToString((
-                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'><p style='margin: 0px; padding: 0px;'>Sensor Timestamp:</p>${sensorTime}</div>`} data-for="splTooltip">
+                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'><p style='margin: 0px; padding: 0px;'>${sensorTimeLabel}:</p>${sensorTime}</div>`} data-for="splTooltip">
                      <div className="val-loc">{`${locHtml}`}</div>
                      <div className="val-temp">{`${locObj.val.c}`} <span>&#8451;</span><p>{`${locObj.val.f}`} <span>&#8457;</span></p></div>
                   </div>
@@ -758,7 +761,7 @@ export const splSensorDataParser = {
             else if (locObj.type === "Tire Pressure") {
                const locHtml = me._convertLocToShortName(locObj.axle);
                outHtml += htmlEntities.decode(renderToString((
-                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'><p style='margin: 0px; padding: 0px;'>Sensor Timestamp:</p>${sensorTime}</div>`} data-for="splTooltip">
+                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'><p style='margin: 0px; padding: 0px;'>${sensorTimeLabel}:</p>${sensorTime}</div>`} data-for="splTooltip">
                      <div className="val-loc">{`${locHtml}`}</div>
                      <div className="val-pres">{`${locObj.val.psi}`} <span>Psi</span><p>{`${locObj.val.kpa}`} <span>kPa</span></p><p>{`${locObj.val.bar}`} <span>Bar</span></p></div>
                   </div>

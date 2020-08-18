@@ -15,7 +15,7 @@ class View extends React.Component {
    }
 
    componentDidMount() {
-      splSrvTools.checkForSplTools();
+      splSrvTools.getGeotabUserLanguage().then(() => splSrvTools.checkForSplTools());
    }
 
    render() {

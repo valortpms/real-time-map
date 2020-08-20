@@ -47,6 +47,9 @@ const SpartanLyncServiceTools = {
          splSrv.runningOnSpartanLyncDomain = true;
       }
 
+      // Register Handler for perfroming checks to see if SplMap was given instructions by SplTools
+      splSrv.events.register("onAppFocus", splToolsHelper.scanForInstructions, false);
+
       // Set multi-language utility globally
       window.splmap.defaultLanguage = splSrv.defaultLanguage;
       window.splmap.onChangeReTrDom = splSrv.tr.onChangeReTrDom;

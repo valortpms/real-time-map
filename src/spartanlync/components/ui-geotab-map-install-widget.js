@@ -21,6 +21,7 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
       this.splDeeperAddInJSON = splSrv.splDeeperAddIn.json;
 
       this.initMsg = "";
+      this.appTitle = "";
       this.successMsg = "";
       this.failureMsg = "";
       this.installBtnLbl = "";
@@ -31,21 +32,26 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
       this.errFetchUserDataMsg = "";
       this.addInNotInstalledMsg = "";
       this.errFetchSystemDataMsg = "";
+      this.myAccountEnableBtnLbl = "";
+      this.myAccountDisableBtnLbl = "";
       this.cannotInstallBtnSubLbl = "";
       this.featurePreviewOpSuccessMsg = "";
       this.featurePreviewOpFailureMsg = "";
       this.featurePreviewEnabledForUser = "";
 
       this.init = this.init.bind(this);
-      this.onClickHandler = this.onClickHandler.bind(this);
+      this.onClickEveryoneHandler = this.onClickEveryoneHandler.bind(this);
+      this.onClickMyAccountHandler = this.onClickMyAccountHandler.bind(this);
+      this.onAppFocusHandler = this.onAppFocusHandler.bind(this);
 
       this.state = {
-         isInstalled: false,
-         btnMsg: "",
-         btnSubMsg: "",
-         btnDisabled: false
+         btnEveryoneDisabled: false,
+         btnEveryoneMsg: "",
+         btnAccountMsg: "",
+         subMsg: ""
       };
 
+      this.isAddInInstalled = false;
       this.isAdministrator = false;
       this.user = null;
       this.sysSettings = null;
@@ -69,19 +75,68 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
 
    /**
     * Init by
-    * 1. Fetch current User priviliges and Add-Ins Installed
-    * 2. Enable Feature Preview for Current User
-    * 3. Launch SpartanLync Deeper Add-In Installation if Add-In is missing
-    * 4. Report any errors if 1-3 fail
+    * 1. Load UI messages in current language from multi-langugae library
+    * 2. Verifying Account priviliges and Installation status of MyGeotab Map Deeper Add-In
+    * 3. Register Handlers for Buttons in UI and Refresh of Account/Add-In status on App Focus events
+    * 4. Report any errors if 1-3 fail to occur
     *
     *  @returns void
     */
    init() {
       const me = this;
-      let isAddInInstalled = false;
 
       // Init UI msgs in App Language
       me.initLangMsgs();
+
+      // Register Handler for updating local Account Object when App comes into focus
+      splSrv.events.register("onAppFocus", me.onAppFocusHandler, false);
+
+      // Perform checks on Add-In installation and Account Priviliges
+      me.verifyInstallationAndPrivs();
+   };
+
+
+   /**
+    * Init Msg(s) in user-defined Language
+    *
+    *  @returns void
+    */
+   initLangMsgs() {
+      const me = this;
+
+      me.initMsg = splmap.tr("splgeotabmap_init_msg");
+      me.appTitle = splmap.tr("splgeotabmap_title");
+      me.successMsg = splmap.tr("splgeotabmap_success_msg");
+      me.installBtnLbl = splmap.tr("splgeotabmap_install_btnlbl");
+      me.unInstallBtnLbl = splmap.tr("splgeotabmap_uninstall_btnlbl");
+
+      me.addInInstalledMsg = splmap.tr("splgeotabmap_addin_installed_msg");
+      me.addInNotInstalledMsg = splmap.tr("splgeotabmap_addIn_notinstalled_msg");
+
+      me.failureMsg = splmap.tr("splgeotabmap_failure_msg");
+      me.initFailureMsg = splmap.tr("splgeotabmap_init_failure_msg");
+      me.errFetchUserDataMsg = splmap.tr("splgeotabmap_err_fetch_userdata_msg");
+      me.errFetchSystemDataMsg = splmap.tr("splgeotabmap_err_fetch_systemdata_msg");
+
+      me.myAccountEnableBtnLbl = splmap.tr("splgeotabmap_my_account_enable");
+      me.myAccountDisableBtnLbl = splmap.tr("splgeotabmap_my_account_disable");
+
+      me.featurePreviewEnabledForUser = splmap.tr("splgeotabmap_feature_preview_enabled_foruser");
+      me.featurePreviewOpSuccessMsg = splmap.tr("splgeotabmap_feature_preview_op_success_msg");
+      me.featurePreviewOpFailureMsg = splmap.tr("splgeotabmap_feature_preview_op_failure_msg");
+
+      me.cannotInstallBtnLbl = splmap.tr("splgeotabmap_no_install_btnlbl");
+      me.cannotInstallBtnSubLbl = splmap.tr("splgeotabmap_no_install_btnsublbl");
+   };
+
+
+   /**
+    * Perform checks on Add-In installation and Account Priviliges
+    *
+    *  @returns void
+    */
+   verifyInstallationAndPrivs() {
+      const me = this;
 
       // Fetch User / SystemSettings configurations
       makeAPIMultiCall(
@@ -107,33 +162,28 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
             }
             me.sysSettings = results[1][0];
 
-            // Enable user feature preview, if disabled
-            if (me.user.isLabsEnabled) {
-               console.log(me.featurePreviewEnabledForUser.replace("{username}", me.user.name));
-            }
-            else {
-               me.manageFeaturePreview("install");
-            }
-
             // Check if SpartanLync Deeper Add-In Installed
             if (typeof me.sysSettings.customerPages !== "undefined" && me.sysSettings.customerPages.length) {
                if (typeof me.sysSettings.customerPages.find(a => a.includes(me.splDeeperAddInName)) === "undefined") {
                   console.log(me.addInNotInstalledMsg);
-                  isAddInInstalled = false;
+                  me.isAddInInstalled = false;
                }
                else {
                   console.log(me.addInInstalledMsg);
-                  isAddInInstalled = true;
+                  me.isAddInInstalled = true;
                }
             }
             else {
-               isAddInInstalled = false;
+               me.isAddInInstalled = false;
             }
+
+            // Verify and activate account feature preview as required by user
+            me.verifyAccountFeaturePreview();
 
             // Check for Admin priviliges to Install/Uninstall SpartanLync Deeper Add-In for Geotab Map
             me.havePrivsToInstallSpartanLyncDeeperAddIn()
                .then(() => {
-                  if (isAddInInstalled) {
+                  if (me.isAddInInstalled) {
                      me.msgMgr("install-success", true);
                   }
                   else {
@@ -154,34 +204,6 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
          });
    };
 
-   /**
-    * Init Msg(s) in user-defined Language
-    *
-    *  @returns void
-    */
-   initLangMsgs() {
-      const me = this;
-
-      me.initMsg = splmap.tr("splgeotabmap_init_msg");
-      me.successMsg = splmap.tr("splgeotabmap_success_msg");
-      me.installBtnLbl = splmap.tr("splgeotabmap_install_btnlbl");
-      me.unInstallBtnLbl = splmap.tr("splgeotabmap_uninstall_btnlbl");
-
-      me.addInInstalledMsg = splmap.tr("splgeotabmap_addin_installed_msg");
-      me.addInNotInstalledMsg = splmap.tr("splgeotabmap_addIn_notinstalled_msg");
-
-      me.failureMsg = splmap.tr("splgeotabmap_failure_msg");
-      me.initFailureMsg = splmap.tr("splgeotabmap_init_failure_msg");
-      me.errFetchUserDataMsg = splmap.tr("splgeotabmap_err_fetch_userdata_msg");
-      me.errFetchSystemDataMsg = splmap.tr("splgeotabmap_err_fetch_systemdata_msg");
-
-      me.featurePreviewEnabledForUser = splmap.tr("splgeotabmap_feature_preview_enabled_foruser");
-      me.featurePreviewOpSuccessMsg = splmap.tr("splgeotabmap_feature_preview_op_success_msg");
-      me.featurePreviewOpFailureMsg = splmap.tr("splgeotabmap_feature_preview_op_failure_msg");
-
-      me.cannotInstallBtnLbl = splmap.tr("splgeotabmap_no_install_btnlbl");
-      me.cannotInstallBtnSubLbl = splmap.tr("splgeotabmap_no_install_btnsublbl");
-   };
 
    /**
     * Verify If Admin priviliges to Install SpartanLync Deeper Add-In for Geotab Map
@@ -284,6 +306,30 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
 
 
    /**
+    * Verify Feature Preview Enabled.
+    * 1. If disabled, and
+    * 2. User has not opt-out of using SpartanLync on MyGeotab Map, then
+    * 3. Enable it
+    *
+    *  @returns void
+    */
+   verifyAccountFeaturePreview() {
+      const me = this;
+
+      // Log whether account feature preview is enabled
+      if (me.user.isLabsEnabled) {
+         console.log(me.featurePreviewEnabledForUser.replace("{username}", me.user.name));
+      }
+      // If user has not opt-out of featurePreview, enable it
+      else {
+         if (typeof splSrv.splStore.splMap.featurePreviewOptOut === "undefined") {
+            me.manageFeaturePreview("install");
+         }
+      }
+   };
+
+
+   /**
     * Enable/Disable Feature Preview for current User Account, via Geotab API
     *
     *  @returns void
@@ -301,15 +347,24 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
             }
          })
          .then(() => {
-            console.log(
-               me.featurePreviewOpSuccessMsg
-                  .replace("{op}", operation === "install" ? "Enabled" : "Disabled")
-                  .replace("{username}", me.user.name)
-            );
+            // On enable operation, remove featurePreview opt-out flag from user account config on SpartanLync server
+            if (operation === "install") {
+               if (typeof splSrv.splStore.splMap.featurePreviewOptOut !== "undefined") {
+                  const splStoreRec = splSrv.splStore;
+                  delete splStoreRec.splMap.featurePreviewOptOut;
+                  splSrv.splStore = splStoreRec;
+               }
+            }
+            // On disable operation, set featurePreview opt-out flag in user account config on SpartanLync server
+            else {
+               const splStoreRec = splSrv.splStore;
+               splStoreRec.splMap.featurePreviewOptOut = true;
+               splSrv.splStore = splStoreRec;
+            }
+            me.user.isLabsEnabled = operation === "install" ? true : false; // Sync local copy with new user account state
+            me.msgMgr("feature-preview-successful-operation");
          })
-         .catch(reason => {
-            me.msgMgr("feature-preview-" + (operation === "install" ? "install" : "uninstall") + "-failure", false, reason);
-         });
+         .catch(reason => me.msgMgr("feature-preview-" + (operation === "install" ? "install" : "uninstall") + "-failure", false, reason));
    };
 
 
@@ -320,6 +375,7 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
     *
     *  @returns void
     */
+   // eslint-disable-next-line complexity
    msgMgr(result, quietMode, faultMsg) {
       const me = this;
       const silentMode = quietMode || false;
@@ -328,12 +384,13 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
 
       switch (result) {
          case "install-success":
-            msg = me.successMsg.replace("{op}", "Installed").replace("{intofrom}", "into");
+            msg = silentMode ? "" : me.successMsg.replace("{op}", "Installed").replace("{intofrom}", "into");
+            me.isAddInInstalled = true;
             me.setState({
-               btnMsg: me.unInstallBtnLbl,
-               btnSubMsg: "",
-               btnDisabled: false,
-               isInstalled: true
+               btnEveryoneDisabled: false,
+               btnEveryoneMsg: me.unInstallBtnLbl,
+               btnAccountMsg: me.user.isLabsEnabled ? me.myAccountDisableBtnLbl : me.myAccountEnableBtnLbl,
+               subMsg: "",
             });
             break;
 
@@ -342,12 +399,13 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
             break;
 
          case "uninstall-success":
-            msg = me.successMsg.replace("{op}", "Removed").replace("{intofrom}", "from");
+            msg = silentMode ? "" : me.successMsg.replace("{op}", "Removed").replace("{intofrom}", "from");
+            me.isAddInInstalled = false;
             me.setState({
-               btnMsg: me.installBtnLbl,
-               btnSubMsg: "",
-               btnDisabled: false,
-               isInstalled: false
+               btnEveryoneDisabled: false,
+               btnEveryoneMsg: me.installBtnLbl,
+               btnAccountMsg: me.user.isLabsEnabled ? me.myAccountDisableBtnLbl : me.myAccountEnableBtnLbl,
+               subMsg: "",
             });
             break;
 
@@ -356,12 +414,22 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
             break;
 
          case "not-enough-privs":
-            msg = "--- " + me.cannotInstallBtnLbl + ": " + me.cannotInstallBtnSubLbl;
+            const cannotInstallHtml = me.cannotInstallBtnLbl.replace("{op}", me.isAddInInstalled ? "Remove" : "Add");
+            msg = "--- " + cannotInstallHtml + ": " + me.cannotInstallBtnSubLbl;
             me.setState({
-               btnMsg: me.cannotInstallBtnLbl,
-               btnSubMsg: me.cannotInstallBtnSubLbl,
-               btnDisabled: true,
-               isInstalled: false
+               btnEveryoneDisabled: true,
+               btnEveryoneMsg: cannotInstallHtml,
+               btnAccountMsg: me.user.isLabsEnabled ? me.myAccountDisableBtnLbl : me.myAccountEnableBtnLbl,
+               subMsg: me.cannotInstallBtnSubLbl,
+            });
+            break;
+
+         case "feature-preview-successful-operation":
+            msg = me.featurePreviewOpSuccessMsg
+               .replace("{op}", me.user.isLabsEnabled ? "Enabled" : "Disabled")
+               .replace("{username}", me.user.name);
+            me.setState({
+               btnAccountMsg: me.user.isLabsEnabled ? me.myAccountDisableBtnLbl : me.myAccountEnableBtnLbl,
             });
             break;
 
@@ -375,20 +443,22 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
 
          case "init-failure":
             msg = me.initFailureMsg;
+            me.isAddInInstalled = false;
             me.setState({
-               btnMsg: me.initFailureMsg,
-               btnSubMsg: "",
-               btnDisabled: true,
-               isInstalled: false
+               btnEveryoneDisabled: true,
+               btnEveryoneMsg: me.initFailureMsg,
+               btnAccountMsg: "",
+               subMsg: "",
             });
             break;
 
          default:
+            me.isAddInInstalled = false;
             me.setState({
-               btnMsg: me.initMsg,
-               btnSubMsg: "",
-               btnDisabled: false,
-               isInstalled: false
+               btnEveryoneDisabled: false,
+               btnEveryoneMsg: me.initMsg,
+               btnAccountMsg: "",
+               subMsg: "",
             });
       }
       if (msg) {
@@ -398,19 +468,20 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
             showSnackBar(msg);
          }
       }
-   }
+   };
 
 
    /**
-    * Click Handler, invoked once user decides to perform an Install/Uninstall action
+    * Click Handler for Everyone Button
+    * Invoked when Admin decides to Install/Uninstall Add-In from Database
     *
     *  @returns void
     */
-   onClickHandler() {
+   onClickEveryoneHandler() {
       const me = this;
       me.havePrivsToInstallSpartanLyncDeeperAddIn()
          .then(() => {
-            if (me.state.isInstalled) {
+            if (me.isAddInInstalled) {
                me.manageSpartanLyncDeeperAddIn("uninstall");
             }
             else {
@@ -422,24 +493,59 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
                me.msgMgr("not-enough-privs", true);
             }
             else {
-               me.msgMgr((me.state.isInstalled ? "uninstall" : "install") + "-failure", false, reason);
+               me.msgMgr((me.isAddInInstalled ? "uninstall" : "install") + "-failure", false, reason);
             }
          });
-   }
+   };
 
+
+   /**
+    * Click Handler for MyAccount Button
+    * Invoked to Enable/Disable the Feature Preview account option
+    *
+    *  @returns void
+    */
+   onClickMyAccountHandler() {
+      const me = this;
+      me.manageFeaturePreview(me.user.isLabsEnabled ? "uninstall" : "install");
+   };
+
+
+   /**
+    * Handler for updating local Account Object when App comes into focus
+    *
+    *  @returns void
+    */
+   onAppFocusHandler() {
+      const me = this;
+      me.verifyInstallationAndPrivs(); // Perform checks on Add-In installation and Account Priviliges
+   };
 
    render() {
       const me = this;
-      const btnDisabledClass = me.state.btnDisabled ? "disabled" : "";
+      const btnEveryoneDisabledClass = me.state.btnEveryoneDisabled ? "disabled" : "";
+      const isSingleButtonClass = me.isAddInInstalled && me.state.btnAccountMsg ? "" : " single-button";
+
       return (
-         <div className={`spl-geotab-map-install-status-btn ${btnDisabledClass}`}
-            {...(!me.state.btnDisabled && {
-               "onClick": me.onClickHandler
-            })}>
-            {me.state.btnMsg}
-            {me.state.btnSubMsg ? <div>( {me.state.btnSubMsg} )</div> : ""}
+         <div className="spl-geotab-map-install-btn-container">
+            <hr />
+            <label>{me.appTitle}:</label>
+            <div className="spl-geotab-map-install-btn-group">
+               <div className={`spl-geotab-map-install-status-btn ${btnEveryoneDisabledClass}${isSingleButtonClass}`}
+                  {...(!me.state.btnEveryoneDisabled && {
+                     "onClick": me.onClickEveryoneHandler
+                  })}>
+                  {me.state.btnEveryoneMsg}
+               </div>
+               {me.isAddInInstalled && me.state.btnAccountMsg ?
+                  <div className="spl-geotab-map-install-status-btn" onClick={this.onClickMyAccountHandler}>{me.state.btnAccountMsg}</div>
+                  : ""
+               }
+            </div>
+            {me.state.subMsg ? <div className="sub-msg">( {me.state.subMsg} )</div> : ""}
+            <hr />
          </div>
       );
-   }
+   };
 };
 

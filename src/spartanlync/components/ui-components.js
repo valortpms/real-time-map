@@ -264,9 +264,7 @@ export const splToolsHelper = {
     *  @returns void
     */
    scanForInstructions: function () {
-      const me = this;
-      const cmds = me.getCmds();
-
+      const cmds = splToolsHelper.getCmds();
       cmds.get.map(cmd => {
          switch (cmd) {
             case "flyToVehId":

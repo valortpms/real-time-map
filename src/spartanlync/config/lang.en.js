@@ -74,20 +74,23 @@ window.splmap.lang.en = {
   "map_fetching_historical_data_inprogress":       "Fetching Historical Data",
   "map_fetching_historical_data_completed":        "Historical Data Load Complete",
 
+  "splgeotabmap_title":                            "Administer SpartanLync for MyGeotab Map Installation", //
   "splgeotabmap_init_msg":                         "Checking Installation Status",
   "splgeotabmap_success_msg":                      "Successfully {op} SpartanLync {intofrom} MyGeotab Map",
-  "splgeotabmap_install_btnlbl":                   "Install SpartanLync into MyGeotab Map",
-  "splgeotabmap_uninstall_btnlbl":                 "Remove SpartanLync from MyGeotab Map",
-  "splgeotabmap_no_install_btnlbl":                "Cannot Add/Remove SpartanLync from MyGeotab Map",
+  "splgeotabmap_install_btnlbl":                   "Install for Everyone", //
+  "splgeotabmap_uninstall_btnlbl":                 "Remove for Everyone", //
+  "splgeotabmap_my_account_disable":               "Remove My Account Only", //
+  "splgeotabmap_my_account_enable":                "Enable for My Account", //
+  "splgeotabmap_no_install_btnlbl":                "Cannot {op} for Everyone",//
   "splgeotabmap_no_install_btnsublbl":             "Not enough priviliges...Please have your database Owner/Admin use this buttom",
-  "splgeotabmap_addin_installed_msg":              "--- SpartanLync Deeper Add-In for MyGeotab Map Installed",
-  "splgeotabmap_addIn_notinstalled_msg":           "--- SpartanLync Deeper Add-In for MyGeotab Map NOT Installed",
+  "splgeotabmap_addin_installed_msg":              "SpartanLync detected as Installed into MyGeotab Map",//
+  "splgeotabmap_addIn_notinstalled_msg":           "SpartanLync is NOT Installed in MyGeotab Map",//
   "splgeotabmap_failure_msg":                      "Failed to {op} SpartanLync {tofrom} MyGeotab Map",
   "splgeotabmap_init_failure_msg":                 "Failed to Initialize SpartanLync in MyGeotab Map",
   "splgeotabmap_err_fetch_userdata_msg":           "Missing user account data after Fetching from Geotab API",
   "splgeotabmap_err_fetch_systemdata_msg":         "Missing System Settings data after Fetching from Geotab API",
-  "splgeotabmap_feature_preview_enabled_foruser":  "--- Feature Preview already Enabled for [ {username} ]",
-  "splgeotabmap_feature_preview_op_success_msg":   "--- Successfully {op} Feature Preview for [ {username} ]",
+  "splgeotabmap_feature_preview_enabled_foruser":  "SpartanLync in MyGeotab Map already Enabled for [ {username} ]",//
+  "splgeotabmap_feature_preview_op_success_msg":   "{op} SpartanLync in MyGeotab Map for [ {username} ]",//
   "splgeotabmap_feature_preview_op_failure_msg":   "Failed to {op} Feature Preview for user [ {username} ]",
 
   "about_appname":                                 "SpartanLync Map",

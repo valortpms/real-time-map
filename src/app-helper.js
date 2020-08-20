@@ -22,7 +22,7 @@ import {
    resetAnimationOnFocus,
    resetTransitionAnimation
 } from "./utils/helper";
-import { splToolsHelper } from "./spartanlync/components/ui-components";
+import splSrv from "./spartanlync/services";
 
 export function initBeforeLogin() {
    initDateKeeper();
@@ -61,6 +61,6 @@ export function handleFocus(api, state) {
    resetTransitionAnimation();
    console.log("Focused!");
 
-   // Perfrom checks to see if SplMap was given instructions by SplTools
-   splToolsHelper.scanForInstructions();
+   // SpartanLync tasks invoked on App Focus
+   splSrv.events.exec("onAppFocus");
 }

@@ -91,7 +91,7 @@ window.splmap.lang.en = {
   "splgeotabmap_err_fetch_systemdata_msg":         "Missing System Settings data after Fetching from Geotab API",
   "splgeotabmap_feature_preview_enabled_foruser":  "SpartanLync in MyGeotab Map already Enabled for [ {username} ]",//
   "splgeotabmap_feature_preview_op_success_msg":   "{op} SpartanLync in MyGeotab Map for [ {username} ]",//
-  "splgeotabmap_feature_preview_op_failure_msg":   "Failed to {op} Feature Preview for user [ {username} ]",
+  "splgeotabmap_feature_preview_op_failure_msg":   "Failed to {op} SpartanLync in MyGeotab Map for user [ {username} ]",//
 
   "about_appname":                                 "SpartanLync Map",
   "about_instruction":                             "Use SpartanLync Tools to change the above settings",

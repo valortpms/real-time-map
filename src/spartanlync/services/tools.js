@@ -48,7 +48,15 @@ const SpartanLyncServiceTools = {
       }
 
       // Register Handler for perfroming checks to see if SplMap was given instructions by SplTools
-      splSrv.events.register("onAppFocus", splToolsHelper.scanForInstructions, false);
+      // But if early in boot-up lifecycle, defer till SpartanLync Services Loaded
+      splSrv.events.register("onAppFocus", () => {
+         if (splSrv._splToolsInstalled) {
+            splToolsHelper.scanForInstructions();
+         }
+         else {
+            splSrv.events.register("onLoadSplServices", splToolsHelper.scanForInstructions);
+         }
+      }, false);
 
       // Set multi-language utility globally
       window.splmap.defaultLanguage = splSrv.defaultLanguage;
@@ -101,14 +109,14 @@ const SpartanLyncServiceTools = {
          // Set Language-specific sensor data search messages
          splSrv.sdataTools.setSensorSearchInProgressResponseMsg(splmap.tr("sensor_search_busy_msg"));
 
+         // Refresh SplLogo with SplTools settings
+         splSrv.events.exec("onLoadSplServices");
+
          // Perfrom checks to see if SplMap was given instructions by SplTools
          // Called by MyGeotab handleFocus() in PROD
          if (splCfg.appEnv === "dev") {
             splToolsHelper.scanForInstructions();
          }
-
-         // Refresh SplLogo with SplTools settings
-         splSrv.events.exec("onLoadSplServices");
 
          // Notify on successful startup
          showMsg.msg(splmap.tr("splmap_service_started"));

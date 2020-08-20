@@ -187,10 +187,15 @@ function createStatusDataCalls(deviceID, statuses, statusData) {
    return statusDataCalls;
 }
 
-window.flyToDevice = id => {
+export function flyToDevice(id) {
    const deviceMarker = markerList[id];
-   const newZoomLevel = Math.max(Math.min(storage.map.getZoom() + 1, 18), 15);
-   storage.map.flyTo(deviceMarker.currentlatLng, newZoomLevel);
+   if (typeof deviceMarker.currentlatLng === "undefined") {
+      showSnackBar(splmap.tr("error_vehicle_cannot_fly"));
+   }
+   else {
+      const newZoomLevel = Math.max(Math.min(storage.map.getZoom() + 1, 18), 15);
+      storage.map.flyTo(deviceMarker.currentlatLng, newZoomLevel);
+   }
 };
 
 export function filterMarkerButton(deviceID, cleanedName = "Go Device") {

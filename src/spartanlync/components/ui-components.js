@@ -5,6 +5,7 @@ import splCfg from "../config";
 import storage from "../../dataStore";
 import { showSnackBar } from "../../components/snackbar/snackbar";
 import { manageSensorDataContentUI } from "./ui-vehicles-config";
+import { flyToDevice } from "../../components/map/popups/popup-helpers";
 
 /**
  *  show Queue of messages with a delay between each message
@@ -268,36 +269,24 @@ export const splToolsHelper = {
       cmds.get.map(cmd => {
          switch (cmd) {
             case "flyToVehId":
-               const vehLabel = cmds.val("flyToVehName") ? cmds.val("flyToVehName") : cmds.val("flyToVehId");
-               const msg = splmap.tr("splmap_veh_flying_msg").replace("{veh}", vehLabel);
 
-               if (splCfg.appEnv === "prod" && splSrv._splToolsInstalled) {
-                  // Remove page redirect query parameters from browser URL
-                  window.history.replaceState({}, document.title, splSrv._splMapUrl);
+               // Inform user to wait while loading vehicle GPS data
+               showModal.msg(splmap.tr("splmap_veh_flying_loading_gps"), splmap.tr("splmap_veh_flying_loading_gps_subtitle"));
 
-                  // Fly to current vehicle location
-                  showModal.msg(msg);
-                  flyToDevice(cmds.val("flyToVehId"));
-               }
-               else {
-                  splSrv.events.register("onLoadSplServices",
-                     function () {
-                        // Remove page redirect query parameters from browser URL
-                        window.history.replaceState({}, document.title, splSrv._splMapUrl);
+               // Notify user when performing flying operation
+               splSrv.events.register("onLoadMapDataCompleted",
+                  function () {
+                     const vehLabel = cmds.val("flyToVehName") ? cmds.val("flyToVehName") : cmds.val("flyToVehId");
+                     const msg = splmap.tr("splmap_veh_flying_msg").replace("{veh}", vehLabel);
+                     showModal.msg(msg, null, null, null, false);
 
-                        // Inform user to wait while loading vehicle GPS data
-                        showModal.msg(splmap.tr("splmap_veh_flying_loading_gps"), splmap.tr("splmap_veh_flying_loading_gps_subtitle"));
-                     });
+                     // Remove page redirect query parameters from browser URL
+                     window.history.replaceState({}, document.title, splSrv._splMapUrl);
 
-                  // Notify user when performing flying operation
-                  splSrv.events.register("onLoadMapDataCompleted",
-                     function () {
-                        showModal.msg(msg, null, null, null, false);
+                     // Fly to current vehicle location
+                     flyToDevice(cmds.val("flyToVehId"));
+                  });
 
-                        // Fly to current vehicle location
-                        flyToDevice(cmds.val("flyToVehId"));
-                     });
-               }
                // Notify user when performing flying operation
                splSrv.events.register("onFlyingComplete",
                   function () {

@@ -67,6 +67,7 @@
   display: grid;
 }
 #SplGeotabMapLogo > div > div > strong {
+  margin-top: 5px;
   font-size: 9px;
 }
 #SplGeotabMapLogo > div > div > span {
@@ -75,6 +76,7 @@
 #SplGeotabMapLogo > div > div > p {
   font-size: 10px;
   text-align: center;
+  margin-bottom: 5px;
 }
 
 /*
@@ -89,6 +91,12 @@
   width: 125px;
   padding: .5em 0em;
 }
+
+#SplGeotabMapResetBtn [aria-label][role~="tooltip"]::after {
+  white-space: break-spaces;
+  max-width: 300px;
+}
+
 
 /*
  *	-- Panel Reset Button
@@ -112,7 +120,7 @@
   border-radius: 5px;
   border-width: 0px;
   margin: 0px;
-  padding: 5px 10px;
+  padding: 5px;
 }
 #SplGeotabMapResetBtn button:hover {
   cursor: pointer;

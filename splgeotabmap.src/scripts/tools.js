@@ -285,6 +285,7 @@ const SplGeotabMapUtils = function (my) {
         // Apply run-time settings to sensor data search library
         my.sdataTools.setSensorDataLifetimeInSec(my.storage.splStore.sensorInfoRefreshRate); // "sensorInfoRefreshRate" from SplTools
         my.sdataTools.setSensorDataNotFoundMsg(my.tr("sensors_not_found"));
+        my.sdataTools.setSensorSearchInProgressResponseMsg(my.tr("panel_search_busy_msg"));
 
         // Init About Info in Logo / Watermark
         my.logo.init();
@@ -482,6 +483,7 @@ const SplGeotabMapUtils = function (my) {
           const aSyncSdataTools = new INITSplSensorDataTools(aSyncGoLib, my.storage.sensorData.cache);
           aSyncSdataTools.setSensorDataLifetimeInSec(my.storage.splStore.sensorInfoRefreshRate);
           aSyncSdataTools.setSensorDataNotFoundMsg(my.tr("sensors_not_found"));
+          aSyncSdataTools.setSensorSearchInProgressResponseMsg(my.tr("panel_search_busy_msg"));
           aSyncSdataTools.setVehComponents(my.vehComponents.toEn);
           aSyncSdataTools.fetchCachedSensorData(vehId, vehName)
             .then(() => me.postGetSensorData(vehId, vehName))
@@ -735,6 +737,12 @@ const SplGeotabMapUtils = function (my) {
             }
           },
 
+          _decodeHtmlCharacterEntities: function (html) {
+            const txtAreaObj = document.createElement("textarea");
+            txtAreaObj.innerHTML = html;
+            return txtAreaObj.value;
+          },
+
           t: function (id) {
             // Lib has not been switched(), therefore use default language
             if (!me._langDB && me._appInit) {
@@ -758,7 +766,7 @@ const SplGeotabMapUtils = function (my) {
                 }
               });
             }
-            return trVal;
+            return me._decodeHtmlCharacterEntities(trVal);
           },
 
           langTokens: function (html) {
@@ -4080,6 +4088,18 @@ const INITSplSensorDataTools = function (goLib, cache) {
   this.setSensorDataNotFoundMsg = function (msg) {
     const me = this;
     me._sensorDataNotFoundMsg = msg;
+  };
+
+  /**
+   * Getters/Setters for _sensorSearchInProgressResponse
+   */
+  this.getSensorSearchInProgressResponseMsg = function () {
+    const me = this;
+    return me._sensorSearchInProgressResponse;
+  };
+  this.setSensorSearchInProgressResponseMsg = function (msg) {
+    const me = this;
+    me._sensorSearchInProgressResponse = msg;
   };
 
   /**

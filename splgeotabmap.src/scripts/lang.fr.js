@@ -32,6 +32,7 @@ window.splgeotabmap.lang.fr = {
   "panel_last_reading":                 "Derni&egrave;re lecture",
   "panel_switchto_spltools_instruction":"Afficher dans les outils SpartanLync",
   "panel_user_instruction":             "Survolez ou cliquez sur un v&eacute;hicule pour afficher les derni&egrave;res informations du capteur SpartanLync",
+  "panel_search_busy_msg":              "OCCUP&Eacute;",
 
   "error_title":                        "Erreur",
   "error_app_title":                    "Erreur SplGeotabMap",

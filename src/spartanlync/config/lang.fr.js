@@ -11,14 +11,14 @@ window.splmap.lang.fr = {
   "veh_comp_dolly":                                "Chariot",
   "veh_comp_trailer2":                             "Bande annonce 2",
 
-  "sensor_search_busy_msg":                        "OCCUPÉ",
+  "sensor_search_busy_msg":                        "OCCUP&Eacute;",
   "sensor_search_busy_getting_data_msg":           "Obtenir des donn&eacute;es",
   "sensor_search_last_reading":                    "Derni&egrave;re lecture",
   "sensor_search_sensor_timestamp":                "Horodatage du capteur",
   "sensor_search_switchto_spltools_instruction":   "Voir dans SpartanLync Tools",
   "sensor_search_status_data_msg":                 "Donn&eacute;es d&apos;&eacute;tat",
 
-  "splmap_rule_name_label":                        "Nom de la règle",
+  "splmap_rule_name_label":                        "Nom de la r&egrave;gle",
   "splmap_alert_header":                           "Alerte SpartanLync",
   "splmap_service_started":                        "Le service SpartanLync Map a d&eacute;marr&eacute; avec succ&egrave;s",
   "splmap_service_failed":                         "&Eacute;chec du d&eacute;marrage du service SpartanLync Map",

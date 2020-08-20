@@ -26,7 +26,7 @@ export class SplLogo extends Component {
       };
 
       this.fetchSettings = this.fetchSettings.bind(this);
-   }
+   };
 
    componentDidMount() {
       const me = this;
@@ -52,7 +52,7 @@ export class SplLogo extends Component {
             });
          }
       });
-   }
+   };
 
    fetchBuildMetaData(callback) {
       const me = this;
@@ -68,7 +68,7 @@ export class SplLogo extends Component {
             callback(null);
          }
       });
-   }
+   };
 
    fetchSettings() {
       const me = this;
@@ -77,9 +77,8 @@ export class SplLogo extends Component {
          spltoolsLang: splSrv.splStore.lang,
          spltoolsSensorInfoRefreshRate: splSrv.splStore.sensorInfoRefreshRate,
       });
-   }
+   };
 
-   //
    getBuildMetaDataUrl(callback) {
       const me = this;
       let addInPageName = "";
@@ -97,6 +96,10 @@ export class SplLogo extends Component {
          addInPageName = window.location.hash.indexOf("?") > -1 ? window.location.hash.split("?")[0] : window.location.hash;
       }
 
+      if (!addInPageName) {
+         console.log("--- SplLogo: getBuildMetaDataUrl() Error: Could not identify App addInPageName!");
+         callback(null);
+      }
       makeAPICall("Get",
          { "typeName": "SystemSettings" })
          .then(([settings]) => {
@@ -120,7 +123,7 @@ export class SplLogo extends Component {
             console.log(`--- SplLogo: getBuildMetaDataUrl(): Error getting buildMetadata URL: ${reason}`);
             callback(null);
          });
-   }
+   };
 
    //
    // Convert from Add-In Name in JSON to MyGeotab Page Name format (approximately - the parts that should never change)
@@ -134,7 +137,7 @@ export class SplLogo extends Component {
          return "addin-" + addInName.toLowerCase().replace(/[\W_]+/g, "_").replace(/^\_|\_$/g, "");
       }
       return "";
-   }
+   };
 
    render() {
       const unKnownHtml = splmap.tr("about_unknown");

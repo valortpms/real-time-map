@@ -339,7 +339,7 @@ export const splToolsHelper = {
             }
          }
       }
-      else {
+      else if (typeof splSrv.state.getState !== "undefined") {
          const queryParams = splSrv.state.getState();
          for (const prop of Object.keys(queryParams)) {
             if (typeof queryParams[prop] !== "undefined" && queryParams[prop]) {

@@ -2,176 +2,178 @@ import noUiSlider from "propellerkit-range-slider/node_modules/nouislider/distri
 import storage from "../../../dataStore";
 
 import {
-  checkIfLive,
-  getLiveTime,
-  resetTransitionAnimation,
+   checkIfLive,
+   getLiveTime,
+   resetTransitionAnimation,
 } from "../../../utils/helper";
 
 import {
-  getPixelsPerMinute,
-  minutesInDay,
-  getMinuteOfDay,
-  calulateCurrentTime,
-  getTimeInlocalFormat,
-  minuteOfDayToHour,
-  calculateLeftOffset
+   getPixelsPerMinute,
+   minutesInDay,
+   getMinuteOfDay,
+   calulateCurrentTime,
+   getTimeInlocalFormat,
+   minuteOfDayToHour,
+   calculateLeftOffset
 } from "./slider-helper";
 
 export const sliderModel = {
 
-  userCurrentlySlidng: false,
-  currentHandle: 2,
+   userCurrentlySlidng: false,
+   currentHandle: 2,
 
-  range: {
-    "min": 0,
-    "max": minutesInDay
-  },
+   range: {
+      "min": 0,
+      "max": minutesInDay
+   },
 
-  get RTMSlider() {
-    return document.getElementById("RTM-TimeSlider");
-  },
+   get RTMSlider() {
+      return document.getElementById("RTM-TimeSlider");
+   },
 
-  initSlider() {
+   initSlider() {
 
-    const endHandleValue = getMinuteOfDay(storage.currentTime);
+      const endHandleValue = getMinuteOfDay(storage.currentTime);
 
-    const toolTipFormatter = {
-      //Display time in us format.
-      from: getTimeInlocalFormat,
-      to: getTimeInlocalFormat
-    };
-
-    noUiSlider.create(this.RTMSlider, {
-      step: 1, //Each step is one minute. There are 1440 minutes a day.
-      start: [getMinuteOfDay(storage.timeRangeStart), endHandleValue],
-      range: this.range,
-      pips: {
-        mode: "values",
-        values: [...Array(8).keys()].slice(1).map(val => Math.round(val * 180)),
-        density: 180,
-        format: {
-          // 'to' the formatted value. Receives a number.
-          to: minuteOfDayToHour,
-        },
-        stepped: true
-      },
-      behaviour: "drag-tap",
-      connect: true,
-      tooltips: [toolTipFormatter, toolTipFormatter]
-    });
-
-    this.RTMSlider.noUiSlider.on("start.one", this.startSliding.bind(this));
-    this.RTMSlider.noUiSlider.on("slide.one", this.userSliding.bind(this));
-    this.RTMSlider.noUiSlider.on("set.one", this.sliderValueSet.bind(this));
-
-    storage.dateKeeper$.subscribe(this.updateSlider.bind(this));
-    this.createSliderTitles();
-  },
-
-  createSliderTitles() {
-    const lower = document.getElementsByClassName("noUi-handle-lower");
-    lower[0].title = "Start Time";
-    const upper = document.getElementsByClassName("noUi-handle-upper");
-    upper[0].title = "Current Time";
-  },
-
-  updateSlider(currentSecond) {
-
-    if (!this.userCurrentlySlidng) {
-      const endHandleValue = getMinuteOfDay(currentSecond);
-      const start = [getMinuteOfDay(storage.timeRangeStart), endHandleValue];
-
-      const options = {
-        range: this.range,
-        padding: [0, endHandleValue + 1],
-        start
+      const toolTipFormatter = {
+         //Display time in us format.
+         from: getTimeInlocalFormat,
+         to: getTimeInlocalFormat
       };
 
-      this.RTMSlider.noUiSlider.updateOptions(options, false);
+      noUiSlider.create(this.RTMSlider, {
+         step: 1, //Each step is one minute. There are 1440 minutes a day.
+         start: [getMinuteOfDay(storage.timeRangeStart), endHandleValue],
+         range: this.range,
+         pips: {
+            mode: "values",
+            values: [...Array(8).keys()].slice(1).map(val => Math.round(val * 180)),
+            density: 180,
+            format: {
+               // 'to' the formatted value. Receives a number.
+               to: minuteOfDayToHour,
+            },
+            stepped: true
+         },
+         behaviour: "drag-tap",
+         connect: true,
+         tooltips: [toolTipFormatter, toolTipFormatter]
+      });
 
-      this.handleOverFlowFix(start, 1);
-      this.toolTipOverFlowFix(start, 1);
-    };
-  },
+      this.RTMSlider.noUiSlider.on("start.one", this.startSliding.bind(this));
+      this.RTMSlider.noUiSlider.on("slide.one", this.userSliding.bind(this));
+      this.RTMSlider.noUiSlider.on("set.one", this.sliderValueSet.bind(this));
 
-  startSliding(values, handle) {
-    this.toolTipOverFlowFix(values, handle);
-    this.currentHandle = handle;
-    this.userCurrentlySlidng = true;
-  },
+      storage.dateKeeper$.subscribe(this.updateSlider.bind(this));
+      this.createSliderTitles();
+   },
 
-  userSliding(values, handle) {
-    if (this.currentHandle === 2) {
-      this.handleOverFlowFix(values, handle);
-    }
-    this.toolTipOverFlowFix(values, handle);
-    this.userCurrentlySlidng = true;
-  },
+   createSliderTitles() {
+      const lower = document.getElementsByClassName("noUi-handle-lower");
+      lower[0].setAttribute("data-tip", "Start Time");
+      lower[0].setAttribute("data-for", "splTooltip");
+      const upper = document.getElementsByClassName("noUi-handle-upper");
+      upper[0].setAttribute("data-tip", "Current Time");
+      upper[0].setAttribute("data-for", "splTooltip");
+   },
 
-  sliderValueSet(values, handle) {
-    // handle 0 = first handle, 1 = second handle
-    this.userCurrentlySlidng = false;
-    this.handleOverFlowFix(values, handle);
+   updateSlider(currentSecond) {
 
-    storage.timeRangeStart = calulateCurrentTime(values[0]);
-    if (checkIfLive(storage.timeRangeStart) > 600) {
-      storage.timeRangeStart = getLiveTime();
-    }
+      if (!this.userCurrentlySlidng) {
+         const endHandleValue = getMinuteOfDay(currentSecond);
+         const start = [getMinuteOfDay(storage.timeRangeStart), endHandleValue];
 
-    let newTime = calulateCurrentTime(values[1]);
-    if (this.currentHandle === 0) {
-      storage.dateKeeper$.update();
+         const options = {
+            range: this.range,
+            padding: [0, endHandleValue + 1],
+            start
+         };
 
-    } else {
-      if (checkIfLive(newTime) > 600) {
-        newTime = getLiveTime();
+         this.RTMSlider.noUiSlider.updateOptions(options, false);
+
+         this.handleOverFlowFix(start, 1);
+         this.toolTipOverFlowFix(start, 1);
+      };
+   },
+
+   startSliding(values, handle) {
+      this.toolTipOverFlowFix(values, handle);
+      this.currentHandle = handle;
+      this.userCurrentlySlidng = true;
+   },
+
+   userSliding(values, handle) {
+      if (this.currentHandle === 2) {
+         this.handleOverFlowFix(values, handle);
       }
-      storage.dateKeeper$.setNewTime(newTime);
-    }
+      this.toolTipOverFlowFix(values, handle);
+      this.userCurrentlySlidng = true;
+   },
 
-    this.currentHandle = 2;
-  },
+   sliderValueSet(values, handle) {
+      // handle 0 = first handle, 1 = second handle
+      this.userCurrentlySlidng = false;
+      this.handleOverFlowFix(values, handle);
 
-  toolTipOverFlowFix(values, handle) {
+      storage.timeRangeStart = calulateCurrentTime(values[0]);
+      if (checkIfLive(storage.timeRangeStart) > 600) {
+         storage.timeRangeStart = getLiveTime();
+      }
 
-    const [lowerValue, upperValue] = values;
+      let newTime = calulateCurrentTime(values[1]);
+      if (this.currentHandle === 0) {
+         storage.dateKeeper$.update();
 
-    const tooltips = document.getElementsByClassName("noUi-tooltip");
-    const [lowerToolTip, upperToolTip] = tooltips;
+      } else {
+         if (checkIfLive(newTime) > 600) {
+            newTime = getLiveTime();
+         }
+         storage.dateKeeper$.setNewTime(newTime);
+      }
 
-    const slider = document.getElementById("RTM-TimeSlider");
-    const pixelsPerMinute = getPixelsPerMinute(slider.offsetWidth);
+      this.currentHandle = 2;
+   },
 
-    const offsetPixelWidth = 36;
+   toolTipOverFlowFix(values, handle) {
 
-    if (handle === 0) {
-      const leftOffset = calculateLeftOffset(offsetPixelWidth, lowerValue, pixelsPerMinute);
-      lowerToolTip.style.setProperty("left", `${leftOffset}px`, "important");
-    } else {
-      const leftOffset = calculateLeftOffset(offsetPixelWidth, upperValue, pixelsPerMinute);
-      upperToolTip.style.setProperty("left", `${leftOffset}px`, "important");
-    }
+      const [lowerValue, upperValue] = values;
 
-  },
+      const tooltips = document.getElementsByClassName("noUi-tooltip");
+      const [lowerToolTip, upperToolTip] = tooltips;
 
-  handleOverFlowFix(values) {
+      const slider = document.getElementById("RTM-TimeSlider");
+      const pixelsPerMinute = getPixelsPerMinute(slider.offsetWidth);
 
-    const [lowerValue] = values;
+      const offsetPixelWidth = 36;
 
-    const slider = document.getElementById("RTM-TimeSlider");
-    const pixelsPerMinute = getPixelsPerMinute(slider.offsetWidth);
+      if (handle === 0) {
+         const leftOffset = calculateLeftOffset(offsetPixelWidth, lowerValue, pixelsPerMinute);
+         lowerToolTip.style.setProperty("left", `${leftOffset}px`, "important");
+      } else {
+         const leftOffset = calculateLeftOffset(offsetPixelWidth, upperValue, pixelsPerMinute);
+         upperToolTip.style.setProperty("left", `${leftOffset}px`, "important");
+      }
 
-    const handles = document.getElementsByClassName("noUi-handle");
-    const [lowerHandle, upperHandle] = handles;
+   },
 
-    const leftOffset = calculateLeftOffset(9, lowerValue, pixelsPerMinute);
-    lowerHandle.style.setProperty("left", `${leftOffset - 9}px`, "important");
+   handleOverFlowFix(values) {
 
-    if (values[1] === values[0]) {
-      upperHandle.style.setProperty("left", `${leftOffset}px`, "important");
-    } else {
-      upperHandle.style.setProperty("left", "0px", "important");
-    }
-  },
+      const [lowerValue] = values;
+
+      const slider = document.getElementById("RTM-TimeSlider");
+      const pixelsPerMinute = getPixelsPerMinute(slider.offsetWidth);
+
+      const handles = document.getElementsByClassName("noUi-handle");
+      const [lowerHandle, upperHandle] = handles;
+
+      const leftOffset = calculateLeftOffset(9, lowerValue, pixelsPerMinute);
+      lowerHandle.style.setProperty("left", `${leftOffset - 9}px`, "important");
+
+      if (values[1] === values[0]) {
+         upperHandle.style.setProperty("left", `${leftOffset}px`, "important");
+      } else {
+         upperHandle.style.setProperty("left", "0px", "important");
+      }
+   },
 
 };

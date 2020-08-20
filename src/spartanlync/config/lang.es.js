@@ -11,11 +11,14 @@ window.splmap.lang.es = {
   "veh_comp_dolly":                                "Mu&ntilde;equita",
   "veh_comp_trailer2":                             "Remolque 2",
 
+  "sensor_search_busy_msg":                        "OCUPADO",
   "sensor_search_busy_getting_data_msg":           "Obtener datos",
   "sensor_search_last_reading":                    "&Uacute;ltima lectura",
   "sensor_search_sensor_timestamp":                "Marca de tiempo del sensor",
   "sensor_search_switchto_spltools_instruction":   "Ver en SpartanLync Tools",
+  "sensor_search_status_data_msg":                 "Datos de estado",
 
+  "splmap_rule_name_label":                        "Nombre de la regla",
   "splmap_alert_header":                           "Alerta SpartanLync",
   "splmap_service_started":                        "El servicio SpartanLync Map se inici&oacute; correctamente",
   "splmap_service_failed":                         "Error al iniciar el servicio SpartanLync Map",

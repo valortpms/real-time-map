@@ -46,8 +46,12 @@ export function initAfterLogin() {
    mapModel.locateUserAndSetView();
    resetAnimationOnFocus();
 
-   initRealTimeFeedRunner();
-   initHistoricalFeedRunner();
+   // Defer DataFeed Initialization till SpartanLync Services Loaded
+   splSrv.events.register("onLoadSplServices",
+      function () {
+         initRealTimeFeedRunner();
+         initHistoricalFeedRunner();
+      });
 }
 
 export function handleBlur() {

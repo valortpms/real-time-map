@@ -47,19 +47,26 @@ export class SplSensorDataTypesButton extends Component {
          splCfg.shouldSplSensorDataButtonUpdate = true;
       }, 50);
 
-      // Init SpartanLync sensor data services / tools
-      me.goLib = INITGeotabTpmsTemptracLib(
-         apiConfig.api,
-         splSrv.sensorSearchRetryRangeInDays,
-         splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds
-      );
-      me.sdataTools = new INITSplSensorDataTools(me.goLib);
-      me.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
-      me.sdataTools.setSensorDataNotFoundMsg(splSrv.sensorDataNotFoundMsg);
-      me.sdataTools.setVehComponents(splSrv.vehComponents.toEn);
+      // Defer Initialization till SpartanLync Services Loaded
+      splSrv.events.register("onLoadSplServices",
+         function () {
+            // Init SpartanLync sensor data services / tools
+            me.goLib = INITGeotabTpmsTemptracLib(
+               apiConfig.api,
+               splSrv.sensorSearchRetryRangeInDays,
+               splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds
+            );
+            me.sdataTools = new INITSplSensorDataTools(me.goLib);
+            me.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
+            me.sdataTools.setSensorDataNotFoundMsg(splSrv.sensorDataNotFoundMsg);
+            me.sdataTools.setVehComponents(splSrv.vehComponents.toEn);
 
-      // Fetch SpartanLync Sensor Types installed into vehicle
-      me.fetchSensorTypes();
+            // Set Language-specific sensor data search messages
+            me.sdataTools.setSensorSearchInProgressResponseMsg(splmap.tr("sensor_search_busy_msg"));
+
+            // Fetch SpartanLync Sensor Types installed into vehicle
+            me.fetchSensorTypes();
+         });
    }
    componentWillUnmount() {
       const me = this;

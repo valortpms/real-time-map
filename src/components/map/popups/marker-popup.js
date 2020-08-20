@@ -176,7 +176,6 @@ export function createMarkerPopupText(deviceID, groups, speed, name, statusData)
                popTextFactory.push(filterMarkerButton(deviceID, cleanedName));
                popTextFactory.push(getStrongText(cleanedName));
                popTextFactory.push(splHtmlOut);
-               //popTextFactory.push(createGroupNamesDiv(groups));  // Comment out returning Db Group Names as it adds no value
                popTextFactory.push(createSpeedRow(speed));
                popTextFactory.push(createStatusDataDiv(statusData));
                resolve(popTextFactory.filter(Boolean).join(""));
@@ -200,7 +199,7 @@ export function createStatusDataDiv(statusData) {
 
    if (statusData && Object.keys(statusData).length > 0) {
 
-      statusDiv += '<p class="RTM-BorderedTextBox">' + getStrongText("Status Data:");
+      statusDiv += '<p class="RTM-BorderedTextBox">' + getStrongText(splmap.tr("sensor_search_status_data_msg") + ":");
 
       const statusIDs = Object.keys(statusData);
       statusIDs.sort();

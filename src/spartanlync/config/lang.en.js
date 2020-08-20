@@ -11,11 +11,14 @@ window.splmap.lang.en = {
   "veh_comp_dolly":                                "Dolly",
   "veh_comp_trailer2":                             "Trailer 2",
 
+  "sensor_search_busy_msg":                        "BUSY",
   "sensor_search_busy_getting_data_msg":           "Getting Data",
   "sensor_search_last_reading":                    "Last Reading",
   "sensor_search_sensor_timestamp":                "Sensor Timestamp",
   "sensor_search_switchto_spltools_instruction":   "View In SpartanLync Tools",
+  "sensor_search_status_data_msg":                 "Status Data",
 
+  "splmap_rule_name_label":                        "Rule Name",
   "splmap_alert_header":                           "SpartanLync Alert",
   "splmap_service_started":                        "SpartanLync Map Service Started Successfully",
   "splmap_service_failed":                         "SpartanLync Map Service Startup Failed",

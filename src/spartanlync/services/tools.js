@@ -93,6 +93,14 @@ const SpartanLyncServiceTools = {
             splSrv._splStore = remoteStore; // Only Save Locally
          }
 
+         // Switch to SpsTools user-defined language preference
+         if (splSrv.defaultLanguage !== splSrv.splStore.lang) {
+            splSrv.tr.switchTo(splSrv.splStore.lang);
+         }
+
+         // Set Language-specific sensor data search messages
+         splSrv.sdataTools.setSensorSearchInProgressResponseMsg(splmap.tr("sensor_search_busy_msg"));
+
          // Perfrom checks to see if SplMap was given instructions by SplTools
          // Called by MyGeotab handleFocus() in PROD
          if (splCfg.appEnv === "dev") {

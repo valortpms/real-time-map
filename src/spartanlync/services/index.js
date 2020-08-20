@@ -284,7 +284,9 @@ const SpartanLyncServices = {
             "#SpeedControlDropUp [data-tip] | splmap_controlspanel_label_speed_tooltip",
             "#RTM-Map .leaflet-control-zoom .leaflet-control-zoom-in [title] | splmap_map_zoom_in",
             "#RTM-Map .leaflet-control-zoom .leaflet-control-zoom-out [title] | splmap_map_zoom_out",
-            "#collapse-button [data-tip]| splmap_tooltip_configpanel_open",
+            "#collapse-button [data-tip] | splmap_tooltip_configpanel_open",
+            "#RTM-TimeSlider .noUi-handle-lower [data-tip] | splmap_controlspanel_label_time_start",
+            "#RTM-TimeSlider .noUi-handle-upper [data-tip] | splmap_controlspanel_label_time_current",
 
             "#RTM-VehicleTitle | splmap_configpanel_vehtab_title",
             "#clearDevices [data-tip] | splmap_tooltip_vehtab_toggle_all",
@@ -409,6 +411,12 @@ const SpartanLyncServices = {
             return selDbArr;
          },
 
+         _decodeHtmlCharacterEntities: function (html) {
+            const txtAreaObj = document.createElement("textarea");
+            txtAreaObj.innerHTML = html;
+            return txtAreaObj.value;
+         },
+
          t: function (id, lang) {
             // Lib has not been switched(), therefore use default language
             if (!me._langDB && me._appInit) {
@@ -446,7 +454,7 @@ const SpartanLyncServices = {
                   }
                });
             }
-            return trVal;
+            return me._decodeHtmlCharacterEntities(trVal);
          },
 
          onChangeReTrDom: function (flushSelectorContains) {

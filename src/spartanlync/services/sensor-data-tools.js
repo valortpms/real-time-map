@@ -284,6 +284,18 @@ export const INITSplSensorDataTools = function (goLib, cache) {
    };
 
    /**
+    * Getters/Setters for _sensorSearchInProgressResponse
+    */
+   this.getSensorSearchInProgressResponseMsg = function () {
+      const me = this;
+      return me._sensorSearchInProgressResponse;
+   };
+   this.setSensorSearchInProgressResponseMsg = function (msg) {
+      const me = this;
+      me._sensorSearchInProgressResponse = msg;
+   };
+
+   /**
     * Clear the Sensor data cache of all vehicles
     * IF a SEARCH OPERATION is NOT occuring
     *

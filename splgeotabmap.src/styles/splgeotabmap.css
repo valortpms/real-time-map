@@ -94,7 +94,7 @@
 
 #SplGeotabMapResetBtn [aria-label][role~="tooltip"]::after {
   white-space: break-spaces;
-  max-width: 300px;
+  width: 200px;
 }
 
 
@@ -110,7 +110,7 @@
 }
 #SplGeotabMapResetBtn button {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 12px;
+  font-size: 11px;
   text-decoration: none;
   -webkit-box-shadow: -3px 1px 3px rgba(47, 60, 67, 0.6);
   box-shadow: -1px 1px 3px rgba(47, 60, 67, 0.6);
@@ -119,8 +119,8 @@
   background-color: #b5b6b7;
   border-radius: 5px;
   border-width: 0px;
-  margin: 0px;
-  padding: 5px;
+  margin: 0px -5px 0px 0px;
+  padding: 3px;
 }
 #SplGeotabMapResetBtn button:hover {
   cursor: pointer;

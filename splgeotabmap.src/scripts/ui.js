@@ -706,7 +706,7 @@ const InitLogoUI = function (my, rootDomObj, containerId) {
         <p>${content.settingsChangeMsg}</p>
         <strong>${content.labelBuildVer}:</strong>
         <span>${content.contentBuildVer}</span>
-        <strong>${content.labelBuildVer}:</strong>
+        <strong>${content.labelBuildDate}:</strong>
         <span>${content.contentBuildDate}</span>
       </div>
     </div>

@@ -3,7 +3,7 @@
 /**********************************************************************************
  *  App UI Lib
  */
-const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, panelLabelId, vehNameId, vehSpeedId) {
+const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, panelLabelId, vehNameId, vehSpeedId, panelBtnId, panelId, panelClass) {
   /**
    *  Private Variables
    */
@@ -12,6 +12,10 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
   this._callback = null;
   this._rootElemObj = null;
   this._containerElemObj = null;
+
+  this._panelOpenCloseBtnElemObj = null;
+  this._panelElemObj = null;
+  this._panelClosedClass = "";
 
   this._contentElemId = "";
   this._contentElemObj = null;
@@ -114,6 +118,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
   this.showMenuItem = function (vehId, vehName, vehSpeed) {
     const me = this;
     const my = me._my;
+    const panelOpenBtnObj = me._panelOpenCloseBtnElemObj;
 
     // Register Event
     my.storage.sensorData.vehRegistry.menuItem = vehId;
@@ -123,6 +128,16 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
 
     // Invoke UI Tooltip / Panel Update Task
     my.ui.updateService.start();
+
+    if (my.ui.isPanelClosed()) {
+      if (typeof panelOpenBtnObj !== "undefined" && panelOpenBtnObj) {
+        console.log("--- PANEL CLOSED...ATTEMPTING TO OPEN",);
+        panelOpenBtnObj.click();
+      }
+      else {
+        console.log("--- PANEL OPEN FAILED. Could not get handle on Panel button within iframe Parent DOM",);
+      }
+    }
 
     // Save Panel change immediately
     my.localStore.save("NOW");
@@ -304,6 +319,21 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
     data.lastReadTimestamp = my.app.convertUnixToTzHuman(me._lastReadTimestampUnix);
 
     return data;
+  };
+
+  /**
+   * Detect whether Add-In panel is open / closed
+   *
+   *  @returns boolean
+   */
+  this.isPanelClosed = function () {
+    const me = this;
+    if (typeof me._panelElemObj !== "undefined" && me._panelElemObj) {
+      return me._panelElemObj.classList.contains(me._panelClosedClass);
+    }
+    else {
+      console.log("--- PANEL OPEN/CLOSE CHECK FAILED. Could not get handle on Panel Object within iframe Parent DOM",);
+    }
   };
 
   this._getComponentContentHtml = function (compId, showHeader, data) {
@@ -617,11 +647,22 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
     return "";
   };
 
-  this.configure = function (my, rootDomObj, containerId, sensorContentId, panelLabelId, vehNameId, vehSpeedId) {
+  this.configure = function (my, rootDomObj, containerId, sensorContentId, panelLabelId, vehNameId, vehSpeedId, panelBtnId, panelId, panelClass) {
     const me = this;
     me._my = my;
     me._rootElemObj = rootDomObj;
     me._containerElemObj = me._rootElemObj.querySelector(containerId);
+    me._panelOpenCloseBtnElemObj = parent.document.querySelector(panelBtnId);
+    me._panelElemObj = parent.document.querySelector(panelId);
+    me._panelClosedClass = panelClass;
+
+    // The panel selector Ids could change by Geotab without warning, so test and report if broken
+    if (typeof me._panelOpenCloseBtnElemObj === "undefined" || me._panelOpenCloseBtnElemObj === null) {
+      console.log("--- Could not get handle on Add-In Panel Open/Close button within iframe Parent DOM...update Selector",);
+    }
+    if (typeof me._panelElemObj === "undefined" || me._panelElemObj === null) {
+      console.log("--- Could not get handle on Add-In Panel Container Element within iframe Parent DOM...update Selector",);
+    }
 
     // Use Ids to dynamically create reference to respective Dom objects on page load
     me._contentElemId = sensorContentId;
@@ -631,11 +672,12 @@ const InitOutputUI = function (my, rootDomObj, containerId, sensorContentId, pan
   };
 
   // configure when an instance gets created
-  this.configure(my, rootDomObj, containerId, sensorContentId, panelLabelId, vehNameId, vehSpeedId);
+  this.configure(my, rootDomObj, containerId, sensorContentId, panelLabelId, vehNameId, vehSpeedId, panelBtnId, panelId, panelClass);
 };
 
 /**********************************************************************************
- *  SpartanLync Logo / Watermark Lib
+ *  SpartanLync Logo / Watermark component
+ * - Shows SplTools User Settings and App metadata
  */
 const InitLogoUI = function (my, rootDomObj, containerId) {
   /**

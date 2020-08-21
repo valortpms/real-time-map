@@ -389,6 +389,12 @@
     margin-bottom: 7px;
   }
 
+  #SplGeotabMapResetBtn button {
+    margin: 0px;
+    right: 5px;
+    padding: 3px 6px;
+  }
+
   #SplGeotabMapLogo {
     position: relative;
     top: 12px;

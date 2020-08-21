@@ -47,6 +47,12 @@ geotab.addin.splgeotabmap = (elt, service) => {
   const splSelVehName = "#SplGeotabMapContainer .title strong";       // Dom selector for Vehicle Name in output HTML
   const splSelVehSpeed = "#SplGeotabMapContainer .title div";         // Dom selector for Vehicle Speed in output HTML
 
+  // iFrame Parent Dom selector for MyGeotab Map page Add-In Panel Open/Close button
+  const geotabAddInPanelOpenCloseBtnSel = "#liveMap_detailsPanelAndMapCanvasLayout .mapAddinResizer .resizerButton";
+  const geotabAddInPanelSel = "#liveMap_addinsPanel";                 // iFrame Parent Dom selector for MyGeotab Map page Add-In Panel
+  const geotabAddInPanelClass = "hiddenPane";                         // CSS class on the
+
+
   // Private Vars
   const my = {
     // APIs
@@ -110,7 +116,10 @@ geotab.addin.splgeotabmap = (elt, service) => {
 
   // Initialize App Objects
   my.goLib = INITGeotabTpmsTemptracLib(my.service.api, my.sensorSearchRetryRangeInDays, my.sensorSearchTimeRangeForRepeatSearchesInSeconds);
-  my.ui = new InitOutputUI(my, elt, splSelContainer, splSelSensorContent, splSelLabel, splSelVehName, splSelVehSpeed);
+  my.ui = new InitOutputUI(my, elt,
+    splSelContainer, splSelSensorContent, splSelLabel, splSelVehName, splSelVehSpeed,
+    geotabAddInPanelOpenCloseBtnSel, geotabAddInPanelSel, geotabAddInPanelClass
+  );
   my.localStore = new InitLocalStorage(my, addInLocalStorageKeyName, addInLocalStorageSecret);
   my.sdataTools = new INITSplSensorDataTools(my.goLib, my.storage.sensorData.cache);
   my.sdataTools.setVehComponents(my.vehComponents.toEn);

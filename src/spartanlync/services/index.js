@@ -294,18 +294,21 @@ const SpartanLyncServices = {
             "#VehicleList .mdc-list-item__meta.material-icons [data-tip] | splmap_tooltip_vehtab_veh_remove",
             "#VehicleList .spl-list-item .vehicle [data-tip] | splmap_tooltip_vehtab_veh_flyto",
             "#VehicleList .showConfig [data-tip] | splmap_tooltip_vehtab_veh_hideshow",
+            "#vehicle-tab .config-Header p | splmap_configpanel_vehtab_list_label",
 
             "#RTM-StatusTitle | splmap_configpanel_statustab_title",
             "#toggleStatus [data-tip] | splmap_tooltip_statustab_toggle_all",
             "#deleteStatus [data-tip] | splmap_tooltip_statustab_delete_all",
             "#StatusList .showConfig [data-tip] | splmap_tooltip_statustab_status_hideshow",
             "#StatusList .mdc-list-item__meta.material-icons [data-tip] | splmap_tooltip_statustab_status_remove",
+            "#status-tab .config-Header p | splmap_configpanel_statustab_list_label",
 
             "#RTM-ExceptionTitle | splmap_configpanel_exceptiontab_title",
             "#clearExceptions [data-tip] | splmap_tooltip_exceptiontab_toggle_all",
             "#deleteExceptions [data-tip] | splmap_tooltip_exceptiontab_delete_all",
             "#ExceptionsList .showConfig [data-tip] | splmap_tooltip_exceptiontab_exception_hideshow",
             "#ExceptionsList .mdc-list-item__meta.material-icons [data-tip] | splmap_tooltip_exceptiontab_exception_remove",
+            "#exception-tab .config-Header p | splmap_configpanel_exceptiontab_list_label",
 
             "#RTM-exception-search-bar [placeholder] | splmap_configpanel_search",
             "#RTM-status-search-bar [placeholder] | splmap_configpanel_search",

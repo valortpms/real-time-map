@@ -14,9 +14,16 @@ BUILD_RELATIVE_PATH="../_Builds"
 BUILD_DIST_RELATIVE_PATH="./dist"
 BUILD_DEPLOY_RELATIVE_PATH="../../src/public"
 MAPS_ARCHIVE_RELATIVE_PATH="../../src/map.src"
-SPLGEOTABMAP_PUBLIC_DIR="splgeotabmap"
 ZIP_CMD="/usr/bin/7z"
 RSYNC_CMD="/usr/bin/rsync"
+CURL_CMD="/mingw64/bin/curl"
+#
+SPLGEOTABMAP_PUBLIC_DIR="splgeotabmap"
+SPLGEOTABMAP_SRC_ROOT_PATH="splgeotabmap.src"
+SPLGEOTABMAP_SRC_MIN_FILES="scripts/lang.en.js scripts/lang.es.js scripts/lang.fr.js scripts/splgeotabmap.js scripts/tools.js scripts/ui.js"
+SPLGEOTABMAP_SRC_BUILD_PATHS="config.json images/ scripts/ splgeotabmap.html styles/"
+SPLGEOTABMAP_SRC_INDEX_FILE="splgeotabmap.html"
+SPLGEOTABMAP_DIST_RELATIVE_PATH="../../src/public/splgeotabmap"
 
 # Init
 UNIX_TIMESTAMP=`date +%s`
@@ -33,7 +40,11 @@ BUILD_UNIX_TIMESTAMP_PATH="${BUILD_PUBLIC_PATH}/${BUILD_UNIX_TIMESTAMP_FILE}"
 ADDIN_CONFIG_JSON_FILE_PATH="${BUILD_PUBLIC_PATH}/config.json"
 ADDIN_DEV_CONFIG_JSON_FILE_PATH="${BUILD_DEV_PUBLIC_PATH}/config.json"
 MAPS_ARCHIVE_PATH="${CURRENT_DIR}/${MAPS_ARCHIVE_RELATIVE_PATH}"
+#
 SPLGEOTABMAP_UNIX_TIMESTAMP_PATH="${BUILD_DEPLOY_RELATIVE_PATH}/${SPLGEOTABMAP_PUBLIC_DIR}/${BUILD_UNIX_TIMESTAMP_FILE}"
+SPLGEOTABMAP_SRC_ROOT_PATH="${CURRENT_DIR}/${SPLGEOTABMAP_SRC_ROOT_PATH}"
+SPLGEOTABMAP_DIST_ROOT_PATH="${CURRENT_DIR}/${SPLGEOTABMAP_DIST_RELATIVE_PATH}"
+SPLGEOTABMAP_DIST_INDEX_PATH="${SPLGEOTABMAP_DIST_ROOT_PATH}/${SPLGEOTABMAP_SRC_INDEX_FILE}"
 
 # Generate new build
 echo "---- BUILDING SpartanLync v${VERSION} SplMap App ----"
@@ -59,8 +70,38 @@ if [ "${OLDVERSION}" != "${VERSION}" ]; then
 fi
 rm -rf "${ADDIN_CONFIG_JSON_FILE_PATH}.bak"
 
+# SplGeotabMap - Generate new DIST
+echo -ne "\n---- SplGeotabMap -   Copying from [ ${SPLGEOTABMAP_SRC_ROOT_PATH} ]\n\t\t\t\tto [ ${SPLGEOTABMAP_DIST_ROOT_PATH} ]\n"
+rm -rf ${SPLGEOTABMAP_DIST_ROOT_PATH}/*
+for path in $SPLGEOTABMAP_SRC_BUILD_PATHS; do cp -a $SPLGEOTABMAP_SRC_ROOT_PATH/$path ${SPLGEOTABMAP_DIST_ROOT_PATH}; done
+
+# SplGeotabMap - Minify JS files in DIST + Update DIST INDEX file with minified file names
+echo -ne "\n---- SplGeotabMap - Minify files in [ ${SPLGEOTABMAP_DIST_ROOT_PATH} ]\n\tand\n\tUpdating INDEX file [ ${SPLGEOTABMAP_DIST_INDEX_PATH} ]\n"
+cd ${SPLGEOTABMAP_DIST_ROOT_PATH}
+for SCRIPT_FILE in $SPLGEOTABMAP_SRC_MIN_FILES;
+do
+   SCRIPT_PATH="${SPLGEOTABMAP_DIST_ROOT_PATH}/${SCRIPT_FILE}"
+   SCRIPT_MIN_PATH="${SCRIPT_PATH/\.js/\.min.js}"
+   SCRIPT_FILE_ESCAPED=${SCRIPT_FILE/\//\\/}
+   SCRIPT_MIN_FILE=${SCRIPT_FILE/\.js/\.min.js}
+   SCRIPT_MIN_FILE_ESCAPED=${SCRIPT_MIN_FILE/\//\\/}
+
+   if [ ! -f ${SCRIPT_FILE} ]; then echo -ne "\n**** ERROR!! DIST FILE NOT FOUND!! **** [ ${SCRIPT_PATH} ]\n\n"; exit 1; fi
+   printf "\t- %-25s=>\t%-25s\n" ${SCRIPT_FILE} ${SCRIPT_FILE/\.js/\.min.js}
+
+   # Minify JS
+   ERROR=$( { ${CURL_CMD} -S -X POST -s --data-urlencode input@${SCRIPT_FILE} https://javascript-minifier.com/raw > ${SCRIPT_MIN_PATH}; } 2>&1 )
+   EXIT_CODE=$?
+   if [[ $EXIT_CODE != 0 ]]; then echo -ne "\n**** CURL ERROR!! ****...Try Again!\n${ERROR}\n\n"; exit $EXIT_CODE; fi
+   rm -f $SCRIPT_FILE
+
+   # Update INDEX
+   sed -i "s/${SCRIPT_FILE_ESCAPED}/${SCRIPT_MIN_FILE_ESCAPED}/g" ${SPLGEOTABMAP_DIST_INDEX_PATH}
+done
+cd ${CURRENT_DIR}
+
 # Create SplMap Build Metadata File
-echo "---- Creating SplMap Build Metadata File [ ${BUILD_UNIX_TIMESTAMP_PATH} ] ---"
+echo -ne "\n---- Creating SplMap Build Metadata File [ ${BUILD_UNIX_TIMESTAMP_PATH} ] ---\n"
 echo "SpartanLync v${VERSION}" > ${BUILD_UNIX_TIMESTAMP_PATH}
 echo "${UNIX_TIMESTAMP}" >> ${BUILD_UNIX_TIMESTAMP_PATH}
 echo "---- Copying Build Metadata File to SplGeotabMap deployment folder [ ${SPLGEOTABMAP_UNIX_TIMESTAMP_PATH} ] ---"

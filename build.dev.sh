@@ -16,7 +16,7 @@ BUILD_DEPLOY_RELATIVE_PATH="../../src/public"
 MAPS_ARCHIVE_RELATIVE_PATH="../../src/map.src"
 ZIP_CMD="/usr/bin/7z"
 RSYNC_CMD="/usr/bin/rsync"
-CURL_CMD="/mingw64/bin/curl"
+MINIFY_CMD="/c/Users/lmit/AppData/Roaming/npm/node_modules/terser/bin/terser"
 #
 SPLGEOTABMAP_PUBLIC_DIR="splgeotabmap"
 SPLGEOTABMAP_SRC_ROOT_PATH="splgeotabmap.src"
@@ -63,7 +63,7 @@ for file in $TEMPLATE_FILES; do cp -a $BUILD_TEMPLATE_PATH/$file ${BUILD_PUBLIC_
 cp -a $ADDIN_CONFIG_JSON_FILE_PATH "${ADDIN_CONFIG_JSON_FILE_PATH}.bak"
 OLDVERSION=`grep "version" $ADDIN_CONFIG_JSON_FILE_PATH | tr -d '[:space:]",' | cut -f2 -d":"`
 if [ "${OLDVERSION}" != "${VERSION}" ]; then
-  echo -ne "---- Modifying Version from [ ${OLDVERSION} ] to [ ${VERSION} ] in [ ${ADDIN_CONFIG_JSON_FILE_PATH} ] ---\n"
+  echo -ne "\n---- Modifying Version from [ ${OLDVERSION} ] to [ ${VERSION} ] in [ ${ADDIN_CONFIG_JSON_FILE_PATH} ] ---\n"
   ERROR=$( { sed -i "s/${OLDVERSION}/${VERSION}/g" "${ADDIN_CONFIG_JSON_FILE_PATH}"; } 2>&1 )
   EXIT_CODE=$?
   if [[ $EXIT_CODE != 0 ]]; then echo -ne "\n**** SED VERSION MODIFY ERROR!! ****...Try Again!\n${ERROR}\n\n"; exit $EXIT_CODE; fi
@@ -76,7 +76,7 @@ rm -rf ${SPLGEOTABMAP_DIST_ROOT_PATH}/*
 for path in $SPLGEOTABMAP_SRC_BUILD_PATHS; do cp -a $SPLGEOTABMAP_SRC_ROOT_PATH/$path ${SPLGEOTABMAP_DIST_ROOT_PATH}; done
 
 # SplGeotabMap - Minify JS files in DIST + Update DIST INDEX file with minified file names
-echo -ne "\n---- SplGeotabMap - Minify files in [ ${SPLGEOTABMAP_DIST_ROOT_PATH} ]\n\tand\n\tUpdating INDEX file [ ${SPLGEOTABMAP_DIST_INDEX_PATH} ]\n"
+echo -ne "\n---- SplGeotabMap - Minify files in [ ${SPLGEOTABMAP_DIST_ROOT_PATH} ]\n\tand\n     Updating INDEX file [ ${SPLGEOTABMAP_DIST_INDEX_PATH} ]\n"
 cd ${SPLGEOTABMAP_DIST_ROOT_PATH}
 for SCRIPT_FILE in $SPLGEOTABMAP_SRC_MIN_FILES;
 do
@@ -90,7 +90,7 @@ do
    printf "\t- %-25s=>\t%-25s\n" ${SCRIPT_FILE} ${SCRIPT_FILE/\.js/\.min.js}
 
    # Minify JS
-   ERROR=$( { ${CURL_CMD} -S -X POST -s --data-urlencode input@${SCRIPT_FILE} https://javascript-minifier.com/raw > ${SCRIPT_MIN_PATH}; } 2>&1 )
+   ERROR=$( { ${MINIFY_CMD} --compress --mangle --output ${SCRIPT_MIN_PATH} -- ${SCRIPT_FILE}; } 2>&1 )
    EXIT_CODE=$?
    if [[ $EXIT_CODE != 0 ]]; then echo -ne "\n**** CURL ERROR!! ****...Try Again!\n${ERROR}\n\n"; exit $EXIT_CODE; fi
    rm -f $SCRIPT_FILE
@@ -104,22 +104,22 @@ cd ${CURRENT_DIR}
 echo -ne "\n---- Creating SplMap Build Metadata File [ ${BUILD_UNIX_TIMESTAMP_PATH} ] ---\n"
 echo "SpartanLync v${VERSION}" > ${BUILD_UNIX_TIMESTAMP_PATH}
 echo "${UNIX_TIMESTAMP}" >> ${BUILD_UNIX_TIMESTAMP_PATH}
-echo "---- Copying Build Metadata File to SplGeotabMap deployment folder [ ${SPLGEOTABMAP_UNIX_TIMESTAMP_PATH} ] ---"
+echo -ne "\n---- Copying Build Metadata File to SplGeotabMap deployment folder [ ${SPLGEOTABMAP_UNIX_TIMESTAMP_PATH} ] ---\n"
 cp -a "${BUILD_UNIX_TIMESTAMP_PATH}" "${SPLGEOTABMAP_UNIX_TIMESTAMP_PATH}"
 
 # Sync LIVE deployment folder with DEV folder
-echo -ne "---- Copying LIVE folder [ ${BUILD_PUBLIC_PATH} ] to DEV folder [ ${BUILD_DEV_PUBLIC_PATH} ] ---\n"
+echo -ne "\n---- Copying LIVE folder [ ${BUILD_PUBLIC_PATH} ] to DEV folder [ ${BUILD_DEV_PUBLIC_PATH} ] ---\n"
 rm -rf ${BUILD_DEV_PUBLIC_PATH}
 cp -r -a "${BUILD_PUBLIC_PATH}" "${BUILD_DEV_PUBLIC_PATH}"
 
 # Update config.json with correct URLs, MyGeotab Menu Paths / Titles for DEV build
-echo -ne "---- Fixing URLs, MyGeotab Menu Paths / Titles in DEV folder [ ${ADDIN_DEV_CONFIG_JSON_FILE_PATH} ]\n"
+echo -ne "\n---- Fixing URLs, MyGeotab Menu Paths / Titles in DEV folder [ ${ADDIN_DEV_CONFIG_JSON_FILE_PATH} ]\n"
 sed -i "s/\/${BUILD_PUBLIC_DIR}\//\/${BUILD_PUBLIC_DIR}${BUILD_DEV_EXTENSION}\//g" ${ADDIN_DEV_CONFIG_JSON_FILE_PATH}
 sed -i "s/Map\"/Map${ADDIN_DEV_CONFIG_JSON_TITLE_SUFFIX}\"/g" ${ADDIN_DEV_CONFIG_JSON_FILE_PATH}
 sed -i "s/\"path\": \"\"/\"path\": \"${ADDIN_DEV_CONFIG_JSON_MENU_PATH}\"/g" ${ADDIN_DEV_CONFIG_JSON_FILE_PATH}
 
 # Create DEV build ZIP file
-echo -ne "---- Zipping Folder(s) [ ${BUILD_DEV_PUBLIC_PATH} ] and [ ${SPLGEOTABMAP_PUBLIC_DIR} ]\n\t       TO file [ ${BUILD_DEV_ZIP_FILE_PATH} ]\n"
+echo -ne "\n---- Zipping Folder(s) [ ${BUILD_DEV_PUBLIC_PATH} ] and [ ${SPLGEOTABMAP_PUBLIC_DIR} ]\n\t       TO file [ ${BUILD_DEV_ZIP_FILE_PATH} ]\n"
 rm -rf ${BUILD_DEV_ZIP_FILE_PATH}
 (cd ${BUILD_DEPLOY_RELATIVE_PATH} && ${ZIP_CMD} a -r ${BUILD_DEV_ZIP_FILE} ${BUILD_DEV_PUBLIC_DIR} ${SPLGEOTABMAP_PUBLIC_DIR} > /dev/null)
 
@@ -127,7 +127,7 @@ rm -rf ${BUILD_DEV_ZIP_FILE_PATH}
 # with
 # "Geotab\src\map.src" (SpartanLync Map source code archive folder for hosting on Bitbucket, with GIT and NPM folders excluded)
 #
-echo -ne "---- Syncing Working Source code folder \"${CURRENT_DIR}\"\n\t\t    with Archive folder \"${MAPS_ARCHIVE_PATH}\"\n"
+echo -ne "\n---- Syncing Working Source code folder \"${CURRENT_DIR}\"\n\t\t    with Archive folder \"${MAPS_ARCHIVE_PATH}\"\n"
 rm -rf ${MAPS_ARCHIVE_PATH}
 ERROR=$( { ${RSYNC_CMD} -rv --exclude=node_modules --exclude=.git "${CURRENT_DIR}/" "${MAPS_ARCHIVE_PATH}"; } 2>&1 )
 EXIT_CODE=$?

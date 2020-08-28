@@ -204,10 +204,6 @@
  *	-- Vehicle Configuration Tab
 */
 
-#RTM-config-view .config-Header {
-   border-bottom-width: 0px;
-}
-
 #RTM-config-view .spl-vehcfg-sensor-data-btn-wrapper {
    position: absolute;
    top: 0px;
@@ -723,6 +719,11 @@
 *	-- Configuration Panel
 */
 
+#RTM-ViewContainer #RTM-config-view .config-Header {
+   border-bottom-width: 0px;
+   padding: 0px;
+}
+
 #RTM-ViewContainer #RTM-config-container {
    max-width: 0%;
 }
@@ -857,9 +858,9 @@
       flex-direction: column;
       justify-content: flex-start;
       align-items: flex-end;
-      height: 125px;
+      height: 100%;
       width: 250px;
-      padding-top: 20px;
+      padding-top: 15px;
    }
 
    #RTM-ControlsContainer > div:nth-child(2),
@@ -873,6 +874,9 @@
    }
 
    #RTM-ControlsContainer #RTM-LiveButton {
-      height: 30px;
+      right: -17px;
+      height: 20px;
+      margin: 5px 0px 0px 0px;
+      padding: 0px !important;
    }
 }

@@ -6,6 +6,9 @@
    position: relative;
 }
 
+#RTM-Map-Container #RTM-Map .mdc-snackbar {
+   z-index: 1001 !important;
+}
 #RTM-Map-Container #RTM-Map .mdc-snackbar__surface {
    max-width: 750px;
 }
@@ -203,11 +206,6 @@
 
 #RTM-config-view .config-Header {
    border-bottom-width: 0px;
-}
-#RTM-config-view #VehicleList {
-   border-top: 1px solid #E9ECEF;
-   margin-top: 0px;
-   padding-top: 1px;
 }
 
 #RTM-config-view .spl-vehcfg-sensor-data-btn-wrapper {
@@ -675,5 +673,206 @@
    }
    to {
        opacity: 1;
+   }
+}
+
+
+/*
+*	-- Control Panel
+*/
+
+#RTM-ControlBarContainer {
+   box-shadow: none;
+}
+
+#RTM-ControlsContainer .inputControls.speed {
+   margin-top: 7px;
+   margin-left: 20px;
+}
+#RTM-ControlsContainer #speedLabel {
+   bottom: auto;
+   display: flex;
+   justify-content: flex-end;
+   width: 83px;
+   margin-bottom: 2px;
+}
+#RTM-ControlsContainer #speedLabel .mdc-floating-label {
+   position: relative;
+   top: auto !important;
+   left: auto !important;
+   display: inline-block;
+   margin: 0px;
+}
+
+#RTM-ControlsContainer #RTM-LiveButton {
+   width: 100px;
+   white-space: nowrap;
+   bottom: 4px;
+}
+
+#RTM-ControlsContainer .inputControls,
+#RTM-ControlsContainer .inputControls .mdc-button {
+   height: 20px;
+}
+#RTM-ControlsContainer > .inputControls {
+   margin-bottom: 13px;
+}
+
+
+/*
+*	-- Configuration Panel
+*/
+
+#RTM-ViewContainer #RTM-config-container {
+   max-width: 0%;
+}
+#RTM-ViewContainer #RTM-Map {
+   max-width: 100%;
+}
+#RTM-ViewContainer #RTM-config-container.panel-open {
+   max-width: 100%;
+   min-width: 260px;
+}
+#RTM-ViewContainer #RTM-Map.panel-open {
+   max-width: 75%;
+}
+
+#RTM-config-view .RTM-Tab {
+   padding: 14px 5px;
+}
+#RTM-ViewContainer #RTM-config-header #RTM-VehicleTitle {
+   width: 30%;
+}
+#RTM-ViewContainer #RTM-config-header #RTM-StatusTitle {
+   width: 20%;
+}
+#RTM-ViewContainer #RTM-config-header #RTM-ExceptionTitle {
+   width: 50%;
+}
+
+#RTM-ViewContainer .config-Header .toggleButtonDiv button {
+   position: relative;
+   bottom: -15px;
+}
+#RTM-ViewContainer .mdc-list {
+   border-top: 1px solid #E9ECEF;
+   margin-top: 0px;
+   padding-top: 1px;
+}
+#RTM-ViewContainer .mdc-list .filterIcon {
+   top: 25px;
+}
+#RTM-ViewContainer .mdc-list .mdc-list-item__meta {
+   top: 27px;
+}
+#RTM-ViewContainer .mdc-list .mdc-list-item:first-child {
+   border-top: 1px solid #E9ECEF;
+}
+#RTM-ViewContainer .mdc-list .mdc-list-item {
+   border-bottom: 1px solid #E9ECEF;
+}
+#RTM-ViewContainer .mdc-list .mdc-list-item__text {
+   white-space: break-spaces;
+}
+
+
+/*
+*	-- Responsive Styles (Tablet)
+*/
+
+#real-time-map-container.width-large { // max-width: 1040px
+
+   #RTM-ViewContainer #RTM-Map.panel-open {
+      max-width: 100%;
+   }
+
+   #RTM-ViewContainer #RTM-Map.panel-open button.collapsible {
+      right: 260px;
+   }
+
+}
+
+
+#real-time-map-container.width-medium { // max-width: 980px
+
+   #RTM-ViewContainer #RTM-Map.panel-open {
+      max-width: 100%;
+   }
+
+   #RTM-ViewContainer #RTM-Map.panel-open button.collapsible {
+      right: 260px;
+   }
+
+   #RTM-ControlBarContainer {
+      overflow: hidden;
+      height: auto;
+   }
+
+   #RTM-ControlsContainer > div:nth-child(2) {
+      position: absolute;
+      top: 27px;
+      left: 200px;
+   }
+
+   #RTM-ControlsContainer > div:nth-child(3),
+   #RTM-ControlsContainer > div:nth-child(4) {
+      position: absolute;
+      top: 16px;
+      right: 115px;
+   }
+   #RTM-ControlsContainer > div:nth-child(4) {
+      top: 37px;
+   }
+}
+
+
+/*
+*	-- Responsive Styles (Mobile)
+*/
+
+#real-time-map-container.width-small { // max-width: 770px
+
+   #RTM-ViewContainer #RTM-Map.panel-open {
+      max-width: 100%;
+   }
+
+   #RTM-ViewContainer #RTM-Map.panel-open button.collapsible {
+      right: 260px;
+   }
+
+   #RTM-ViewContainer #RTM-config-container {
+      height: calc(100% - 155px);
+   }
+
+   #RTM-Map-Container {
+      height: calc(100% - 155px);
+   }
+
+   #RTM-ControlBarContainer {
+      overflow: auto;
+      height: auto;
+   }
+
+   #RTM-ControlsContainer {
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-end;
+      height: 125px;
+      width: 250px;
+      padding-top: 20px;
+   }
+
+   #RTM-ControlsContainer > div:nth-child(2),
+   #RTM-ControlsContainer > div:nth-child(3),
+   #RTM-ControlsContainer > div:nth-child(4) {
+      position: relative;
+      top: auto;
+      left: auto;
+      right: 0px;
+      margin: 0px;
+   }
+
+   #RTM-ControlsContainer #RTM-LiveButton {
+      height: 30px;
    }
 }

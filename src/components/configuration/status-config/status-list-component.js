@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { diagnosticSearch } from "./status-search";
-import splSrv from "../../../spartanlync/services";
+import splSrvTools from "../../../spartanlync/services/tools";
 
 export const StatusListComponent = props => {
    const mapPropsToComponent = props.setStatusDisplay;
@@ -39,7 +39,7 @@ export const StatusListComponent = props => {
                      )
                   }
                ></span>
-               <img src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' className="loader" onLoad={splSrv.trOnElementLoad.status}></img>
+               <img src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' className="loader" onLoad={splSrvTools.trOnElementLoad.status}></img>
             </li>
          ))
          : [];

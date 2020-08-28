@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { exceptionSearch } from "./exception-search";
-import splSrv from "../../../spartanlync/services";
+import splSrvTools from "../../../spartanlync/services/tools";
 
 export const ExceptionListComponent = props => {
    const mapPropsToComponent = props.setExceptionsDisplay;
@@ -44,7 +44,7 @@ export const ExceptionListComponent = props => {
                      )
                   }
                ></span>
-               <img src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' className="loader" onLoad={splSrv.trOnElementLoad.exception}></img>
+               <img src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' className="loader" onLoad={splSrvTools.trOnElementLoad.exception}></img>
             </li>
          ))
          : [];

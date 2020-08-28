@@ -11,19 +11,19 @@ export const initCollapse = () => {
       const map = document.getElementById("RTM-Map");
       const button = document.getElementById("collapse-button");
 
-      if (content.style.maxWidth === "100%") {
+      if (content.classList.contains("panel-open")) {
          button.setAttribute("data-tip", splmap.tr("splmap_tooltip_configpanel_open"));
          button.classList.remove("closeConfigPanel");
          button.classList.add("openConfigPanel");
-         content.style.maxWidth = "0%";
-         map.style.maxWidth = "100%";
+         content.classList.remove("panel-open");
+         map.classList.remove("panel-open");
       }
       else {
          button.setAttribute("data-tip", splmap.tr("splmap_tooltip_configpanel_close"));
          button.classList.remove("openConfigPanel");
          button.classList.add("closeConfigPanel");
-         content.style.maxWidth = "100%";
-         map.style.maxWidth = "75%";
+         content.classList.add("panel-open");
+         map.classList.add("panel-open");
       }
 
       ReactTooltip.rebuild();

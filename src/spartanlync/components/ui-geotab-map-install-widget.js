@@ -523,15 +523,15 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
 
    render() {
       const me = this;
-      const btnEveryoneDisabledClass = me.state.btnEveryoneDisabled ? "disabled" : "";
+      const btnEveryoneDisabledClass = me.state.btnEveryoneDisabled ? " disabled" : "";
       const isSingleButtonClass = me.isAddInInstalled && me.state.btnAccountMsg ? "" : " single-button";
 
       return (
          <div className="spl-geotab-map-install-btn-container">
             <hr />
             <label>{me.appTitle}:</label>
-            <div className="spl-geotab-map-install-btn-group">
-               <div className={`spl-geotab-map-install-status-btn ${btnEveryoneDisabledClass}${isSingleButtonClass}`}
+            <div className={`spl-geotab-map-install-btn-group${isSingleButtonClass}`}>
+               <div className={`spl-geotab-map-install-status-btn${btnEveryoneDisabledClass}`}
                   {...(!me.state.btnEveryoneDisabled && {
                      "onClick": me.onClickEveryoneHandler
                   })}>

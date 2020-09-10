@@ -672,6 +672,49 @@
 
 
 /*
+ *	-- SplGeotabMap Installation Consent Dialog
+*/
+
+#RTM-ViewContainer .splgeotabmap-consent-graphic:before {
+   display: block;
+   width: 350px;
+   height: 337px;
+   transform: translate(0px, 0px);
+
+   margin: 0 auto 5px auto;
+   border-radius: 4px;
+
+   content: '';
+   background: url('https://help.spartansense.com/geotab/splmap/img/spartanlync-map-screenshot.jpg');
+   background-repeat: no-repeat;
+   background-position: center;
+
+   -webkit-filter: drop-shadow( 0 0 3px #fff);
+   filter: drop-shadow( 0 0 3px #fff);
+}
+
+#RTM-ViewContainer .splgeotabmap-consent-uninstall-msg {
+   display: block;
+   position: relative;
+   margin: 10px 0 0 0;
+   padding-right: 20px;
+}
+#RTM-ViewContainer .splgeotabmap-consent-uninstall-msg span {
+   display: block;
+   width: 30px;
+   height: 30px;
+   position: absolute;
+   top: 10px;
+   right: 0px;
+
+   content: '';
+   background: url('../images/spartanlync-logo.svg');
+   background-repeat: no-repeat;
+   background-position: center;
+}
+
+
+/*
 *	-- Control Panel
 */
 
@@ -876,5 +919,14 @@
       height: 20px;
       margin: 5px 0px 0px 0px;
       padding: 0px !important;
+   }
+
+   #RTM-ViewContainer .spl-modal-popup {
+      margin-left: 50px;
+   }
+   #RTM-ViewContainer .splgeotabmap-consent-graphic:before {
+      width: 250px;
+      height: 241px;
+      background-size: 250px 241px;
    }
 }

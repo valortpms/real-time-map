@@ -1,6 +1,7 @@
 // eslint-disable-next-line no-unused-vars
 import React, { Component } from "react";
 import splSrv from "../services";
+import Swal from "sweetalert2";
 import { InitSecurityClearanceAPI } from "../services/api/security-clearance";
 import { makeAPICall, makeAPIMultiCall } from "../../services/api/helpers";
 import { showSnackBar } from "../../components/snackbar/snackbar";
@@ -56,6 +57,8 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
       this.user = null;
       this.sysSettings = null;
       this.secClearance = null;
+
+      this.getInstallConsent = new this.INITGetInstallConsentDialog(this);
    }
 
 
@@ -68,7 +71,7 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
       const me = this;
       me.msgMgr("init");
 
-      // Register a callback, invoked when SplTools is successfully initialized
+      // Register a callback, invoked when SplMap has successfully initialized
       splSrv.events.register("onLoadSplServices", me.init, false);
    }
 
@@ -131,6 +134,92 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
 
 
    /**
+    *  Modal dialog box component for getting consent to install SplGeotabMap
+    */
+   INITGetInstallConsentDialog(parentObj) {
+
+      this._parent = null;
+      this._SwalOptions = {
+         html: null,
+         confirmButtonText: null,
+         confirmButtonAriaLabel: null,
+         cancelButtonText: null,
+         cancelButtonAriaLabel: null,
+         customClass: {
+            popup: "spl-modal-popup",
+            content: "spl-modal-content",
+         },
+         target: "#RTM-ViewContainer",
+         allowOutsideClick: false,
+         allowEscapeKey: false,
+         showCloseButton: false,
+         showCancelButton: true,
+         focusConfirm: false,
+         heightAuto: false
+      };
+
+      // Show consent dialog
+      // (1) If user has not already skipped the consent notice
+      // (2) after any possible flying-to-vehicle event
+      this.show = function () {
+         const me = this;
+         if (typeof splSrv.splStore.splMap.splGeotabMapOptOut === "undefined") {
+            if (splSrv._pendingFlyingEvent) {
+               splSrv.events.register("postFlyingComplete", () => me.showConsentDialog(), false);
+            }
+            else {
+               me.showConsentDialog();
+            }
+         }
+      };
+
+      this.showConsentDialog = function () {
+         const me = this;
+
+         me._SwalOptions.confirmButtonText = me._SwalOptions.confirmButtonAriaLabel = splmap.tr("splgeotabmap_consent_btn_label_install");
+         me._SwalOptions.cancelButtonText = me._SwalOptions.cancelButtonAriaLabel = splmap.tr("splgeotabmap_consent_btn_label_skip");
+         me._SwalOptions.html =
+            "<div class='splgeotabmap-consent-graphic'>" + splmap.tr("splgeotabmap_consent_install_msg") +
+            "</div><i class='splgeotabmap-consent-uninstall-msg'>" + splmap.tr("splgeotabmap_consent_uninstall_msg") +
+            "<span></span></i>";
+
+         Swal.fire(me._SwalOptions)
+            .then((result) => {
+               if (result.isConfirmed) {
+                  me.giveConsent();
+               }
+               else if (result.dismiss === Swal.DismissReason.cancel) {
+                  me.skipConsent();
+               }
+            })
+            .catch(() => me.skipConsent());
+      };
+
+      this.giveConsent = function () {
+         const me = this;
+         const my = me._parent;
+         my.manageSpartanLyncDeeperAddIn("install");
+      };
+
+      // Add a SplGeotabMap opt-out flag to this user account configuration on SpartanLync server
+      this.skipConsent = function () {
+         if (typeof splSrv.splStore.splMap.splGeotabMapOptOut === "undefined") {
+            const splStoreRec = splSrv.splStore;
+            splStoreRec.splMap.splGeotabMapOptOut = true;
+            splSrv.splStore = splStoreRec;
+         }
+      };
+
+      this.configure = function (parentObj) {
+         this._parent = parentObj;
+      };
+
+      // configure when an instance gets created
+      this.configure(parentObj);
+   };
+
+
+   /**
     * Perform checks on Add-In installation and Account Priviliges
     *
     *  @returns void
@@ -188,6 +277,7 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
                   }
                   else {
                      me.msgMgr("uninstall-success", true);
+                     me.getInstallConsent.show();  // Show User Opt-In dialog
                   }
                })
                .catch(reason => {
@@ -486,6 +576,13 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
             }
             else {
                me.manageSpartanLyncDeeperAddIn("install");
+            }
+
+            // If exist, remove the SplGeotabMap opt-out flag from SpartanLync servers
+            if (typeof splSrv.splStore.splMap.splGeotabMapOptOut !== "undefined") {
+               const splStoreRec = splSrv.splStore;
+               delete splStoreRec.splMap.splGeotabMapOptOut;
+               splSrv.splStore = splStoreRec;
             }
          })
          .catch(reason => {

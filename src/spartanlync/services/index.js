@@ -75,6 +75,7 @@ const SpartanLyncServices = {
       sessionId: "",
    },
 
+   _pendingFlyingEvent: false,
    _splToolsInstalled: false,
    _splStore: null,
    _splMapUrl: null,

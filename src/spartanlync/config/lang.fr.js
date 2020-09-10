@@ -95,6 +95,10 @@ window.splmap.lang.fr = {
   "splgeotabmap_feature_preview_enabled_foruser":  "SpartanLync dans MyGeotab Map est d&eacute;j&agrave; activ&eacute; pour [ {username} ]",
   "splgeotabmap_feature_preview_op_success_msg":   "{op} SpartanLync dans MyGeotab Map pour [ {username} ]",
   "splgeotabmap_feature_preview_op_failure_msg":   "&Eacute;chec de {op} SpartanLync dans MyGeotab Map pour l&apos;utilisateur [ {username} ]",
+  "splgeotabmap_consent_install_msg":              "Obtenez des informations sur le capteur SpartanLync dans MyGeotab Map pour tous les utilisateurs de cette base de données en choisissant l'option d'installation suivante.",
+  "splgeotabmap_consent_uninstall_msg":            "Vous pouvez supprimer SpartanLync de MyGeotab Map à tout moment à partir du menu Icône SpartanLync.",
+  "splgeotabmap_consent_btn_label_install":        "Installer dans MyGeotab Map",
+  "splgeotabmap_consent_btn_label_skip":           "Pas maintenant",
 
   "about_appname":                                 "SpartanLync Map",
   "about_instruction":                             "Utilisez les outils SpartanLync pour modifier les param&egrave;tres ci-dessus",

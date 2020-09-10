@@ -201,14 +201,16 @@ export const InitSecurityClearanceAPI = function InitSecurityClearanceAPI(myapi,
       const secGrps = me._secGrps;
       const geotabGroups = me._geotabGroups;
 
-      for (let i = 0; i < geotabGroups.length; i++) {
-         const sourceGrp = geotabGroups[i];
-         const sourceName = secGrps[sourceGrp.id].name;
-         if (name.toLowerCase() === me.camelize(sourceName).toLowerCase()) {
-            for (let j = 0; j < userGrps.length; j++) {
-               const targetGrpId = userGrps[j];
-               if (me.groupWalker(sourceGrp, targetGrpId)) {
-                  return true;
+      if (geotabGroups && geotabGroups.length) {
+         for (let i = 0; i < geotabGroups.length; i++) {
+            const sourceGrp = geotabGroups[i];
+            const sourceName = secGrps[sourceGrp.id].name;
+            if (name.toLowerCase() === me.camelize(sourceName).toLowerCase()) {
+               for (let j = 0; j < userGrps.length; j++) {
+                  const targetGrpId = userGrps[j];
+                  if (me.groupWalker(sourceGrp, targetGrpId)) {
+                     return true;
+                  }
                }
             }
          }

@@ -269,6 +269,7 @@ export const splToolsHelper = {
       cmds.get.map(cmd => {
          switch (cmd) {
             case "flyToVehId":
+               splSrv._pendingFlyingEvent = true;
 
                // Inform user to wait while loading vehicle GPS data
                showModal.msg(splmap.tr("splmap_veh_flying_loading_gps"), splmap.tr("splmap_veh_flying_loading_gps_subtitle"));
@@ -291,11 +292,18 @@ export const splToolsHelper = {
                splSrv.events.register("onFlyingComplete",
                   function () {
                      showModal.close();
+                     splSrv._pendingFlyingEvent = false;
+                     splSrv.events.exec("postFlyingComplete");
                   });
 
             default:
+               splSrv.events.exec("postFlyingComplete");
          }
       });
+
+      if (!cmds.get.length) {
+         splSrv.events.exec("postFlyingComplete");
+      }
    },
 
    /**

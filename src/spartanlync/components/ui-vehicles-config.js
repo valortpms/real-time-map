@@ -19,6 +19,7 @@ export class SplSensorDataTypesButton extends Component {
    constructor(props) {
       super(props);
 
+      this.init = this.init.bind(this);
       this.renderSplButton = this.renderSplButton.bind(this);
       this.onClickHandler = this.onClickHandler.bind(this);
       this.onCloseContentHandler = this.onCloseContentHandler.bind(this);
@@ -47,30 +48,46 @@ export class SplSensorDataTypesButton extends Component {
          splCfg.shouldSplSensorDataButtonUpdate = true;
       }, 50);
 
-      // Defer Initialization till SpartanLync Services Loaded
-      splSrv.events.register("onLoadSplServices",
-         function () {
-            // Init SpartanLync sensor data services / tools
-            me.goLib = INITGeotabTpmsTemptracLib(
-               apiConfig.api,
-               splSrv.sensorSearchRetryRangeInDays,
-               splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds
-            );
-            me.sdataTools = new INITSplSensorDataTools(me.goLib);
-            me.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
-            me.sdataTools.setSensorDataNotFoundMsg(splSrv.sensorDataNotFoundMsg);
-            me.sdataTools.setVehComponents(splSrv.vehComponents.toEn);
-
-            // Set Language-specific sensor data search messages
-            me.sdataTools.setSensorSearchInProgressResponseMsg(splmap.tr("sensor_search_busy_msg"));
-
-            // Fetch SpartanLync Sensor Types installed into vehicle
-            me.fetchSensorTypes();
-         });
+      // Initialize if SpartanLync Services is Loaded
+      if (splSrv._splToolsInstalled) {
+         me.init();
+      }
+      // Otherwise Defer
+      else {
+         splSrv.events.register("onLoadSplServices", me.init);
+      }
    }
    componentWillUnmount() {
       const me = this;
       me.onCloseContentHandler();
+   }
+
+   /**
+    * Init by
+    * 1. Creating ASync instance of Geotab sensor data Lib
+    * 2. Fetching sensor data types installed on a vehicle
+    *
+    *  @returns void
+    */
+   init() {
+      const me = this;
+
+      // Init SpartanLync sensor data services / tools
+      me.goLib = INITGeotabTpmsTemptracLib(
+         apiConfig.api,
+         splSrv.sensorSearchRetryRangeInDays,
+         splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds
+      );
+      me.sdataTools = new INITSplSensorDataTools(me.goLib);
+      me.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
+      me.sdataTools.setSensorDataNotFoundMsg(splSrv.sensorDataNotFoundMsg);
+      me.sdataTools.setVehComponents(splSrv.vehComponents.toEn);
+
+      // Set Language-specific sensor data search messages
+      me.sdataTools.setSensorSearchInProgressResponseMsg(splmap.tr("sensor_search_busy_msg"));
+
+      // Fetch SpartanLync Sensor Types installed into vehicle
+      me.fetchSensorTypes();
    }
 
    // eslint-disable-next-line no-unused-vars

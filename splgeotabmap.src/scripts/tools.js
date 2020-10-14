@@ -329,7 +329,6 @@ const SplGeotabMapUtils = function (my) {
           // Refresh SplService configuration(s) if:
           // 1. Missing
           // 2. Stale (older than expiry date as defined in "cachedStoreLifetime" setting)
-          // 3. non-MyGeotab (containes SplMap/SplTools URL pageName reference to proxy instance(s) running on help.spartansense.com)
           //
           if (!my.storage.credentials.sessionId ||
             !my.storage.splStore ||

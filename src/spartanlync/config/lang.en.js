@@ -108,4 +108,14 @@ window.splmap.lang.en = {
   "about_buildver":                                "Build Version",
   "about_builddate":                               "Build Date",
   "about_unknown":                                 "UnKnown",
+
+  // Fault Alerts
+  'alert_tooltip':                                 '{alert_msg}<br />on<br />{timestamp}',
+  'alert_header':                                  'Alert',
+  'alert_missing_sensor':                          'Missing Sensor',
+  'alert_pressure_extreme_over':                   'Extreme Over Pressure',
+  'alert_pressure_extreme_under':                  'Extreme Under Pressure',
+  'alert_pressure_over':                           'Over Pressure',
+  'alert_pressure_under':                          'Under Pressure',
+  'alert_battery_low_voltage':                     'Vehicle Battery has LOW Voltage',
 }

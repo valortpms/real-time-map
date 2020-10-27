@@ -35,7 +35,9 @@ const SpartanLyncServiceTools = {
       splSrv.goLib = INITGeotabTpmsTemptracLib(
          apiConfig.api,
          splSrv.sensorSearchRetryRangeInDays,
-         splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds
+         splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds,
+         splSrv.faultSearchRetryRangeInDays,
+         splSrv.faultSearchTimeRangeForRepeatSearchesInSeconds
       );
 
       splSrv.sdataTools = new INITSplSensorDataTools(splSrv.goLib);

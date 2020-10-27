@@ -19,11 +19,14 @@ RSYNC_CMD="/usr/bin/rsync"
 MINIFY_CMD="/c/Users/lmit/AppData/Roaming/npm/node_modules/terser/bin/terser"
 #
 SPLGEOTABMAP_PUBLIC_DIR="splgeotabmap"
-SPLGEOTABMAP_SRC_ROOT_PATH="splgeotabmap.src"
+SPLGEOTABMAP_DEV_URL="https://help.spartansense.com/geotab/splgeotabmap${BUILD_DEV_EXTENSION}/splgeotabmap.html"
+SPLGEOTABMAP_DEV_PUBLIC_DIR="${SPLGEOTABMAP_PUBLIC_DIR}${BUILD_DEV_EXTENSION}"
+SPLGEOTABMAP_SRC_ROOT_PATH="${SPLGEOTABMAP_PUBLIC_DIR}.src"
 SPLGEOTABMAP_SRC_MIN_FILES="scripts/lang.en.js scripts/lang.es.js scripts/lang.fr.js scripts/splgeotabmap.js scripts/tools.js scripts/ui.js"
-SPLGEOTABMAP_SRC_BUILD_PATHS="config.json images/ scripts/ splgeotabmap.html styles/"
-SPLGEOTABMAP_SRC_INDEX_FILE="splgeotabmap.html"
-SPLGEOTABMAP_DIST_RELATIVE_PATH="../../src/public/splgeotabmap"
+SPLGEOTABMAP_SRC_BUILD_PATHS="config.json images/ scripts/ ${SPLGEOTABMAP_PUBLIC_DIR}.html styles/"
+SPLGEOTABMAP_SRC_INDEX_FILE="${SPLGEOTABMAP_PUBLIC_DIR}.html"
+SPLGEOTABMAP_DIST_RELATIVE_PATH="../../src/public/${SPLGEOTABMAP_PUBLIC_DIR}"
+SPLGEOTABMAP_DIST_DEV_RELATIVE_PATH="../../src/public/${SPLGEOTABMAP_DEV_PUBLIC_DIR}"
 
 # Init
 UNIX_TIMESTAMP=`date +%s`
@@ -34,16 +37,21 @@ BUILD_PUBLIC_PATH="${BUILD_DEPLOY_RELATIVE_PATH}/${BUILD_PUBLIC_DIR}"
 BUILD_DEV_PUBLIC_PATH="${BUILD_DEPLOY_RELATIVE_PATH}/$BUILD_DEV_PUBLIC_DIR"
 LARAVEL_APP_CONFIG_PATH="${CURRENT_DIR}/../../src/config/app.php"
 VERSION=`grep "version" $LARAVEL_APP_CONFIG_PATH | tr -d '[:space:]' | cut -f4 -d"'"`
+BUILD_ZIP_FILE="${BUILD_PUBLIC_DIR}.zip"
+BUILD_ZIP_FILE_PATH="${BUILD_DEPLOY_RELATIVE_PATH}/${BUILD_ZIP_FILE}"
 BUILD_DEV_ZIP_FILE="${BUILD_PUBLIC_DIR}${BUILD_DEV_EXTENSION}.v${VERSION}.zip"
 BUILD_DEV_ZIP_FILE_PATH="${BUILD_DEPLOY_RELATIVE_PATH}/${BUILD_DEV_ZIP_FILE}"
 BUILD_UNIX_TIMESTAMP_PATH="${BUILD_PUBLIC_PATH}/${BUILD_UNIX_TIMESTAMP_FILE}"
 ADDIN_CONFIG_JSON_FILE_PATH="${BUILD_PUBLIC_PATH}/config.json"
 ADDIN_DEV_CONFIG_JSON_FILE_PATH="${BUILD_DEV_PUBLIC_PATH}/config.json"
+ADDIN_DEV_BUILD_FILE_PATH="${BUILD_DEV_PUBLIC_PATH}/bundle.js"
 MAPS_ARCHIVE_PATH="${CURRENT_DIR}/${MAPS_ARCHIVE_RELATIVE_PATH}"
 #
 SPLGEOTABMAP_UNIX_TIMESTAMP_PATH="${BUILD_DEPLOY_RELATIVE_PATH}/${SPLGEOTABMAP_PUBLIC_DIR}/${BUILD_UNIX_TIMESTAMP_FILE}"
+SPLGEOTABMAP_UNIX_TIMESTAMP_DEV_PATH="${BUILD_DEPLOY_RELATIVE_PATH}/${SPLGEOTABMAP_DEV_PUBLIC_DIR}/${BUILD_UNIX_TIMESTAMP_FILE}"
 SPLGEOTABMAP_SRC_ROOT_PATH="${CURRENT_DIR}/${SPLGEOTABMAP_SRC_ROOT_PATH}"
 SPLGEOTABMAP_DIST_ROOT_PATH="${CURRENT_DIR}/${SPLGEOTABMAP_DIST_RELATIVE_PATH}"
+SPLGEOTABMAP_DIST_DEV_ROOT_PATH="${CURRENT_DIR}/${SPLGEOTABMAP_DIST_DEV_RELATIVE_PATH}"
 SPLGEOTABMAP_DIST_INDEX_PATH="${SPLGEOTABMAP_DIST_ROOT_PATH}/${SPLGEOTABMAP_SRC_INDEX_FILE}"
 
 # Generate new build
@@ -70,12 +78,16 @@ if [ "${OLDVERSION}" != "${VERSION}" ]; then
 fi
 rm -rf "${ADDIN_CONFIG_JSON_FILE_PATH}.bak"
 
-# SplGeotabMap - Generate new DIST
-echo -ne "\n---- SplGeotabMap -   Copying from [ ${SPLGEOTABMAP_SRC_ROOT_PATH} ]\n\t\t\t\tto [ ${SPLGEOTABMAP_DIST_ROOT_PATH} ]\n"
-rm -rf ${SPLGEOTABMAP_DIST_ROOT_PATH}/*
+# SplGeotabMap - Generate new DEV/LIVE DIST
+echo -ne "\n---- SplGeotabMap -   Copying from  [ ${SPLGEOTABMAP_SRC_ROOT_PATH} ]\n\t\t\t\tto  [ ${SPLGEOTABMAP_DIST_ROOT_PATH} ]\n\t\t\t\tand [ ${SPLGEOTABMAP_DIST_DEV_ROOT_PATH} ]\n"
+rm -rf ${SPLGEOTABMAP_DIST_ROOT_PATH}
+rm -rf ${SPLGEOTABMAP_DIST_DEV_ROOT_PATH}
+mkdir ${SPLGEOTABMAP_DIST_ROOT_PATH}
+mkdir ${SPLGEOTABMAP_DIST_DEV_ROOT_PATH}
 for path in $SPLGEOTABMAP_SRC_BUILD_PATHS; do cp -a $SPLGEOTABMAP_SRC_ROOT_PATH/$path ${SPLGEOTABMAP_DIST_ROOT_PATH}; done
+for path in $SPLGEOTABMAP_SRC_BUILD_PATHS; do cp -a $SPLGEOTABMAP_SRC_ROOT_PATH/$path ${SPLGEOTABMAP_DIST_DEV_ROOT_PATH}; done
 
-# SplGeotabMap - Minify JS files in DIST + Update DIST INDEX file with minified file names
+# SplGeotabMap - Minify JS files in LIVE DIST + Update LIVE DIST INDEX file with minified file names
 echo -ne "\n---- SplGeotabMap - Minify files in [ ${SPLGEOTABMAP_DIST_ROOT_PATH} ]\n\tand\n     Updating INDEX file [ ${SPLGEOTABMAP_DIST_INDEX_PATH} ]\n"
 cd ${SPLGEOTABMAP_DIST_ROOT_PATH}
 for SCRIPT_FILE in $SPLGEOTABMAP_SRC_MIN_FILES;
@@ -104,8 +116,9 @@ cd ${CURRENT_DIR}
 echo -ne "\n---- Creating SplMap Build Metadata File [ ${BUILD_UNIX_TIMESTAMP_PATH} ] ---\n"
 echo "SpartanLync v${VERSION}" > ${BUILD_UNIX_TIMESTAMP_PATH}
 echo "${UNIX_TIMESTAMP}" >> ${BUILD_UNIX_TIMESTAMP_PATH}
-echo -ne "\n---- Copying Build Metadata File to SplGeotabMap deployment folder [ ${SPLGEOTABMAP_UNIX_TIMESTAMP_PATH} ] ---\n"
+echo -ne "\n---- Copying Build Metadata File to SplGeotabMap deployment folder(s)\n\t     [ ${SPLGEOTABMAP_UNIX_TIMESTAMP_PATH} ]\n\t and [ ${SPLGEOTABMAP_UNIX_TIMESTAMP_DEV_PATH} ]\n"
 cp -a "${BUILD_UNIX_TIMESTAMP_PATH}" "${SPLGEOTABMAP_UNIX_TIMESTAMP_PATH}"
+cp -a "${BUILD_UNIX_TIMESTAMP_PATH}" "${SPLGEOTABMAP_UNIX_TIMESTAMP_DEV_PATH}"
 
 # Sync LIVE deployment folder with DEV folder
 echo -ne "\n---- Copying LIVE folder [ ${BUILD_PUBLIC_PATH} ] to DEV folder [ ${BUILD_DEV_PUBLIC_PATH} ] ---\n"
@@ -118,10 +131,19 @@ sed -i "s/\/${BUILD_PUBLIC_DIR}\//\/${BUILD_PUBLIC_DIR}${BUILD_DEV_EXTENSION}\//
 sed -i "s/Map\"/Map${ADDIN_DEV_CONFIG_JSON_TITLE_SUFFIX}\"/g" ${ADDIN_DEV_CONFIG_JSON_FILE_PATH}
 sed -i "s/\"path\": \"\"/\"path\": \"${ADDIN_DEV_CONFIG_JSON_MENU_PATH}\"/g" ${ADDIN_DEV_CONFIG_JSON_FILE_PATH}
 
+# Update SplMap DEV build (bundle.js) with SplGeotabMap DEV URL (https://help.spartansense.com/geotab/splgeotabmap.dev/splgeotabmap.html)
+echo -ne "\n---- Updating SplMap DEV build [ ${ADDIN_DEV_BUILD_FILE_PATH} ] with SplGeotabMap DEV URL [ ${SPLGEOTABMAP_DEV_URL} ]\n"
+sed -i "s/\/${SPLGEOTABMAP_PUBLIC_DIR}\//\/${SPLGEOTABMAP_PUBLIC_DIR}${BUILD_DEV_EXTENSION}\//g" ${ADDIN_DEV_BUILD_FILE_PATH}
+
+# Create LIVE build ZIP file
+echo -ne "\n---- Zipping Folder(s) [ ${BUILD_PUBLIC_PATH} ] and [ ${SPLGEOTABMAP_PUBLIC_DIR} ]\n\t       TO file [ ${BUILD_ZIP_FILE_PATH} ]\n"
+rm -rf ${BUILD_ZIP_FILE_PATH}
+(cd ${BUILD_DEPLOY_RELATIVE_PATH} && ${ZIP_CMD} a -r ${BUILD_ZIP_FILE} ${BUILD_PUBLIC_DIR} ${SPLGEOTABMAP_PUBLIC_DIR} > /dev/null)
+
 # Create DEV build ZIP file
-echo -ne "\n---- Zipping Folder(s) [ ${BUILD_DEV_PUBLIC_PATH} ] and [ ${SPLGEOTABMAP_PUBLIC_DIR} ]\n\t       TO file [ ${BUILD_DEV_ZIP_FILE_PATH} ]\n"
+echo -ne "\n---- Zipping Folder(s) [ ${BUILD_DEV_PUBLIC_PATH} ] and [ ${SPLGEOTABMAP_DEV_PUBLIC_DIR} ]\n\t       TO file [ ${BUILD_DEV_ZIP_FILE_PATH} ]\n"
 rm -rf ${BUILD_DEV_ZIP_FILE_PATH}
-(cd ${BUILD_DEPLOY_RELATIVE_PATH} && ${ZIP_CMD} a -r ${BUILD_DEV_ZIP_FILE} ${BUILD_DEV_PUBLIC_DIR} ${SPLGEOTABMAP_PUBLIC_DIR} > /dev/null)
+(cd ${BUILD_DEPLOY_RELATIVE_PATH} && ${ZIP_CMD} a -r ${BUILD_DEV_ZIP_FILE} ${BUILD_DEV_PUBLIC_DIR} ${SPLGEOTABMAP_DEV_PUBLIC_DIR} > /dev/null)
 
 # Sync "Geotab\Real-Time-Maps\valor_src" working dev source code (hosted on Github https://github.com/valortpms/real-time-map repo)
 # with

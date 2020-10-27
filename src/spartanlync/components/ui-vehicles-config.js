@@ -5,7 +5,7 @@ import splSrv from "../services";
 import splCfg from "../config";
 import { apiConfig } from "../../dataStore/api-config";
 import { INITSplSensorDataTools, splSensorDataParser } from "../services/sensor-data-tools";
-import { fetchVehSensorDataAsync } from "../services/api/temptrac-tpms/utils";
+import { fetchVehSensorDataAsync, fetchVehFaultsAndIgnitionAsync } from "../services/api/temptrac-tpms/utils";
 import { INITGeotabTpmsTemptracLib } from "../services/api/temptrac-tpms";
 
 /**
@@ -76,7 +76,9 @@ export class SplSensorDataTypesButton extends Component {
       me.goLib = INITGeotabTpmsTemptracLib(
          apiConfig.api,
          splSrv.sensorSearchRetryRangeInDays,
-         splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds
+         splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds,
+         splSrv.faultSearchRetryRangeInDays,
+         splSrv.faultSearchTimeRangeForRepeatSearchesInSeconds
       );
       me.sdataTools = new INITSplSensorDataTools(me.goLib);
       me.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
@@ -88,12 +90,38 @@ export class SplSensorDataTypesButton extends Component {
 
       // Fetch SpartanLync Sensor Types installed into vehicle
       me.fetchSensorTypes();
+
+      // Fetch vehicle faults and ignition data for Alert cache(s)
+      me.fetchFaultsAndIgnitionData();
    }
 
    // eslint-disable-next-line no-unused-vars
    shouldComponentUpdate(nextProps, nextState) {
       // Handler for preventing duplicate Initial Invocation(s)
       return splCfg.shouldSplSensorDataButtonUpdate;
+   }
+
+   /**
+    * Fetch vehicle fault + ignition data from API
+    * Parse results and store in cache for initiating alerts
+    *
+    *  @returns void
+    */
+   fetchFaultsAndIgnitionData() {
+      const me = this;
+
+      //Splunk for fault & ignition data for specific vehicle
+      fetchVehFaultsAndIgnitionAsync(me.vehId)
+         .then(([faults, vehIgnitionInfo]) => {
+            // Update Fault & Ignition data caches
+            splSrv.cache.storeFaultData(me.vehId, faults);
+            splSrv.cache.storeIgnData(me.vehId, vehIgnitionInfo);
+            console.log("---------------------- getFaultData(" + me.vehId + ") = ", splSrv.cache.getFaultData(me.vehId));
+            console.log("---------------------- getIgnData(" + me.vehId + ") = ", splSrv.cache.getIgnData(me.vehId));
+         })
+         .catch((reason) => {
+            console.log("---- Error while searching for FAULTS for VehicleID [ " + me.vehId + " ] named [ " + me.vehName + " ]: ", reason);
+         });
    }
 
    /**
@@ -308,7 +336,7 @@ export class SplSensorDataTypesButton extends Component {
 };
 
 /**
- *  Manage the which SplSensorDataTypesButton sibling is showing Sensor Data in UI
+ *  Manage which SplSensorDataTypesButton sibling is showing Sensor Data in UI
  */
 export const manageSensorDataContentUI = {
 

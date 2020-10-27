@@ -144,21 +144,21 @@ const InitLocalStorage = function (my, storageKeyId, storageSecret) {
     // Wait till activity settles down
     if (me._setTimerHandle === null) {
       me._setTimerHandle = setTimeout(function () {
+
         // Encrypt everything but /sensorData property
         const dataBak = JSON.parse(JSON.stringify(my.storage)); // clone storage object... can't modify the original
         delete dataBak.sensorData;
-        const encryptedStorageCfgObj = JSON.parse(sjcl.encrypt(me._storageSecret, JSON.stringify(dataBak)));
-        const unencryptedSensorDataObj = JSON.parse(JSON.stringify(my.storage.sensorData));
+        const encryptedStorageCfgObj = sjcl.encrypt(me._storageSecret, JSON.stringify(dataBak));
+        const unencryptedSensorDataObj = JSON.stringify(my.storage.sensorData);
 
-        my.service.localStorage.set(storageCfgKey, encryptedStorageCfgObj).then(() => {
-          my.service.localStorage.set(storageCacheKey, unencryptedSensorDataObj).then(() => {
-            console.log("--- Successfully Saved data to Local Storage");
-            if (me._callback) {
-              me._callback(); // Invoke callback if provided
-              me._callback = null;
-            }
-          });
-        });
+        localStorage.setItem(storageCfgKey, encryptedStorageCfgObj);
+        localStorage.setItem(storageCacheKey, unencryptedSensorDataObj);
+
+        console.log("--- Successfully Saved data to Local Storage");
+        if (me._callback) {
+          me._callback(); // Invoke callback if provided
+          me._callback = null;
+        }
         me._setTimerHandle = null;
       }, saveWaitTime);
     }
@@ -173,37 +173,38 @@ const InitLocalStorage = function (my, storageKeyId, storageSecret) {
     const my = me._my;
     const storageCfgKey = me._storageKey + "_CFG";
     const storageCacheKey = me._storageKey + "_CACHE";
+    const encryptedStorageCfgObj = me.parseJSON(localStorage.getItem(storageCfgKey));
+    const unencryptedSensorDataObj = me.parseJSON(localStorage.getItem(storageCacheKey));
     me._callback = callback && typeof callback === "function" ? callback : me._callback !== null ? me._callback : null;
 
-    Promise.all([
-      my.service.localStorage.get(storageCfgKey),
-      my.service.localStorage.get(storageCacheKey),
-    ]).then(([encryptedStorageCfgObj, unencryptedSensorDataObj]) => {
-      // Storage data is paired, so both must exist
-      if (encryptedStorageCfgObj !== null && unencryptedSensorDataObj !== null) {
-        // Decrypt & Save
-        my.storage = JSON.parse(sjcl.decrypt(me._storageSecret, JSON.stringify(encryptedStorageCfgObj)));
-        my.storage.sensorData = unencryptedSensorDataObj;
+    // Storage data is paired, so both must exist
+    if (typeof encryptedStorageCfgObj !== "undefined" && encryptedStorageCfgObj !== null &&
+      typeof encryptedStorageCfgObj === "object" && typeof encryptedStorageCfgObj.cipher !== "undefined" &&
+      typeof unencryptedSensorDataObj !== "undefined" && unencryptedSensorDataObj !== null &&
+      typeof unencryptedSensorDataObj === "object" && typeof unencryptedSensorDataObj.cache !== "undefined") {
 
-        // Set Sensor Data Cache
-        my.sdataTools._cache = my.storage.sensorData.cache;
-        console.log("--- Successfully restored data from Local Storage: ");
+      // Decrypt & Save
+      my.storage = JSON.parse(sjcl.decrypt(me._storageSecret, JSON.stringify(encryptedStorageCfgObj)));
+      my.storage.sensorData = unencryptedSensorDataObj;
+
+      // Set Sensor Data Cache
+      my.sdataTools._cache = my.storage.sensorData.cache;
+      console.log("--- Successfully restored data from Local Storage: ");
+    }
+    // Delete one if the other is missing
+    else {
+      if (typeof encryptedStorageCfgObj !== "undefined" && encryptedStorageCfgObj !== null) {
+        localStorage.removeItem(storageCfgKey);
       }
-      // Delete one if the other is missing
-      else {
-        if (encryptedStorageCfgObj !== null) {
-          my.service.localStorage.remove(storageCfgKey);
-        }
-        if (unencryptedSensorDataObj !== null) {
-          my.service.localStorage.remove(storageCacheKey);
-        }
-        console.log("--- Local Storage Empty");
+      if (typeof unencryptedSensorDataObj !== "undefined" && unencryptedSensorDataObj !== null) {
+        localStorage.removeItem(storageCacheKey);
       }
-      if (me._callback) {
-        me._callback(my.storage); // Invoke callback if provided
-        me._callback = null;
-      }
-    });
+      console.log("--- Local Storage Empty");
+    }
+    if (me._callback) {
+      me._callback(my.storage); // Invoke callback if provided
+      me._callback = null;
+    }
   };
 
   /**
@@ -216,15 +217,14 @@ const InitLocalStorage = function (my, storageKeyId, storageSecret) {
     const storageCacheKey = me._storageKey + "_CACHE";
     me._callback = callback && typeof callback === "function" ? callback : me._callback !== null ? me._callback : null;
 
-    my.service.localStorage.remove(storageCfgKey).then(() => {
-      my.service.localStorage.remove(storageCacheKey).then(() => {
-        console.log("--- Successful purged data from Local Storage");
-        if (me._callback) {
-          me._callback(); // Invoke callback if provided
-          me._callback = null;
-        }
-      });
-    });
+    localStorage.removeItem(storageCfgKey);
+    localStorage.removeItem(storageCacheKey);
+    console.log("--- Successful purged data from Local Storage");
+
+    if (me._callback) {
+      me._callback(); // Invoke callback if provided
+      me._callback = null;
+    }
   };
 
   /**
@@ -237,7 +237,20 @@ const InitLocalStorage = function (my, storageKeyId, storageSecret) {
     return me._setTimerHandle === null ? false : true;
   };
 
-
+  /**
+  *  Parse JSON String to JSON Object
+  *
+  * @return object (NULL on invalid JSON / Parsing Error)
+  */
+  this.parseJSON = function (raw) {
+    try {
+      json = JSON.parse(raw);
+    } catch (e) {
+      // Malformed JSON
+      return null;
+    }
+    return json;
+  };
 
   this.configure = function (my, storageKeyId, storageSecret) {
     const me = this;

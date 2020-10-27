@@ -16,7 +16,9 @@ export function fetchVehSensorDataAsync(vehId, vehComp, firstTimeCallOverride) {
       const aSyncGoLib = INITGeotabTpmsTemptracLib(
          apiConfig.api,
          splSrv.sensorSearchRetryRangeInDays,
-         splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds
+         splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds,
+         splSrv.faultSearchRetryRangeInDays,
+         splSrv.faultSearchTimeRangeForRepeatSearchesInSeconds
       );
       aSyncGoLib.getData(vehId, vehComponent, function (sensorData) {
          if (sensorData === null) {
@@ -24,6 +26,27 @@ export function fetchVehSensorDataAsync(vehId, vehComp, firstTimeCallOverride) {
          } else {
             resolve(sensorData);
          }
+      }, overrideFirstTimeCall);
+   });
+};
+
+/**
+*  Asynchronously Fetch Vehicle Faults and Ignition data
+*
+*  @returns {array} objects
+*/
+export function fetchVehFaultsAndIgnitionAsync(vehId, firstTimeCallOverride) {
+   const overrideFirstTimeCall = typeof firstTimeCallOverride === "undefined" ? null : firstTimeCallOverride;
+   return new Promise((resolve) => {
+      const aSyncGoLib = INITGeotabTpmsTemptracLib(
+         apiConfig.api,
+         splSrv.sensorSearchRetryRangeInDays,
+         splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds,
+         splSrv.faultSearchRetryRangeInDays,
+         splSrv.faultSearchTimeRangeForRepeatSearchesInSeconds
+      );
+      aSyncGoLib.getFaults(vehId, function (faults, vehIgnitionInfo) {
+         resolve([faults, vehIgnitionInfo]);
       }, overrideFirstTimeCall);
    });
 };

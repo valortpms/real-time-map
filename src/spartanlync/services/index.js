@@ -21,6 +21,9 @@ const SpartanLyncServices = {
    sensorSearchRetryRangeInDays: [1, 2, 7, 30, 60, 90],     // Days from now to search for sensors (on App Start)
    sensorSearchTimeRangeForRepeatSearchesInSeconds: 3600,   // (Default: 1 Hour) 3600 Seconds from now to use for repeating sensor search's
 
+   faultSearchRetryRangeInDays: [30, 60, 90],               // Days from now to search for faults (on App Start)
+   faultSearchTimeRangeForRepeatSearchesInSeconds: 3600,    // 3600 Seconds from now to use for repeating fault search's (default: 1 Hour)
+
    splToolsSearchRetry: 60000,                              // (Default: 1 min) How often to poll backend for SplTools Add-In configured for this user in this database
 
    alertsDefaultStartupDelay: 8,                            // (Default: 8 seconds) UI will start showing alerts XX seconds after App loads in Browser
@@ -81,6 +84,74 @@ const SpartanLyncServices = {
    _splMapUrl: null,
    _dbDeviceIds: null,
    _timeZone: null,
+   _splStore: null,
+
+   /**
+    * Cache for Vehicle Fault and Ignition data
+    */
+   cache: {
+
+      _faultCache: {},
+      _ignitionCache: {},
+
+      getFaultData: function (vehId) {
+         const me = this;
+         if (typeof me._faultCache[vehId] !== "undefined") {
+            return me._faultCache[vehId];
+         }
+         return null;
+      },
+
+      storeFaultData: function (vehId, data) {
+         const me = this;
+         if (typeof data !== "undefined" && data !== null && Array.isArray(data) && data.length) {
+            if (typeof me._faultCache[vehId] === "undefined") {
+               me._faultCache[vehId] = data;
+            }
+            else {
+               data.forEach(faultObj => {
+                  const faultId = "fault_" + faultObj.id;
+                  // Update fault data cache with individual updates to each fault
+                  if (typeof me._faultCache[vehId][faultId] === "undefined" || faultObj.time > me._faultCache[vehId][faultId].time) {
+                     me._faultCache[vehId][faultId] = faultObj;
+                  }
+               });
+            }
+         }
+      },
+
+      getIgnData: function (vehId) {
+         const me = this;
+         if (typeof me._ignitionCache[vehId] !== "undefined") {
+            return me._ignitionCache[vehId];
+         }
+         return null;
+      },
+
+      storeIgnData: function (vehId, data) {
+         const me = this;
+         if (typeof data !== "undefined" &&
+            data !== null &&
+            typeof data === "object" &&
+            typeof data["on-latest"] !== "undefined") {
+
+            // Create ignition data cache
+            if (typeof me._ignitionCache[vehId] === "undefined" ||
+               typeof me._ignitionCache[vehId]["on-latest"] === "undefined" ||
+               typeof me._ignitionCache[vehId]["off-latest"] === "undefined") {
+               me._ignitionCache[vehId] = data;
+            }
+            // Merge new data into ignition data cache
+            else {
+               me._ignitionCache[vehId]["on-latest"] = data["on-latest"] > me._ignitionCache[vehId]["on-latest"] ? data["on-latest"] : me._ignitionCache[vehId]["on-latest"];
+               me._ignitionCache[vehId]["off-latest"] = data["off-latest"] > me._ignitionCache[vehId]["off-latest"] ? data["off-latest"] : me._ignitionCache[vehId]["off-latest"];
+               me._ignitionCache[vehId]["byTime"] = { ...me._ignitionCache[vehId]["byTime"], ...data["byTime"] };
+               me._ignitionCache[vehId]["on"].push(...data["on"]);
+               me._ignitionCache[vehId]["off"].push(...data["off"]);
+            }
+         }
+      },
+   },
 
    /**
     *  Getters/Setters for _splStore

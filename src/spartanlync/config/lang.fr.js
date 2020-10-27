@@ -108,4 +108,14 @@ window.splmap.lang.fr = {
   "about_buildver":                                "Version de construction",
   "about_builddate":                               "Date de construction",
   "about_unknown":                                 "Inconnue",
+
+  // Fault Alerts
+  'alert_tooltip':                                 '{alert_msg}<br />sur<br />{timestamp}',
+  'alert_header':                                  'Alerte',
+  'alert_missing_sensor':                          'Capteur manquant',
+  'alert_pressure_extreme_over':                   'Surpression extrême',
+  'alert_pressure_extreme_under':                  'Extrême sous pression',
+  'alert_pressure_over':                           'Surpression',
+  'alert_pressure_under':                          'Sous pression',
+  'alert_battery_low_voltage':                     'La batterie du véhicule a une tension FAIBLE',
 }

@@ -567,7 +567,7 @@ export const splSensorDataParser = {
       const me = this;
       const htmlEntities = new Html5Entities();
       const firstComponentHeaderClass = compId === data.compIds[0] ? "first" : "";
-      const headerTitle = showHeader ? splmap.tr(splSrv.vehComponents.toTr[compId]) : "";
+      const headerTitle = showHeader ? splmap.tr(splSrv.vehCompTr.toTr[compId]) : "";
       const compHeaderHtml = headerTitle ? htmlEntities.decode(renderToString((
          <div className="splTableRow">
             <div className={`splTableCell component-header ${firstComponentHeaderClass}`}>
@@ -675,11 +675,13 @@ export const splSensorDataParser = {
     */
    do: function (sdata, isUpdate) {
       const me = this;
-      const compIds = sdata.vehCfg.total === 1 ? [sdata.vehCfg.active] : sdata.vehCfg.ids;
+      const cloneData = JSON.parse(JSON.stringify(sdata)); // clone sensor data object... can't modify the original
+      const compIds = cloneData.vehCfg.total === 1 ? [cloneData.vehCfg.active] : cloneData.vehCfg.ids;
+      const fdata = splSrv.cache.getFaultData(cloneData.vehId);
       const data = {
          compIds: [],
-         vehId: sdata.vehId,
-         vehName: sdata.vehName,
+         vehId: cloneData.vehId,
+         vehName: cloneData.vehName,
          lastReadTimestamp: ""
       };
       me._lastReadTimestampUnix = 0;
@@ -689,21 +691,56 @@ export const splSensorDataParser = {
       data.foundTpmsTempSensors = false;
       data.foundTpmsPressSensors = false;
       compIds.map(compId => {
+
+         // Merge in cached Fault/Alert data into sensor data, for Vehicle component
+         fdata.forEach(faultObj => {
+            if (typeof faultObj.alert !== "undefined" &&
+               typeof faultObj.alert.type !== "undefined" &&
+               typeof faultObj.occurredOnLatestIgnition !== "undefined" &&
+               typeof faultObj.loc !== "undefined" &&
+               Array.isArray(faultObj.loc) && faultObj.loc.length &&
+               faultObj.occurredOnLatestIgnition &&
+               faultObj.alert.type === "Tire Pressure Fault"
+            ) {
+               faultObj.loc.forEach(locObj => {
+                  if (typeof locObj.vehComp !== "undefined" &&
+                     typeof cloneData[compId].tpmspress !== "undefined" &&
+                     locObj.vehComp === compId) {
+
+                     const locId = "tirepress_axle" + locObj.axle + "tire" + locObj.tire;
+                     if (typeof cloneData[compId].tpmspress[locId] !== "undefined") {
+                        if (typeof cloneData[compId].tpmspress[locId].alert === "undefined" || (
+                           typeof cloneData[compId].tpmspress[locId].alert !== "undefined" &&
+                           faultObj.time > cloneData[compId].tpmspress[locId].alert.time)) {
+                           cloneData[compId].tpmspress[locId].alert = {
+                              time: faultObj.time,
+                              class: "alert-" + faultObj.alert.color.toLowerCase(),
+                              html:
+                                 "<p class='spl-vehicle-alert-tooltip-header'>" + splmap.tr("alert_header") + ":</p>" +
+                                 splmap.tr("alert_tire_pressure_fault") + "<br />" + splmap.tr(faultObj.alert.trId) + "<p>"
+                           };
+                        }
+                     }
+                  }
+               });
+            }
+         });
+
          data[compId] = {};
-         if (Object.keys(sdata[compId].temptrac).length) {
+         if (Object.keys(cloneData[compId].temptrac).length) {
             data.compIds.push(compId);
             data.foundTemptracSensors = true;
-            data[compId].temptracHtml = me._genHtml(sdata[compId].temptrac, isUpdate);
+            data[compId].temptracHtml = me._genHtml(cloneData[compId].temptrac, isUpdate);
          }
-         if (Object.keys(sdata[compId].tpmstemp).length) {
+         if (Object.keys(cloneData[compId].tpmstemp).length) {
             data.compIds.push(compId);
             data.foundTpmsTempSensors = true;
-            data[compId].tpmsTempHtml = me._genHtml(sdata[compId].tpmstemp, isUpdate);
+            data[compId].tpmsTempHtml = me._genHtml(cloneData[compId].tpmstemp, isUpdate);
          }
-         if (Object.keys(sdata[compId].tpmspress).length) {
+         if (Object.keys(cloneData[compId].tpmspress).length) {
             data.compIds.push(compId);
             data.foundTpmsPressSensors = true;
-            data[compId].tpmsPressHtml = me._genHtml(sdata[compId].tpmspress, isUpdate);
+            data[compId].tpmsPressHtml = me._genHtml(cloneData[compId].tpmspress, isUpdate);
          }
       });
 
@@ -733,6 +770,8 @@ export const splSensorDataParser = {
          if (sdata.hasOwnProperty(loc)) {
             const locObj = sdata[loc];
             const sensorTime = splSrv.convertUnixToTzHuman(locObj.time);
+            const alertClass = typeof locObj.alert !== "undefined" && typeof locObj.alert.class !== "undefined" ? locObj.alert.class : "";
+            const alertTooltipHtml = typeof locObj.alert !== "undefined" && typeof locObj.alert.html !== "undefined" ? locObj.alert.html : "";
 
             // Keep track of the most recent sensor data timestamp
             if (locObj.time > me._lastReadTimestampUnix) {
@@ -773,8 +812,8 @@ export const splSensorDataParser = {
             else if (locObj.type === "Tire Pressure") {
                const locHtml = me._convertLocToShortName(locObj.axle);
                outHtml += htmlEntities.decode(renderToString((
-                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'><p style='margin: 0px; padding: 0px;'>${sensorTimeLabel}:</p>${sensorTime}</div>`} data-for="splTooltip">
-                     <div className="val-loc">{`${locHtml}`}</div>
+                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'>${alertTooltipHtml}<p style='margin: 0px; padding: 0px;'>${sensorTimeLabel}:</p>${sensorTime}</div>`} data-for="splTooltip">
+                     <div className={`val-loc ${alertClass}`}>{`${locHtml}`}</div>
                      <div className="val-pres">{`${locObj.val.psi}`} <span>Psi</span><p>{`${locObj.val.kpa}`} <span>kPa</span></p><p>{`${locObj.val.bar}`} <span>Bar</span></p></div>
                   </div>
                )));
@@ -800,5 +839,37 @@ export const splSensorDataParser = {
                .replace(" ", "-");
       }
       return "";
+   },
+
+   /**
+   * Convert Location Array of Objects to HTML string
+   * [0: {axle: 1, tire: 2, vehComp: "tractor"}] =>
+   *
+   *  @returns string
+   */
+   _convertLocArrObjToLocHtml: function (locArr) {
+      const me = this;
+      if (typeof locArr !== "undefined" && locArr !== null &&
+         Array.isArray(locArr) && locArr.length) {
+         let locHtml = "";
+         locArr.forEach(locObj => {
+            const locStr = "Axle " + locObj.axle + " Tire " + locObj.tire + " &hyphen; " + splSrv.vehCompDb.names[locObj.vehComp];
+            locHtml += "<span>" + me._locTr(locStr) + "</span>";
+         });
+         return '<div class="spl-vehicle-alert-tooltip-location-items">' + locHtml + "</div>";
+      }
+      return "";
+   },
+
+   _locTr: function (rawVal) {
+      let val = rawVal.toString().trim();
+      if (val) {
+         val = val.replace("Axle", splmap.tr("alert_desc_axle"));
+         val = val.replace("Tire", splmap.tr("alert_desc_tire"));
+         val = val.replace("Tractor", splmap.tr("alert_desc_tractor"));
+         val = val.replace("Trailer", splmap.tr("alert_desc_trailer"));
+         val = val.replace("Dolly", splmap.tr("alert_desc_dolly"));
+      }
+      return val;
    }
 };

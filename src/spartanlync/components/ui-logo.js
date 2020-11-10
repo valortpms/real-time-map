@@ -106,8 +106,7 @@ export class SplLogo extends Component {
             let addInJson = null;
             settings.customerPages.map((jsonTxt) => {
                const jsonObj = JSON.parse(jsonTxt);
-               const myGeotabPageName = me.convertAddInNameToMyGeotabPageName(jsonObj.name);
-               if (addInPageName.indexOf(myGeotabPageName) > -1) {
+               if (addInPageName === me.convertAddInNameToMyGeotabPageName(jsonObj.name)) {
                   addInJson = jsonObj;
                }
             });
@@ -134,7 +133,7 @@ export class SplLogo extends Component {
    //
    convertAddInNameToMyGeotabPageName(addInName) {
       if (typeof addInName === "string") {
-         return "addin-" + addInName.toLowerCase().replace(/[\W_]+/g, "_").replace(/^\_|\_$/g, "");
+         return "#addin-" + addInName.toLowerCase().replace(/[\W_]+/g, "_").replace(/^\_|\_$/g, "") + "-index";
       }
       return "";
    };

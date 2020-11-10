@@ -33,6 +33,7 @@ export class SplSensorDataTypesButton extends Component {
 
       this.vehId = this.props.id;
       this.vehName = this.props.name.trim();
+      this.faultAlertEventHandlerId = null;
 
       this.goLib = null;
       this.sdataTools = null;
@@ -83,7 +84,7 @@ export class SplSensorDataTypesButton extends Component {
       me.sdataTools = new INITSplSensorDataTools(me.goLib);
       me.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
       me.sdataTools.setSensorDataNotFoundMsg(splSrv.sensorDataNotFoundMsg);
-      me.sdataTools.setVehComponents(splSrv.vehComponents.toEn);
+      me.sdataTools.setVehComponents(splSrv.vehCompTr.toEn);
 
       // Set Language-specific sensor data search messages
       me.sdataTools.setSensorSearchInProgressResponseMsg(splmap.tr("sensor_search_busy_msg"));
@@ -113,14 +114,27 @@ export class SplSensorDataTypesButton extends Component {
       //Splunk for fault & ignition data for specific vehicle
       fetchVehFaultsAndIgnitionAsync(me.vehId)
          .then(([faults, vehIgnitionInfo]) => {
+
             // Update Fault & Ignition data caches
             splSrv.cache.storeFaultData(me.vehId, faults);
             splSrv.cache.storeIgnData(me.vehId, vehIgnitionInfo);
-            console.log("---------------------- getFaultData(" + me.vehId + ") = ", splSrv.cache.getFaultData(me.vehId));
-            console.log("---------------------- getIgnData(" + me.vehId + ") = ", splSrv.cache.getIgnData(me.vehId));
+            console.log("---------------------------- faults[" + me.vehId + "] = ", JSON.stringify(faults));
+            console.log("---------------------------- vehIgnitionInfo[" + me.vehId + "] = ", JSON.stringify(vehIgnitionInfo));
+
+            // Update Faults cache with new ignition data
+            if (typeof vehIgnitionInfo !== "undefined" && vehIgnitionInfo !== null &&
+               typeof vehIgnitionInfo === "object" && typeof vehIgnitionInfo["on-latest"] !== "undefined" &&
+               vehIgnitionInfo["on-latest"]) {
+               splSrv.cache.updateFaultStatusUsingIgnData(me.vehId);
+            }
+
+            // Invoke New Fault event handlers by throwing a New Fault Event
+            if (typeof faults !== "undefined" && faults !== null && Array.isArray(faults) && faults.length) {
+               splSrv.events.exec("onFaultAlert", me.vehId);
+            }
          })
          .catch((reason) => {
-            console.log("---- Error while searching for FAULTS for VehicleID [ " + me.vehId + " ] named [ " + me.vehName + " ]: ", reason);
+            console.log("---- Error while searching for FAULTS on VehicleID [ " + me.vehId + " ] named [ " + me.vehName + " ]: ", reason);
          });
    }
 
@@ -198,6 +212,15 @@ export class SplSensorDataTypesButton extends Component {
             .then(sensorData => {
                splHtmlOut = splSensorDataParser.generateSensorDataHtml(sensorData, me.vehId, me.sdataTools);
                me.startContentRefresh();  // Start content update timer
+
+               // Register Handler for showing changes to vehicle Alert Status
+               me.faultAlertEventHandlerId = splSrv.events.register("onFaultAlert", (vehId) => {
+                  console.log("----------- Sensor Data Panel: onFaultAlert OCCURRED for vehId =", vehId); //DEBUG
+                  if (vehId === me.vehId) {
+                     console.log("----------- Sensor Data Panel: Update UI for vehId =", vehId); //DEBUG
+                     me.updateSensorDataContent();
+                  }
+               }, false);
             })
             .catch(reason => {
                splHtmlOut = reason;
@@ -214,7 +237,7 @@ export class SplSensorDataTypesButton extends Component {
    }
 
    /**
-    * Click Handler, invoked once there are sensor types to display
+    * Close Handler, invoked once UI is closed
     *
     *  @returns void
     */
@@ -223,6 +246,8 @@ export class SplSensorDataTypesButton extends Component {
       manageSensorDataContentUI.cleanup(me.vehId);
       me.stopContentRefresh();
       me.setState({ html: "" });
+      splSrv.events.delete("onFaultAlert", me.faultAlertEventHandlerId);
+      me.faultAlertEventHandlerId = null;
    }
 
    /**
@@ -319,7 +344,7 @@ export class SplSensorDataTypesButton extends Component {
                   {...(me.state.components.length && {
                      "data-tip":
                         "<div class='veh-components-popup'><span>" + vehicleComponentsTitle + "</span>" +
-                        me.state.components.map(component => "<li>" + splmap.tr(splSrv.vehComponents.toTr[component]) + "</li>").join("") +
+                        me.state.components.map(component => "<li>" + splmap.tr(splSrv.vehCompTr.toTr[component]) + "</li>").join("") +
                         "</div>",
                      "data-for": "splTooltip"
                   })}>

@@ -17,6 +17,29 @@ export const splSensorsOnMap = {
       return new Promise((resolve, reject) => {
          splSrv.sdataTools.fetchCachedSensorData(vehId, vehName)
             .then((sensorData) => {
+               if (vehId && splSrv.sdataTools._cache !== null &&
+                  typeof splSrv.sdataTools._cache[vehId] !== "undefined" &&
+                  typeof splSrv.sdataTools._cache[vehId].popupOpenForFirstTime === "undefined") {
+                  splSrv.sdataTools._cache[vehId].popupOpenForFirstTime = true;
+               }
+
+               // Fetch sensor data from cache,
+               // if
+               // 1. cached data available
+               // 2. recent search result empty
+               // 3. first time fetching data since vehicle map popup opened
+               //
+               if (typeof sensorData.vehId === "undefined" &&
+                  vehId && splSrv.sdataTools._cache !== null &&
+                  typeof splSrv.sdataTools._cache[vehId] !== "undefined" &&
+                  splSrv.sdataTools._cache[vehId].popupOpenForFirstTime &&
+                  splSrv.sdataTools._cache[vehId].data !== null) {
+                  splSrv.sdataTools._cache[vehId].firstTime = true;
+                  sensorData = splSrv.sdataTools._cache[vehId].data;
+               }
+               splSrv.sdataTools._cache[vehId].popupOpenForFirstTime = false;
+
+               // Render sensor data
                const splHtml = splSensorDataParser.generateSensorDataHtml(sensorData, vehId, splSrv.sdataTools);
                resolve(splHtml ? `<p class="SPL-popupSensor"> ${splHtml} </p>` : "");
             })
@@ -27,11 +50,18 @@ export const splSensorsOnMap = {
    },
 
    /**
-    * Clear the Sensor data cache for all vehicles
+    * Reset state of a vehicle cache
     *
     *  @returns void
     */
-   clearCache: function () {
-      splSrv.sdataTools.resetCache();
+   resetVehCache: function (vehId) {
+      if (typeof vehId !== "undefined" && vehId !== null &&
+         typeof splSrv.sdataTools._cache !== null &&
+         typeof splSrv.sdataTools._cache[vehId] !== "undefined" &&
+         typeof splSrv.sdataTools._cache[vehId].data !== null &&
+         !splSrv.sdataTools._cache[vehId].searching) {
+         splSrv.sdataTools._cache[vehId].expiry = 0;
+         splSrv.sdataTools._cache[vehId].popupOpenForFirstTime = true;
+      }
    }
 };

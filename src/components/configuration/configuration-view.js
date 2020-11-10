@@ -6,6 +6,10 @@ import { initCollapse } from "./utils/config-collapse";
 import { diagnosticSearch } from "./status-config/status-search";
 import { exceptionSearch } from "./exception-config/exception-search";
 import { deviceSearch } from "./vehicles-config/vehicle-search";
+import { splSensorDataParser } from "../../spartanlync/services/sensor-data-tools";
+import { markerList } from "../../dataStore/map-data";
+import storage from "../../dataStore";
+import splSrv from "../../spartanlync/services";
 
 export class ConfigView extends React.Component {
    constructor(props) {
@@ -40,6 +44,118 @@ export class ConfigView extends React.Component {
 
    setVehicleList(props) {
       this.setState({ vehicleDisplayList: props });
+
+      // Register Handler for showing changes to Vehicle Alert Status
+      this.setState((state) => {
+         let vehicleFaultAlertEventHandlerId = typeof state.vehicleFaultAlertEventHandlerId === "undefined" ? null : state.vehicleFaultAlertEventHandlerId;
+         if (!vehicleFaultAlertEventHandlerId &&
+            typeof state.vehicleDisplayList !== "undefined" && state.vehicleDisplayList !== null &&
+            Array.isArray(state.vehicleDisplayList) && state.vehicleDisplayList.length) {
+            vehicleFaultAlertEventHandlerId = splSrv.events.register("onFaultAlert", (vehId) => {
+
+               const alertlevel = {
+                  time: 0,
+                  color: "",
+                  tooltipHtml: ""
+               };
+               // Get most recent / urgent post-ignition fault level
+               splSrv.cache.getFaultData(vehId).forEach(faultObj => {
+                  if (typeof faultObj.time !== "undefined" &&
+                     typeof faultObj.alert !== "undefined" &&
+                     typeof faultObj.alert.color !== "undefined" &&
+                     typeof faultObj.alert.type !== "undefined" &&
+                     typeof faultObj.occurredOnLatestIgnition !== "undefined" &&
+                     faultObj.occurredOnLatestIgnition &&
+                     faultObj.time &&
+                     faultObj.alert.type !== "Sensor Fault" &&
+                     faultObj.alert.color.toString().trim() !== ""
+                  ) {
+                     if (!alertlevel.color ||
+                        (alertlevel.color && alertlevel.color.toUpperCase() === "AMBER" && faultObj.alert.color.toUpperCase() === "RED") ||
+                        (alertlevel.color.toUpperCase() === faultObj.alert.color.toUpperCase() && faultObj.time > alertlevel.time)) {
+
+                        const sensorLocHtml = splSensorDataParser._convertLocArrObjToLocHtml(faultObj.loc);
+
+                        alertlevel.time = faultObj.time;
+                        alertlevel.color = faultObj.alert.color;
+                        alertlevel.class = "strobe-" + faultObj.alert.color.toLowerCase();
+                        alertlevel.alertSummary = splmap.tr("alert_header") + ": " + splmap.tr(faultObj.alert.trId);
+                        alertlevel.tooltipHtml =
+                           '<p class="spl-vehicle-alert-tooltip-header">' + splmap.tr("alert_header") + ":</p>" +
+                           (faultObj.alert.type === "Tire Pressure Fault" ? splmap.tr("alert_tire_pressure_fault") + "<br />" : "") +
+                           splmap.tr(faultObj.alert.trId) +
+                           (sensorLocHtml ? '<p class="spl-vehicle-alert-tooltip-location-header">' + splmap.tr("alert_sensor_location_header") + ":</p>" + sensorLocHtml : "");
+                     }
+                  }
+               });
+
+               // Update Alert status of Vehicle List on Vehicle Config Tab
+               this.setState((state) => {
+                  const vehDisplayList = state.vehicleDisplayList;
+                  for (const idx in vehDisplayList) {
+                     if (vehDisplayList[idx].id === vehId) {
+                        // If alert for vehicle found, update vehicle AlertClass + Tooltip
+                        if (alertlevel.color) {
+                           vehDisplayList[idx].alertClass = alertlevel.class;
+                           vehDisplayList[idx].tooltip = alertlevel.tooltipHtml;
+                        }
+                        // Otherwise, clear alert if one exists
+                        else {
+                           if (typeof vehDisplayList[idx].alertClass !== "undefined" && vehDisplayList[idx].alertClass) {
+                              delete vehDisplayList[idx].alertClass;
+                              delete vehDisplayList[idx].tooltip;
+                           }
+                        }
+                     }
+                  }
+                  return { vehicleDisplayList: vehDisplayList };
+               });
+
+               // Update Vehicle Map Icon
+               setTimeout(function () {
+                  const vehMarkerObj = markerList[vehId];
+                  if (typeof vehMarkerObj !== "undefined" && vehMarkerObj !== null &&
+                     typeof vehMarkerObj === "object" && typeof vehMarkerObj.mapMarker !== "undefined"
+                  ) {
+                     const vehMapElem = vehMarkerObj.mapMarker.getElement();
+                     if (vehMapElem) {
+                        vehMapElem.classList.remove("strobe-amber");
+                        vehMapElem.classList.remove("strobe-red");
+                        if (alertlevel.color) {
+                           vehMapElem.classList.add(alertlevel.class);
+
+                           // On Vehicle Map tooltip, update Vehicle Storage Object with Alert info
+                           console.log("--- Alert[" + vehId + "] SET on Map Tooltip"); //DEBUG
+                           if (typeof storage.selectedDevices[vehId] !== "undefined") {
+                              const devObj = storage.selectedDevices[vehId];
+                              devObj.alert = alertlevel;
+                           }
+                        }
+                        else {
+                           // On Vehicle Map tooltip, Remove Alert info
+                           if (typeof storage.selectedDevices[vehId] !== "undefined" &&
+                              typeof storage.selectedDevices[vehId].alert !== "undefined") {
+                              console.log("--- Alert[" + vehId + "] CLEARED on Map Tooltip"); //DEBUG
+                              delete storage.selectedDevices[vehId].alert;
+                           }
+                        }
+                     }
+                  }
+               }, 1000);
+
+            }, false);
+         }
+         else {
+            // Un-Register Handler for Vehicle Alert Status, if Vehicle list is EMPTY
+            if (vehicleFaultAlertEventHandlerId &&
+               typeof state.vehicleDisplayList !== "undefined" && state.vehicleDisplayList !== null &&
+               Array.isArray(state.vehicleDisplayList) && !state.vehicleDisplayList.length) {
+               splSrv.events.delete("onFaultAlert", vehicleFaultAlertEventHandlerId);
+               vehicleFaultAlertEventHandlerId = null;
+            }
+         }
+         return { vehicleFaultAlertEventHandlerId: vehicleFaultAlertEventHandlerId };
+      });
    }
 
    setStatuses(props) {

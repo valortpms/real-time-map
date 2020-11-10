@@ -72,7 +72,7 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
       me.msgMgr("init");
 
       // Register a callback, invoked when SplMap has successfully initialized
-      splSrv.events.register("onLoadSplServices", me.init, false);
+      splSrv.events.register("onLoadSplServices", me.init);
    }
 
 
@@ -165,7 +165,7 @@ export class SplGeotabMapInstallationStatusBtn extends Component {
          const me = this;
          if (typeof splSrv.splStore.splMap.splGeotabMapOptOut === "undefined") {
             if (splSrv._pendingFlyingEvent) {
-               splSrv.events.register("postFlyingComplete", () => me.showConsentDialog(), false);
+               splSrv.events.register("postFlyingComplete", () => me.showConsentDialog());
             }
             else {
                me.showConsentDialog();

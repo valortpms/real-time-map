@@ -14,6 +14,7 @@ export const mapModel = {
    handleMapCreated(element) {
       storage.map = new L.Map(element, {
          doubleClickZoom: false,
+         closePopupOnClick: false,
          markerZoomAnimation: false,
          worldCopyJump: true
       });
@@ -27,9 +28,6 @@ export const mapModel = {
       // Execute any SpartanLync Listeners waiting for this moment when the map has changed due to animations
       storage.map.on("zoomend", () => {
          splSrv.events.exec("onFlyingComplete");
-      });
-      storage.map.on("mousedown", () => {
-         storage.map.closePopup();
       });
       storage.map.on("zoom", resetTransitionAnimation);
 

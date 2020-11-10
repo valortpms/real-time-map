@@ -21,6 +21,8 @@ export function initMarkerPopup(deviceMarker) {
    const popup = L.popup({
       maxHeight: 200,
       minWidth: 190,
+      autoClose: false,
+      closeOnClick: false,
       className: "markerPopups",
       offset: [0, 0]
    });
@@ -32,7 +34,12 @@ export function initMarkerPopup(deviceMarker) {
       "</strong>"
    );
 
-   mapMarker.bindPopup(popup);
+   mapMarker.bindPopup(popup).on("popupopen", (evt) => {
+      popup.bringToFront();
+      evt.popup._container.addEventListener("click", function () {
+         popup.bringToFront();
+      });
+   });
 
    const constructors = {
       mapMarker,
@@ -53,7 +60,7 @@ export function initMarkerPopup(deviceMarker) {
    });
 
    mapMarker.on("popupclose", () => {
-      splSensorsOnMap.clearCache();
+      splSensorsOnMap.resetVehCache(deviceID);
       popup.setContent(
          filterMarkerButton(deviceID) +
          "<strong class='loading'>" +
@@ -67,7 +74,8 @@ export function initMarkerPopup(deviceMarker) {
       if (!mapMarker.isPopupOpen()) {
          if (typeof storage.selectedDevices[deviceID] !== "undefined") {
             const devObj = storage.selectedDevices[deviceID];
-            mapMarker.bindTooltip(devObj.name, {
+            const alertHtml = typeof devObj.alert !== "undefined" && typeof devObj.alert.alertSummary !== "undefined" ? " - " + devObj.alert.alertSummary : "";
+            mapMarker.bindTooltip(devObj.name + alertHtml, {
                "className": "spl-map-vehicle-tooltip",
             }).openTooltip();
          }

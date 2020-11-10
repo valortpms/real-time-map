@@ -374,6 +374,38 @@
    text-align: center;
 }
 
+#RTM-ViewContainer .spl-vehicle-alert-tooltip {
+   text-align: center;
+}
+#RTM-ViewContainer .spl-vehicle-alert-tooltip-header {
+   font-weight: bold;
+   padding: 0px;
+   margin: 0px 0px 5px 0px;
+}
+#RTM-ViewContainer .spl-vehicle-alert-tooltip-location-header {
+   font-size: 11px;
+   font-weight: bold;
+   font-style: italic;
+   padding: 0px;
+   margin: 5px 0px 0px 0px;
+}
+#RTM-ViewContainer .spl-vehicle-alert-tooltip-location-items {
+   display: flex;
+   flex-direction: column;
+   justify-content: flex-start;
+   align-items: flex-start;
+   padding: 0px;
+   margin: 0px;
+}
+#RTM-ViewContainer .spl-vehicle-alert-tooltip-location-items span {
+   flex: none;
+   font-size: 9px;
+   font-weight: normal;
+   padding: 1px 5px 1px 25px;
+}
+
+
+
 
 /*
  *	-- Vehicle Sensor Data Popup on Map / ConfigView Panel
@@ -520,6 +552,32 @@
    text-align: center;
    font-size: 9px;
 }
+#RTM-ViewContainer .splTableCell .content-body .val-loc.alert-amber {
+   -webkit-animation: alert-amber 2s ease-in-out infinite alternate;
+   -moz-animation: alert-amber 2s ease-in-out infinite alternate;
+   animation: alert-amber 2s ease-in-out infinite alternate;
+}
+@keyframes alert-amber {
+   from {
+      background-color: #FBBD04;
+   }
+   to {
+      background-color: #2F3C43;
+   }
+}
+#RTM-ViewContainer .splTableCell .content-body .val-loc.alert-red {
+   -webkit-animation: alert-red 2s ease-in-out infinite alternate;
+   -moz-animation: alert-red 2s ease-in-out infinite alternate;
+   animation: alert-red 2s ease-in-out infinite alternate;
+}
+@keyframes alert-red {
+   from {
+      background-color: #BD2727;
+   }
+   to {
+      background-color: #2F3C43;
+   }
+}
 
 #RTM-ViewContainer .splTableCell .content-body .val-temp,
 #RTM-ViewContainer .splTableCell .content-body .val-pres,
@@ -560,7 +618,7 @@
 
 
 /*
- *	-- Vehicle Tooltip on Map
+ *	-- Vehicle Tooltip and Icon on Map
 */
 
 .leaflet-tooltip.spl-map-vehicle-tooltip {
@@ -582,6 +640,26 @@
 .leaflet-tooltip-right.spl-map-vehicle-tooltip:before {
    border-right-color: #000000;
 }
+
+.car-icon.strobe-amber {
+   -webkit-animation: car-icon-strobe-amber 3s infinite;
+   -moz-animation: car-icon-strobe-amber 3s infinite;
+   animation: car-icon-strobe-amber 3s infinite;
+}
+@keyframes car-icon-strobe-amber {
+   0%, 100%  { filter: brightness(none); }
+   50% { filter: invert(71%) sepia(76%) saturate(1816%) hue-rotate(1deg) brightness(105%) contrast(97%); }
+}
+.car-icon.strobe-red {
+   -webkit-animation: car-icon-strobe-red 3s infinite;
+   -moz-animation: car-icon-strobe-red 3s infinite;
+   animation: car-icon-strobe-red 3s infinite;
+}
+@keyframes car-icon-strobe-red {
+   0%, 100%  { filter: brightness(none); }
+   50% { filter: invert(82%) sepia(60%) saturate(2414%) hue-rotate(352deg) brightness(96%) contrast(105%); }
+}
+
 
 
 /*
@@ -815,6 +893,35 @@
 }
 #RTM-ViewContainer .mdc-list .mdc-list-item__text {
    white-space: break-spaces;
+}
+
+#RTM-ViewContainer .mdc-list .mdc-list-item__text.strobe-amber {
+   -webkit-animation: strobe-amber 1.2s ease-in-out infinite alternate;
+   -moz-animation: strobe-amber 1.2s ease-in-out infinite alternate;
+   animation: strobe-amber 1.2s ease-in-out infinite alternate;
+   padding: 0 5px;
+}
+@keyframes strobe-amber {
+   from {
+     text-shadow: 0 0 3px #FBBD04, 0 4px 10px #FBBD04, -5px 0 10px #FBBD04, 5px 0 10px #FBBD04;
+   }
+   to {
+     text-shadow: 0 0 20px #FFFFFF;
+   }
+}
+#RTM-ViewContainer .mdc-list .mdc-list-item__text.strobe-red {
+   -webkit-animation: strobe-red 1.2s ease-in-out infinite alternate;
+   -moz-animation: strobe-red 1.2s ease-in-out infinite alternate;
+   animation: strobe-red 1.2s ease-in-out infinite alternate;
+   padding: 0 5px;
+}
+@keyframes strobe-red {
+   from {
+     text-shadow: 0 0 3px #BD2727, 0 4px 10px #BD2727, -5px 0 10px #BD2727, 5px 0 10px #BD2727;
+   }
+   to {
+     text-shadow: 0 0 20px #FFFFFF;
+   }
 }
 
 

@@ -112,10 +112,18 @@ window.splmap.lang.en = {
   // Fault Alerts
   'alert_tooltip':                                 '{alert_msg}<br />on<br />{timestamp}',
   'alert_header':                                  'Alert',
+  'alert_sensor_location_header':                  'Sensor Location',
   'alert_missing_sensor':                          'Missing Sensor',
   'alert_pressure_extreme_over':                   'Extreme Over Pressure',
   'alert_pressure_extreme_under':                  'Extreme Under Pressure',
   'alert_pressure_over':                           'Over Pressure',
   'alert_pressure_under':                          'Under Pressure',
   'alert_battery_low_voltage':                     'Vehicle Battery has LOW Voltage',
+  'alert_tire_pressure_fault':                     'Tire Pressure Fault',
+  'alert_desc_zone':                               'Zone',
+  'alert_desc_axle':                               'Axle',
+  'alert_desc_tire':                               'Tire',
+  'alert_desc_tractor':                            'Tractor',
+  'alert_desc_trailer':                            'Trailer',
+  'alert_desc_dolly':                              'Dolly',
 }

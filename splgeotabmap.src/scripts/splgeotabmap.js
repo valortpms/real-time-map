@@ -12,6 +12,9 @@ geotab.addin.splgeotabmap = (elt, service) => {
   const sensorSearchRetryRangeInDays = [1, 2, 7, 30, 60, 90];         // Days from now to search for sensors (on App Start)
   const sensorSearchTimeRangeForRepeatSearchesInSeconds = 3600;       // (Default: 1 Hour) 3600 Seconds from now to use for repeating sensor search's
 
+  const faultSearchRetryRangeInDays = [30, 60, 90];                   // Days from now to search for faults (on App Start)
+  const faultSearchTimeRangeForRepeatSearchesInSeconds = 3600;        // 3600 Seconds from now to use for repeating fault search's (default: 1 Hour)
+
   const uiUpdatePollingTime = 30;                                     // How frequently does update service refresh ToolTip / MenuItem UI (In seconds)
 
   const addInLocalStorageKeyName = "splGeotabMapStore";               // Lookup key to use when saving/retrieving/removing data from Browser Local Storage
@@ -67,6 +70,8 @@ geotab.addin.splgeotabmap = (elt, service) => {
       sensorData: {
         searchInProgress: "",
         cache: {},
+        faultCache: {},
+        ignitionCache: {},
         vehRegistry: {
           tooltip: "",
           menuItem: "",
@@ -112,10 +117,18 @@ geotab.addin.splgeotabmap = (elt, service) => {
     addInBuildMetadataFilename: addInBuildMetadataFilename,
     sensorSearchRetryRangeInDays: sensorSearchRetryRangeInDays,
     sensorSearchTimeRangeForRepeatSearchesInSeconds: sensorSearchTimeRangeForRepeatSearchesInSeconds,
+    faultSearchRetryRangeInDays: faultSearchRetryRangeInDays,
+    faultSearchTimeRangeForRepeatSearchesInSeconds: faultSearchTimeRangeForRepeatSearchesInSeconds
   };
 
   // Initialize App Objects
-  my.goLib = INITGeotabTpmsTemptracLib(my.service.api, my.sensorSearchRetryRangeInDays, my.sensorSearchTimeRangeForRepeatSearchesInSeconds);
+  my.goLib = INITGeotabTpmsTemptracLib(
+    my.service.api,
+    my.sensorSearchRetryRangeInDays,
+    my.sensorSearchTimeRangeForRepeatSearchesInSeconds,
+    my.faultSearchRetryRangeInDays,
+    my.faultSearchTimeRangeForRepeatSearchesInSeconds
+  );
   my.ui = new InitOutputUI(my, elt,
     splSelContainer, splSelSensorContent, splSelLabel, splSelVehName, splSelVehSpeed,
     geotabAddInPanelOpenCloseBtnSel, geotabAddInPanelSel, geotabAddInPanelClass

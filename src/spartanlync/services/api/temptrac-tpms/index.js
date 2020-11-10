@@ -314,8 +314,8 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                   const fdata = {};
 
                   me._timer.b4 = new Date();
-                  console.log("Fault data retrieved - " + me._convertSecondsToHMS((me._timer.b4 - me._timer.b3) / 1000));
-                  console.log("Fault data being analyzed - Please Wait!");
+                  console.log("Fault data for VehicleID [ " + me._devId + " ] retrieved - " + me._convertSecondsToHMS((me._timer.b4 - me._timer.b3) / 1000));
+                  console.log("Fault data for VehicleID [ " + me._devId + " ] being analyzed - Please Wait!");
 
                   // Collect Ignition data
                   me._vehIgnitionData = me._generateVehIgnitionDb(result[1]);
@@ -432,7 +432,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                               }
 
                               me._timer.b4 = new Date();
-                              console.log("Fault data analyzed and sorted - " + me._convertSecondsToHMS((me._timer.b4 - me._timer.b3) / 1000) + ".");
+                              console.log("Fault data for VehicleID [ " + me._devId + " ] analyzed and sorted - " + me._convertSecondsToHMS((me._timer.b4 - me._timer.b3) / 1000) + ".");
 
                               // Return fault data to callback
                               me._apiCallFaultRetryCount = 0;

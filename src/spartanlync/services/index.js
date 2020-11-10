@@ -38,7 +38,8 @@ const SpartanLyncServices = {
       "es": "Espa&#241;ol"
    },
 
-   vehComponents: {                                         // Id/Description/TranslationCodes for supported Vehicles components
+   vehCompDb: {},
+   vehCompTr: {                                         // Id/Description/TranslationCodes for supported Vehicles components
       "toEn": {
          "tractor": "Tractor",
          "trailer1": "Trailer 1",
@@ -120,6 +121,11 @@ const SpartanLyncServices = {
          }
       },
 
+      getIgnVehIDs: function () {
+         const me = this;
+         return Object.keys(me._ignitionCache);
+      },
+
       getIgnData: function (vehId) {
          const me = this;
          if (typeof me._ignitionCache[vehId] !== "undefined") {
@@ -148,6 +154,27 @@ const SpartanLyncServices = {
                me._ignitionCache[vehId]["byTime"] = { ...me._ignitionCache[vehId]["byTime"], ...data["byTime"] };
                me._ignitionCache[vehId]["on"].push(...data["on"]);
                me._ignitionCache[vehId]["off"].push(...data["off"]);
+            }
+         }
+      },
+
+      updateFaultStatusUsingIgnData: function (vehId) {
+         const me = this;
+         if (typeof vehId !== "undefined" && vehId !== null &&
+            typeof me._ignitionCache !== "undefined" && me._ignitionCache !== null &&
+            typeof me._faultCache !== "undefined" && me._faultCache !== null &&
+            typeof me._faultCache[vehId] !== "undefined" && typeof me._ignitionCache[vehId] !== "undefined" &&
+            typeof me._ignitionCache === "object" && Array.isArray(me._faultCache[vehId]) && me._faultCache[vehId].length &&
+            typeof me._ignitionCache[vehId]["on-latest"] !== "undefined" && me._ignitionCache[vehId]["on-latest"]
+         ) {
+            console.log("--------- me._faultCache[" + vehId + "] = ", JSON.stringify(me._faultCache[vehId])); //DEBUG
+            console.log("--------- me._ignitionCache[" + vehId + "] = ", JSON.stringify(me._ignitionCache[vehId])); //DEBUG
+            for (const idx in me._faultCache[vehId]) {
+               me._faultCache[vehId][idx].occurredOnLatestIgnition =
+                  (
+                     typeof me._faultCache[vehId][idx].time !== "undefined" &&
+                     me._faultCache[vehId][idx].time >= me._ignitionCache[vehId]["on-latest"]
+                  ) ? true : false;
             }
          }
       },
@@ -203,24 +230,29 @@ const SpartanLyncServices = {
       * @param {function} callback     - Callback executed when this event occurs
       * @param {boolean}  execOnceOnly - Execute Callback once, then remove from Event Array (Optional - Default: true)
       *
-      * @returns void
+      * @returns EventId (for Event callback deletion)
       */
       register: function (event, callback, execOnceOnly) {
          const me = this;
          const execOneTime = typeof execOnceOnly !== "undefined" && execOnceOnly === false ? false : true;
+         const evtId = moment().utc().unix();
 
          if (event !== null && typeof event !== "undefined" && typeof callback === "function") {
             if (typeof me._events[event] === "undefined") {
                me._events[event] = [{
+                  id: evtId,
                   func: callback,
                   execOnce: execOneTime
                }];
+               return evtId;
             }
             else {
                me._events[event].push({
+                  id: evtId,
                   func: callback,
                   execOnce: execOneTime
                });
+               return evtId;
             }
          }
       },
@@ -229,10 +261,11 @@ const SpartanLyncServices = {
       * Invoke registered callbacks (if any) on a event(s) array
       *
       * @param {string} event - Name of Event Array to execute stored callbacks (Required)
+      * @param {array} params - parameters passed to callbacks (Optional)
       *
       * @returns void
       */
-      exec: function (event) {
+      exec: function (event, ...params) {
          const me = this;
          if (event !== null &&
             typeof event !== "undefined" &&
@@ -242,9 +275,35 @@ const SpartanLyncServices = {
          ) {
             me._events[event] = me._events[event].filter((callee) => {
                if (typeof callee.func === "function") {
-                  callee.func();
+                  callee.func(...params);
                }
                return !callee.execOnce;
+            });
+         }
+      },
+
+      /**
+      * Delete callback from event(s) array using specified EventId
+      *
+      * @param {string} event - Name of Event Array to execute stored callbacks (Required)
+      * @param {int}    evtId - Id of callback in Event Array to delete (Required)
+      *
+      * @returns void
+      */
+      delete: function (event, evtId) {
+         const me = this;
+         if (event !== null &&
+            typeof event !== "undefined" &&
+            typeof me._events[event] !== "undefined" &&
+            Array.isArray(me._events[event]) &&
+            me._events[event].length &&
+            typeof evtId !== "undefined" && evtId !== null && evtId
+         ) {
+            me._events[event] = me._events[event].filter((callee) => {
+               if (callee.id === evtId) {
+                  return false;
+               }
+               return true;
             });
          }
       }

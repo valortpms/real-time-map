@@ -11,8 +11,7 @@ export const VehicleListComponent = props => {
          ? props.vehicleDisplayList.map(prop => (
             <li key={prop.id} className="spl-list-item">
                <span
-                  className={`RTM-iconSquare mdc-list-item__graphic material-icons filterIcon ${
-                     prop.visible ? "showConfig" : "hideConfig"
+                  className={`RTM-iconSquare mdc-list-item__graphic material-icons filterIcon ${prop.visible ? "showConfig" : "hideConfig"
                      }`}
                   data-tip="Hide/Show Vehicle on Map"
                   data-for="splTooltip"
@@ -31,8 +30,11 @@ export const VehicleListComponent = props => {
                )}
                <span
                   id={"RTMnode-" + prop.id}
-                  className="RTM-ConfigListItem mdc-list-item__text"
-               >
+                  className={`RTM-ConfigListItem mdc-list-item__text ${prop.alertClass ? prop.alertClass : ""}`}
+                  {...(prop.tooltip && {
+                     "data-tip": "<div class='spl-vehicle-alert-tooltip'>" + prop.tooltip + "</div>",
+                     "data-for": "splTooltip"
+                  })}>
                   {prop.name}
                </span>
                <span

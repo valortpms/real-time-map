@@ -686,6 +686,7 @@ export const splSensorDataParser = {
       };
       me._lastReadTimestampUnix = 0;
 
+      console.log("============= fdata =", fdata);
       // Process Single/Multi-Component source sensor data
       data.foundTemptracSensors = false;
       data.foundTpmsTempSensors = false;
@@ -700,11 +701,14 @@ export const splSensorDataParser = {
                typeof faultObj.loc !== "undefined" &&
                Array.isArray(faultObj.loc) && faultObj.loc.length &&
                faultObj.occurredOnLatestIgnition &&
-               faultObj.alert.type === "Tire Pressure Fault"
+               (faultObj.alert.type === "Tire Pressure Fault" || faultObj.alert.type === "Tire Temperature Fault")
             ) {
                faultObj.loc.forEach(locObj => {
+
+                  // TPMS Pressure Alerts
                   if (typeof locObj.vehComp !== "undefined" &&
                      typeof cloneData[compId].tpmspress !== "undefined" &&
+                     faultObj.alert.type === "Tire Pressure Fault" &&
                      locObj.vehComp === compId) {
 
                      const locId = "tirepress_axle" + locObj.axle + "tire" + locObj.tire;
@@ -722,9 +726,31 @@ export const splSensorDataParser = {
                         }
                      }
                   }
+                  // TPMS Temperature Alerts
+                  if (typeof locObj.vehComp !== "undefined" &&
+                     typeof cloneData[compId].tpmstemp !== "undefined" &&
+                     faultObj.alert.type === "Tire Temperature Fault" &&
+                     locObj.vehComp === compId) {
+
+                     const locId = "tiretemp_axle" + locObj.axle + "tire" + locObj.tire;
+                     if (typeof cloneData[compId].tpmstemp[locId] !== "undefined") {
+                        if (typeof cloneData[compId].tpmstemp[locId].alert === "undefined" || (
+                           typeof cloneData[compId].tpmstemp[locId].alert !== "undefined" &&
+                           faultObj.time > cloneData[compId].tpmstemp[locId].alert.time)) {
+                           cloneData[compId].tpmstemp[locId].alert = {
+                              time: faultObj.time,
+                              class: "alert-" + faultObj.alert.color.toLowerCase(),
+                              html:
+                                 "<p class='spl-vehicle-alert-tooltip-header'>" + splmap.tr("alert_header") + ":</p>" +
+                                 splmap.tr("alert_tire_temperature_fault") + "<br />" + splmap.tr(faultObj.alert.trId) + "<p>"
+                           };
+                        }
+                     }
+                  }
                });
             }
          });
+         console.log("============= cloneData[compId] =", cloneData[compId]); //DEBUG
 
          data[compId] = {};
          if (Object.keys(cloneData[compId].temptrac).length) {
@@ -802,8 +828,8 @@ export const splSensorDataParser = {
             else if (locObj.type === "Tire Temperature") {
                const locHtml = me._convertLocToShortName(locObj.axle);
                outHtml += htmlEntities.decode(renderToString((
-                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'><p style='margin: 0px; padding: 0px;'>${sensorTimeLabel}:</p>${sensorTime}</div>`} data-for="splTooltip">
-                     <div className="val-loc">{`${locHtml}`}</div>
+                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'>${alertTooltipHtml}<p style='margin: 0px; padding: 0px;'>${sensorTimeLabel}:</p>${sensorTime}</div>`} data-for="splTooltip">
+                     <div className={`val-loc ${alertClass}`}>{`${locHtml}`}</div>
                      <div className="val-temp">{`${locObj.val.c}`} <span>&#8451;</span><p>{`${locObj.val.f}`} <span>&#8457;</span></p></div>
                   </div>
                )));

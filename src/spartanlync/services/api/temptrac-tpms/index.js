@@ -71,6 +71,12 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                trId: "alert_pressure_extreme_under",
                color: "RED"
             },
+            "ak1udf2L2UEemAp833dbAZQ": {
+               name: "Over Temperature",
+               type: "Tire Temperature Fault",
+               trId: "alert_temperature_over",
+               color: "AMBER"
+            },
             "alCsVoz4p50ap9rPVxYnr_A": {
                name: "Over Pressure",
                type: "Tire Pressure Fault",

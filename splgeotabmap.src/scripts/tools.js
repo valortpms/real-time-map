@@ -5,7 +5,7 @@
  */
 const onLoadInitEvents = function (my) {
 
-  // Event: User moves mouse over Vehicle on the map
+  // Event: User moves mouse OVER a Vehicle on the map
   my.service.events.attach("over", (evt) => {
     if (evt.type === "device") {
       my.service.api
@@ -17,6 +17,7 @@ const onLoadInitEvents = function (my) {
           if (result[0]) {
             const vehObj = result[0];
             my.ui.showTooltip(evt.entity.id, vehObj.name);
+            my.app.monitorVehSensorDataStatus();
           }
           //
           else {
@@ -26,7 +27,7 @@ const onLoadInitEvents = function (my) {
     }
   });
 
-  // Event: User moves mouse out of a Vehicle on the map
+  // Event: User moves mouse OFF a Vehicle on the map
   my.service.events.attach("out", (evt) => {
     // Remove this Vehicle from ToolTip registry to disable update attempt by the uiUpdateService
     if (evt.type === "device" && my.storage.sensorData.vehRegistry.tooltip === evt.entity.id) {
@@ -36,7 +37,7 @@ const onLoadInitEvents = function (my) {
 
   // Event: User focuses on SplMap Deeper add-in (Show What I Know)
   my.service.page.attach("focus", () => {
-    console.log("--- Focus Occured"); //DEBUG
+    console.log("--- Focus Occured");
     // Don't LOAD if SAVE operation is Pending
     if (my.localStore.isSavePending()) {
       my.app.init();
@@ -50,7 +51,7 @@ const onLoadInitEvents = function (my) {
 
   // Event: User focuses away from SplMap Deeper add-in (may not trigger on MyGeotab page switch)
   my.service.page.attach("blur", () => {
-    console.log("--- Blur Occured"); //DEBUG
+    console.log("--- Blur Occured");
     // Cancel all Pending Tasks in App
     my.app.cancelPendingTasks();
   });
@@ -63,7 +64,9 @@ const onLoadInitEvents = function (my) {
   // Create handler for dynamic closeMenuItem() button 'click' event
   document.addEventListener("click", function (evt) {
     if (evt.target && evt.target.classList.contains("vehDetailClose")) {
-      my.ui.closeMenuItem();
+      const vehIdAttrName = "data-veh-id";
+      const vehId = evt.target.getAttribute(vehIdAttrName) !== null ? evt.target.getAttribute(vehIdAttrName) : "";
+      my.ui.closeMenuItem(vehId);
     }
   });
 
@@ -81,31 +84,90 @@ const loadInitEventsPostTr = function (my) {
   // Register these events once on page load
   if (!document.body.getAttribute("splgeotabmap")) {
 
-    // Register Vehicle Menu-Item on map
+    // Register Vehicle Menu-Item "Show SpartanLync Sensors" on map
     my.service.actionList.attachMenu("vehicleMenu", (_, rest) => {
       return Promise.resolve([
         {
           title: my.tr("map_menuitm_label"),
+          icon: my.toolTipSettings.cfg.icon,
           clickEvent: "ShowSplDeviceInfo",
           data: rest.device,
         },
       ]);
     });
 
-    // Event: Clicked Vehicle Menu-Item on map
-    my.service.actionList.attach("ShowSplDeviceInfo", ({ id }) => {
-      Promise.all([
-        my.service.api.call("Get", {
-          typeName: "Device",
-          search: { id },
-        }),
-        my.service.api.call("Get", {
-          typeName: "DeviceStatusInfo",
-          search: { deviceSearch: { id } },
-        }),
-      ]).then(([[device], [dsi]]) => {
-        my.ui.showMenuItem(id, device.name, dsi.speed);
-      });
+    // Register Vehicle Menu-Item "Add/Remove to/from SpartanLync Watchlist" on map
+    my.service.actionList.attachMenu("vehicleMenu", (_, rest) => {
+      const title = my.app.getWatchlistByIds().includes(rest.device.id) ? my.tr("map_menuitm_watchlist_remove") : my.tr("map_menuitm_watchlist_add");
+      return Promise.resolve([
+        {
+          title: title,
+          icon: my.watchlistAndAlertSettings.mapVehMenuItemIcon,
+          clickEvent: "ToggleSplWatchList",
+          data: rest.device,
+        },
+      ]);
+    });
+
+    // Event: Clicked "Show SpartanLync Sensors" Menu-Item on Vehicle map
+    my.service.actionList.attach("ShowSplDeviceInfo", vehObj => {
+      const vehId = vehObj.id;
+      if (vehId) {
+        if (my.app.getWatchlistByIds().includes(vehId)) {
+          my.app.monitorVehSensorDataStatus();
+        }
+        else {
+          my.service.api
+            .call("Get", {
+              typeName: "Device",
+              search: { id: vehId },
+            })
+            .then(function (result) {
+              if (result[0]) {
+                const vehObj = result[0];
+
+                // Update watchlist & show in UI
+                my.app.addWatchlistItem(vehId, vehObj.name);
+                my.app.monitorVehSensorDataStatus();
+
+                // SAVE watchlist change Locally & Remotely
+                my.app.saveWatchlist("NOW");
+              }
+            });
+        }
+      }
+    });
+
+    // Event: Clicked "Show SpartanLync Sensors" Menu-Item on Vehicle map
+    my.service.actionList.attach("ToggleSplWatchList", vehObj => {
+      const vehId = vehObj.id;
+      if (vehId) {
+        my.service.api
+          .call("Get", {
+            typeName: "Device",
+            search: { id: vehId },
+          })
+          .then(function (result) {
+            if (result[0]) {
+              const vehObj = result[0];
+
+              // Update Watchlist by Adding/Deleting
+              if (my.app.getWatchlistByIds().includes(vehId)) {
+                my.app.delWatchlistItem(vehId);
+
+                // Remove vehId from Panel Jumper Widget
+                my.ui.panelVehJumper.del(vehId);
+              }
+              else {
+                my.app.addWatchlistItem(vehId, vehObj.name);
+              }
+              my.app.monitorVehSensorDataStatus();
+
+              // SAVE watchlist change Locally & Remotely
+              my.app.saveWatchlist("NOW");
+            }
+          });
+      }
     });
 
     // Set <body splgeotabmap="eventsok"> attribute as flag indicating initialization completed
@@ -166,7 +228,7 @@ const InitLocalStorage = function (my, storageKeyId, storageSecret) {
 
   /**
    *  Get encrypted storage data from localStorage, then decrypt the encryted parts and restore the whole
-   *  @returns {*} An object with a property as JS object
+   *  @return {*} An object with a property as JS object
    */
   this.load = function (callback) {
     const me = this;
@@ -276,59 +338,6 @@ const SplGeotabMapUtils = function (my) {
       _callback: null,
 
       /**
-       * startup() Startup tasks for SplGeotabMap Add-in
-       *
-       * @return void
-       */
-      startup: function () {
-        // Update moment() with User-defined Timezone
-        moment.tz.setDefault(my.storage.splStore.timezone);
-
-        // Switch to User-defined Language
-        if (my.storage.splStore.lang !== my.defaultLanguage) {
-          me.tr.switchTo(my.storage.splStore.lang);
-        }
-
-        // Complete App API Event Registration(s)
-        loadInitEventsPostTr(my);
-
-        // Reset sensor data search for all vehicles
-        me.resetSearch();
-
-        // Apply run-time settings to sensor data search library
-        my.sdataTools.setSensorDataLifetimeInSec(my.storage.splStore.sensorInfoRefreshRate); // "sensorInfoRefreshRate" from SplTools
-        my.sdataTools.setSensorDataNotFoundMsg(my.tr("sensors_not_found"));
-        my.sdataTools.setSensorSearchInProgressResponseMsg(my.tr("panel_search_busy_msg"));
-
-        // Init About Info in Logo / Watermark
-        my.logo.init();
-
-        // Restore Vehicle Sensor Data Panel
-        const vehId = my.storage.sensorData.vehRegistry.menuItem;
-        if (vehId && typeof my.storage.sensorData.cache[vehId] !== "undefined") {
-          const vehName = my.storage.sensorData.cache[vehId].data.vehName;
-          my.service.api.call("Get", {
-            typeName: "DeviceStatusInfo",
-            search: { deviceSearch: { id: vehId } }
-          }).then(([dsi]) => {
-            const vehSpeed = dsi.speed;
-            my.ui.renderMenuItemHTML(vehId, vehName, vehSpeed, me.getCachedSensorDataStatusForVeh(vehId, vehName));
-            my.ui.updateService.start();
-          });
-        }
-        // Otherwise, set initial UI message
-        else {
-          my.ui.showMsg(my.tr("panel_user_instruction"));
-        }
-
-        // Invoke callback if provided
-        if (me._callback) {
-          me._callback();
-          me._callback = null;
-        }
-      },
-
-      /**
        * init() Initialization tasks for SplGeotabMap Add-in
        *
        * @return void
@@ -347,16 +356,23 @@ const SplGeotabMapUtils = function (my) {
             !my.storage.splStore ||
             cachedStoreExpiry < now ||
             (typeof my.storage.splStore.splMap.mapsPageName !== "undefined" &&
+              my.storage.splStore.splMap.mapsPageName !== null &&
               my.storage.splStore.splMap.mapsPageName.indexOf("help.spartansense.com") > -1) ||
             (typeof my.storage.splStore.splMap.toolsPageName !== "undefined" &&
+              my.storage.splStore.splMap.toolsPageName !== null &&
               my.storage.splStore.splMap.toolsPageName.indexOf("help.spartansense.com") > -1)) {
             me.getSplSettings()
               .then(() => {
+                // Update local watchlist cache from remote
+                if (typeof my.storage.splStore.splMap.splGeotabMapWatchlist !== "undefined") {
+                  my.storage.sensorData.vehRegistry.watchlist = my.storage.splStore.splMap.splGeotabMapWatchlist;
+                }
                 me.startup();
               })
               .catch((reason) => my.ui.showError(reason));
           }
           else {
+            my.splSessionMgr = new INITSplSessionMgr(my.splApi, my.storage.credentials);
             me.startup();
           }
 
@@ -367,7 +383,53 @@ const SplGeotabMapUtils = function (my) {
       },
 
       /**
-       * getSplSettings() Fetch and store SpartanLync Store data for current logged-in Geotab Account
+       * startup() Startup tasks for SplGeotabMap Add-in
+       *
+       * @return void
+       */
+      startup: function () {
+        // Update moment() with User-defined Timezone
+        moment.tz.setDefault(my.storage.splStore.timezone);
+
+        // Switch to User-defined Language
+        if (my.storage.splStore.lang !== my.defaultLanguage) {
+          me.tr.switchTo(my.storage.splStore.lang);
+        }
+
+        // Init Panel Vehicle Jumper
+        my.ui.panelVehJumper.init();
+
+        // Complete App API Event Registration(s)
+        loadInitEventsPostTr(my);
+
+        // Reset sensor data search for all vehicles
+        me.resetSearch();
+
+        // Apply run-time settings to sensor data search library
+        my.sdataTools.setSensorDataLifetimeInSec(my.storage.splStore.sensorInfoRefreshRate); // "sensorInfoRefreshRate" from SplTools
+        my.sdataTools.setSensorDataNotFoundMsg(my.tr("sensors_not_found"));
+        my.sdataTools.setSensorSearchInProgressResponseMsg(my.tr("panel_search_busy_msg"));
+
+        // Init About Info in Logo / Watermark
+        my.logo.init();
+
+        // Manage UI and Services, after short wait for UI to load in DOM
+        setTimeout(function () {
+          my.app.monitorVehSensorDataStatus();
+        }, 500);
+
+        // Start Sensor Data Panel UI Update and Fault Alerts Monitoring Polling Service / Task
+        my.ui.updateService.start();
+
+        // Invoke callback if provided to init()
+        if (me._callback) {
+          me._callback();
+          me._callback = null;
+        }
+      },
+
+      /**
+       * getSplSettings() Fetch and store locally SpartanLync Store data for current logged-in Geotab Account
        *
        * @return promise
        */
@@ -411,9 +473,267 @@ const SplGeotabMapUtils = function (my) {
       },
 
       /**
+       * saveWatchlist(): Save Watchlist locally and remotely
+       * 1. Fetch most current SpartanLync Store data
+       * 2. update Store data with current watchlist array
+       * 3. Save SpartanLync Store data remotely
+       *
+       * @return void
+       */
+      saveWatchlist: function (args) {
+        const saveLocallyNow = typeof args === "string" && args.toUpperCase() === "NOW" ? true : false;
+
+        // Ensure local and remote Watchlists are synced before SAVE operation
+        if (typeof my.storage.sensorData.vehRegistry.watchlist !== "undefined" &&
+          typeof my.storage.splStore.splMap.splGeotabMapWatchlist !== "undefined" &&
+          JSON.stringify(my.storage.sensorData.vehRegistry.watchlist) !== JSON.stringify(my.storage.splStore.splMap.splGeotabMapWatchlist)) {
+          my.storage.splStore.splMap.splGeotabMapWatchlist = my.storage.sensorData.vehRegistry.watchlist;
+        }
+
+        // Save settings immediately, not after remote update
+        if (saveLocallyNow) {
+          my.localStore.save("NOW");
+        }
+
+        // Perform remote update
+        my.splSessionMgr.getSettings(
+          (remoteStore, dbDeviceIds) => {
+            if (remoteStore !== null && typeof remoteStore.splMap !== "undefined") {
+              my.storage.splStoreFetchedUnix = moment().utc().unix();
+              my.storage.splStore = remoteStore;
+            }
+            my.storage.splStore.timestamp = moment().utc().format(); // Set timestamp of local Storage object to NOW
+            my.storage.splStore.splMap.splGeotabMapWatchlist = my.storage.sensorData.vehRegistry.watchlist;
+            my.splSessionMgr.syncSettings(my.storage.splStore, dbDeviceIds,
+              (accepted) => {
+                // If accepted by Remote, save locally
+                if (accepted) {
+                  console.log("--- Successfully saved Watchlist Remotely");
+                  if (!saveLocallyNow) {
+                    my.localStore.save();
+                  }
+                }
+                else {
+                  my.ui.showMsg(my.tr("error_failed_saving_watchlist"));
+                }
+              },
+              // Error Handler
+              (reason) => my.ui.showMsg(my.tr("error_failed_saving_watchlist") + " " + reason));
+          },
+          (reason) => my.ui.showMsg(my.tr("error_failed_saving_watchlist") + " " + reason)
+        );
+      },
+
+      /**
+       * getWatchlistByIds(): Returns array of Watchlist vehicle Id(s)
+       *
+       * @return array
+       */
+      getWatchlistByIds: function () {
+        return my.storage.sensorData.vehRegistry.watchlist.map(vehObj => { return vehObj.id; });
+      },
+
+      /**
+       * getWatchlistVehNameByIds(): Returns vehicle Name from Watchlist using its Id
+       *
+       * @return string ("" if not found)
+       */
+      getWatchlistVehNameByIds: function (vehId) {
+        let vehName = "";
+        if (vehId) {
+          for (const vehObj of my.storage.sensorData.vehRegistry.watchlist) {
+            if (vehObj.id === vehId) {
+              vehName = vehObj.name;
+              break;
+            }
+          }
+        }
+        return vehName;
+      },
+
+      /**
+       * addWatchlistItem(): Add vehId+Name to watchlist array, then sort array by Name
+       *
+       *  @param {string} [vehId] The vehicle Id to add
+       *  @param {string} [vehName] The vehicle Name to add
+       *
+       * @return void
+       */
+      addWatchlistItem: function (vehId, vehName) {
+        if (vehId && vehName && !me.getWatchlistByIds().includes(vehId)) {
+          // Append new item
+          my.storage.sensorData.vehRegistry.watchlist.push({
+            id: vehId,
+            name: vehName,
+          });
+          // Sort by Name
+          my.storage.sensorData.vehRegistry.watchlist.sort((a, b) => (a.name > b.name) ? 1 : -1);
+        }
+      },
+
+      /**
+       * delWatchlistItem(): Delete watchlist item from array
+       *  @param {string} [vehId] The vehicle Id to delete
+       *
+       * @return void
+       */
+      delWatchlistItem: function (vehId) {
+        if (vehId) {
+          my.storage.sensorData.vehRegistry.watchlist =
+            my.storage.sensorData.vehRegistry.watchlist.filter(vehObj => vehObj.id !== vehId);
+        }
+      },
+
+      /**
+       * monitorVehSensorDataStatus(): Manage update service tasks that performs UI updates
+       * Based on whether
+       *   - Vehicles exist in watchlist for showing sensor data in Panel
+       *   or
+       *   - Vehicle fault alerts to show on map
+       *
+       * @return void
+       */
+      // eslint-disable-next-line complexity
+      monitorVehSensorDataStatus: function (mode) {
+        const inUpdateMode = typeof mode !== "undefined" && mode !== null && mode === "updateServiceMode" ? true : false;
+        const watchListIds = my.app.getWatchlistByIds();
+        const calls = [];
+
+        // Init watchlistData for MapFaults + Sensor-Data-Watches
+        my.storage.sensorData.watchlistData = {
+          index: []
+        };
+
+        // Include search for vehicles with "post-Ignition" Fault Alerts
+        for (const vehId of my.app.getVehFaultIDs()) {
+          for (const faultObj of my.app.getFaultData(vehId)) {
+            if (typeof faultObj.occurredOnLatestIgnition !== "undefined" &&
+              typeof faultObj.alert !== "undefined" &&
+              faultObj.occurredOnLatestIgnition) {
+
+              if (!my.storage.sensorData.watchlistData.index.includes(vehId)) {
+                // Init
+                my.storage.sensorData.watchlistData.index.push(vehId);
+                my.storage.sensorData.watchlistData[vehId] = JSON.parse(JSON.stringify(my.watchlistAndAlertSettings.defaultCfg));
+
+                // Alert notification data
+                my.storage.sensorData.watchlistData[vehId].type.push("alert");
+                my.storage.sensorData.watchlistData[vehId].alerts = [];
+                my.storage.sensorData.watchlistData[vehId].alertlevel = {
+                  time: 0,
+                  color: "",
+                  iconName: "",
+                  tooltip: {}
+                };
+
+                // Add per-vehicle info to API request
+                calls.push(["Get", {
+                  typeName: "Device",
+                  search: { id: vehId }
+                }]);
+                calls.push(["Get", {
+                  typeName: "DeviceStatusInfo",
+                  search: { deviceSearch: { id: vehId } }
+                }]);
+              }
+              my.storage.sensorData.watchlistData[vehId].alerts.push(faultObj);
+
+              if (faultObj.occurredOnLatestIgnition &&
+                faultObj.time &&
+                faultObj.alert.type !== "Sensor Fault" &&
+                faultObj.alert.color.toString().trim() !== ""
+              ) {
+                const alertlevel = my.storage.sensorData.watchlistData[vehId].alertlevel;
+                if (!alertlevel.color ||
+                  (alertlevel.color && alertlevel.color.toUpperCase() === "AMBER" && faultObj.alert.color.toUpperCase() === "RED") ||
+                  (alertlevel.color.toUpperCase() === faultObj.alert.color.toUpperCase() && faultObj.time > alertlevel.time)) {
+
+                  const sensorLocArr = me.convertLocArrObjToLocDescArr(faultObj.loc);
+
+                  // Add instructional message
+                  sensorLocArr.push(my.tr("alert_tooltip_instruction_msg"));
+
+                  alertlevel.time = faultObj.time;
+                  alertlevel.color = faultObj.alert.color;
+                  alertlevel.iconName = "mapVehAlertIcon" + faultObj.alert.color.charAt(0).toUpperCase() + faultObj.alert.color.slice(1).toLowerCase();
+                  alertlevel.tooltip.title = "SpartanLync " + my.tr("alert_header") + ": " + my.tr(faultObj.alert.trId) +
+                    (faultObj.alert.type === "Tire Pressure Fault" ? " ( " + my.tr("alert_tire_pressure_fault") + " )" : "") +
+                    (faultObj.alert.type === "Tire Temperature Fault" ? " ( " + my.tr("alert_temperature_over") + " )" : "");
+                  alertlevel.tooltip.sensorLocLabel = ["@" + me.convertUnixToTzHuman(faultObj.time), my.tr("alert_sensor_location_header") + ":"];
+                  alertlevel.tooltip.sensorLocArr = sensorLocArr;
+                }
+              }
+            }
+          }
+        }
+
+        // Include search for vehicles in Watchlist
+        if (watchListIds.length) {
+
+          for (const vehId of watchListIds) {
+            if (!my.storage.sensorData.watchlistData.index.includes(vehId)) {
+              my.storage.sensorData.watchlistData.index.push(vehId);
+              my.storage.sensorData.watchlistData[vehId] = JSON.parse(JSON.stringify(my.watchlistAndAlertSettings.defaultCfg));
+            }
+            my.storage.sensorData.watchlistData[vehId].type.push("watchlist");
+            calls.push(["Get", {
+              typeName: "Device",
+              search: { id: vehId }
+            }]);
+            calls.push(["Get", {
+              typeName: "DeviceStatusInfo",
+              search: { deviceSearch: { id: vehId } }
+            }]);
+          }
+
+          // Open UI Panel, if closed and not invoded by the UpdateService Task
+          if (!inUpdateMode) {
+            my.ui.openPanel();
+          }
+        }
+        // Stop everything if watchlist empty
+        else {
+
+          // Reset UI, if not invoded by the UpdateService Task
+          if (!inUpdateMode) {
+            my.ui.showMsg(my.tr("panel_user_instruction"));
+          }
+        }
+
+        // Fetch latest Vehicle information for Watchlist + Fault Alerts
+        if (calls.length) {
+          my.service.api
+            .multiCall(calls)
+            .then(function (result) {
+              if (result && result.length) {
+                for (let i = 0; i < result.length; i += 2) {
+                  const [veh] = result[i];
+                  const [vehInfo] = result[i + 1];
+                  const vehId = veh.id;
+
+                  my.storage.sensorData.watchlistData[vehId].name = veh.name;
+                  my.storage.sensorData.watchlistData[vehId].time = moment(vehInfo.dateTime).unix();
+                  my.storage.sensorData.watchlistData[vehId].speed = vehInfo.speed;
+                  my.storage.sensorData.watchlistData[vehId].loc.lat = vehInfo.latitude;
+                  my.storage.sensorData.watchlistData[vehId].loc.lng = vehInfo.longitude;
+                }
+
+                // Render Vehicle Watchlist sensor data data in UI
+                if (watchListIds.length) {
+                  my.ui.renderPanelHTML();
+                }
+
+                // Invoke Map Fault Alerts UI
+                my.ui.renderMapAlerts();
+              }
+            });
+        }
+      },
+
+      /**
        *  Perform page-redirect navigation to SpartanLync Tools Add-in
        *
-       *  @returns void
+       *  @return void
        */
       navigateToSplTools: (vehId, vehName) => {
         const splToolsPageName = my.storage.splStore.splMap.toolsPageName;
@@ -422,6 +742,7 @@ const SplGeotabMapUtils = function (my) {
           .hasAccessToPage(splToolsPageName)
           .then((accessGranted) => {
             if (accessGranted) {
+              my.app.cancelPendingTasks();
               my.service.page
                 .go(splToolsPageName, {
                   switchToVehId: vehId,
@@ -487,7 +808,6 @@ const SplGeotabMapUtils = function (my) {
       getSensorData: function (vehId, vehName) {
         // Get SpartanLync Sensor Data
         if (my.storage.sensorData.searchInProgress) {
-          console.log(`=== getSensorData() ======================= ASYNC FETCH FOR Vehicle [ ${vehId} ], as SEARCH IN PROGRESS ON Vehicle [ ${my.storage.sensorData.searchInProgress} ]`); //DEBUG
           const aSyncGoLib = INITGeotabTpmsTemptracLib(
             my.service.api,
             my.sensorSearchRetryRangeInDays,
@@ -508,7 +828,6 @@ const SplGeotabMapUtils = function (my) {
             });
         }
         else {
-          console.log(`=== getSensorData() ======================= FETCHING VEH [ ${vehName} / ${vehId} ]`); //DEBUG
           my.storage.sensorData.searchInProgress = vehId;
           my.sdataTools.fetchCachedSensorData(vehId, vehName)
             .then(() => me.postGetSensorData(vehId, vehName))
@@ -519,7 +838,8 @@ const SplGeotabMapUtils = function (my) {
         }
 
         // Get Vehicle Faults / Ignition data
-        me.fetchVehFaultsAndIgnitionAsync(vehId)
+        const overrideFirstTimeCall = my.app.getFaultData(vehId) === null ? null : true;
+        me.fetchVehFaultsAndIgnitionAsync(vehId, overrideFirstTimeCall)
           .then(([faults, vehIgnitionInfo]) => {
 
             // Update Fault & Ignition data cache(s)
@@ -544,7 +864,6 @@ const SplGeotabMapUtils = function (my) {
        * @return void
        */
       postGetSensorData: function (vehId, vehName) {
-        console.log(`=== postGetSensorData() ======================= SUCCESS [ ${vehName} / ${vehId} ]`); //DEBUG
         // Reset search status and Backup found sensor data
         my.storage.sensorData.searchInProgress = "";
 
@@ -618,7 +937,7 @@ const SplGeotabMapUtils = function (my) {
       /**
       *  fetchVehSensorDataAsync() Asynchronously fetch Temptrac/TPMS sensor data
       *
-      *  @returns object / string (on Error)
+      *  @return object / string (on Error)
       */
       fetchVehSensorDataAsync: function (vehId, vehComp, firstTimeCallOverride) {
         const vehComponent = vehComp || "";
@@ -644,7 +963,7 @@ const SplGeotabMapUtils = function (my) {
       /**
       *  Asynchronously Fetch Vehicle Faults and Ignition data
       *
-      *  @returns {array} objects
+      *  @return {array} objects
       */
       fetchVehFaultsAndIgnitionAsync: function (vehId, firstTimeCallOverride) {
         const overrideFirstTimeCall = typeof firstTimeCallOverride === "undefined" ? null : firstTimeCallOverride;
@@ -697,9 +1016,12 @@ const SplGeotabMapUtils = function (my) {
             my.storage.splStore = null;
             my.sdataTools.resetCache();
             my.storage.sensorData.cache = {};
-            my.storage.sensorData.vehRegistry.menuItem = "";
+            my.storage.sensorData.faultCache = {};
+            my.storage.sensorData.ignitionCache = {};
             me.init(() => {
-              my.ui.showMsg(my.tr("reset_btn_msg") + "<p>" + my.tr("panel_user_instruction"));
+              setTimeout(function () {
+                my.ui.showMsg(my.tr("reset_btn_msg") + "<p>" + my.tr("panel_user_instruction"));
+              }, 700);
             });
           });
         } else {
@@ -718,13 +1040,48 @@ const SplGeotabMapUtils = function (my) {
       },
 
       /**
+      * Convert Location Array of Objects to Array of Descriptions
+      * [0: {axle: 1, tire: 2, vehComp: "tractor"}] => [0: "Axle 1 Tire 2 - Tractor"]
+      *
+      *  @returns string
+      */
+      convertLocArrObjToLocDescArr: function (locArr) {
+        const locDescArr = [];
+        if (typeof locArr !== "undefined" && locArr !== null &&
+          Array.isArray(locArr) && locArr.length) {
+          locArr.forEach(locObj => {
+            const locStr = "Axle " + locObj.axle + " Tire " + locObj.tire + " - " + my.vehCompDb.names[locObj.vehComp];
+            locDescArr.push(me._locTr(locStr));
+          });
+        }
+        return locDescArr;
+      },
+
+      _locTr: function (rawVal) {
+        let val = rawVal.toString().trim();
+        if (val) {
+          val = val.replace("Axle", my.tr("alert_desc_axle"));
+          val = val.replace("Tire", my.tr("alert_desc_tire"));
+          val = val.replace("Tractor", my.tr("alert_desc_tractor"));
+          val = val.replace("Trailer", my.tr("alert_desc_trailer"));
+          val = val.replace("Dolly", my.tr("alert_desc_dolly"));
+        }
+        return val;
+      },
+
+      /**
        * Convert from Unix timestamp to Human-readable time
        * eg. Sa Aug 17, 2020 7:00 PM EDT
        *
-       *  @returns string
+       *  @return string
        */
       convertUnixToTzHuman: function (unixTime) {
         return isNaN(unixTime) ? null : moment.unix(unixTime).format(my.timeFormat);
+      },
+
+      getVehFaultIDs: function () {
+        const me = this;
+        return Object.keys(my.storage.sensorData.faultCache);
       },
 
       getFaultData: function (vehId) {
@@ -795,8 +1152,6 @@ const SplGeotabMapUtils = function (my) {
           typeof my.storage.sensorData.ignitionCache === "object" && Array.isArray(my.storage.sensorData.faultCache[vehId]) && my.storage.sensorData.faultCache[vehId].length &&
           typeof my.storage.sensorData.ignitionCache[vehId]["on-latest"] !== "undefined" && my.storage.sensorData.ignitionCache[vehId]["on-latest"]
         ) {
-          console.log("--------- my.storage.sensorData.faultCache[" + vehId + "] = ", my.storage.sensorData.faultCache[vehId]);
-          console.log("--------- my.storage.sensorData.ignitionCache[" + vehId + "] = ", my.storage.sensorData.ignitionCache[vehId]);
           for (const idx in my.storage.sensorData.faultCache[vehId]) {
             my.storage.sensorData.faultCache[vehId][idx].occurredOnLatestIgnition =
               (
@@ -810,7 +1165,7 @@ const SplGeotabMapUtils = function (my) {
       /**
        * Language Translation Tools
        *
-       *  @returns void
+       *  @return void
        */
       tr: function () {
         const me = {
@@ -1098,7 +1453,7 @@ const INITSplAPI = function (serverUrl, csrfToken) {
   /**
    *  INIT - Constructor, When an instance gets created
    *
-   *  @returns string
+   *  @return string
    */
   this.configure = function (url, csrfToken) {
     const me = this;
@@ -1287,7 +1642,7 @@ const INITSplSessionMgr = function (myApi, credentials) {
   /**
    *  INIT - Constructor, When an instance gets created
    *
-   *  @returns string
+   *  @return string
    */
 
   this.configure = function (myApi, myCreds) {
@@ -1377,6 +1732,12 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
           trId: "alert_pressure_extreme_under",
           color: "RED"
         },
+        "ak1udf2L2UEemAp833dbAZQ": {
+          name: "Over Temperature",
+          type: "Tire Temperature Fault",
+          trId: "alert_temperature_over",
+          color: "AMBER"
+        },
         "alCsVoz4p50ap9rPVxYnr_A": {
           name: "Over Pressure",
           type: "Tire Pressure Fault",
@@ -1462,53 +1823,6 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
         me._devId = devId;
         me._fDataCallback = callback;
         me._setDateRangeAndInvokeFaultCalls();
-      },
-
-      /**
-       * getVehStatus() Retrieves Vehicle status info from Geotab API
-       *
-       * @param {string} devId    - Geotab Device Id
-       * @param {string} callback - Callback func to invoke upon retrieval of data
-       *
-       * @return {array} Vehicle status object
-       */
-      getVehStatus: function (devId, vStatusCallback) {
-        if (devId.toString().trim() === "" || typeof vStatusCallback === "undefined" || typeof vStatusCallback !== "function") {
-          return;
-        }
-
-        // Build DeviceStatus API Call
-        const apiCall = {
-          typeName: "DeviceStatusInfo",
-          search: {
-            deviceSearch: {
-              id: devId,
-            },
-          },
-        };
-        console.log("--- getVehStatus(): Collecting latest Vehicle Status information...");
-
-        // Invoke Device Status API Call
-        me._timer.a1 = new Date();
-        me._api
-          .call("Get", apiCall)
-          .then(function (result) {
-            if (result && result.length) {
-              const vehStatusObj = result[0];
-              me._timer.a2 = new Date();
-              console.log("--- getVehStatus(): Vehicle Status Info retrieved - " + me._convertSecondsToHMS((me._timer.a2 - me._timer.a1) / 1000));
-              vStatusCallback(vehStatusObj);
-            } else {
-              console.log("--- Error: getVehStatus.api.call(): EMPTY RESPONSE");
-              vStatusCallback(null);
-            }
-          })
-          .catch((errorString) => {
-            me._timer.a2 = new Date();
-            console.log("--- Vehicle Status Info retrieval failed - " + me._convertSecondsToHMS((me._timer.a2 - me._timer.a1) / 1000));
-            console.log("--- Error: getVehStatus.api.call(): " + errorString);
-            vStatusCallback(null);
-          });
       },
 
       getVehComponentDB: function () {
@@ -4444,7 +4758,7 @@ const INITSplSensorDataTools = function (goLib, cache) {
    * Fetch vehicle sensor data from cache or API
    * ( cached is refreshed after X minutes, as defined in _sensorDataLifetime )
    *
-   *  @returns promise
+   *  @return promise
    */
   this.fetchCachedSensorData = function (vehId, vehName) {
     const me = this;
@@ -4640,7 +4954,7 @@ const INITSplSensorDataTools = function (goLib, cache) {
   /**
    * Standardized error response used when Library busy with search in progress
    *
-   *  @returns string
+   *  @return string
    */
   this.getSensorSearchInProgressResponse = function () {
     const me = this;
@@ -4716,7 +5030,7 @@ const INITSplSensorDataTools = function (goLib, cache) {
    * Clear the Sensor data cache of all vehicles
    * IF a SEARCH OPERATION is NOT occuring
    *
-   *  @returns boolean
+   *  @return boolean
    */
   this.resetCache = function () {
     const me = this;
@@ -4732,7 +5046,7 @@ const INITSplSensorDataTools = function (goLib, cache) {
   /**
    *  Fetch Temptrac and TPMS sensor data
    *
-   *  @returns promise
+   *  @return promise
    */
   this._fetchData = function (vehId) {
     const me = this;
@@ -4793,7 +5107,7 @@ const INITSplSensorDataTools = function (goLib, cache) {
    * @param {string} vehId       - Geotab Device Id
    * @param {boolean} clearNulls - Reset stale NEW sensor readings to OLD readings
    *
-   * @returns object
+   * @return object
    */
   this._resetSensorDataInCache = function (vehId, clearNewNulls) {
     const me = this;
@@ -4829,7 +5143,7 @@ const INITSplSensorDataTools = function (goLib, cache) {
   /**
    * Merge fresh sensor data with existing cache data (by sensor location)
    *
-   *  @returns object
+   *  @return object
    */
   this._mergeSensorDataIntoCache = function (cache, sdata, vehCompId, vehId) {
     if (cache === null) {
@@ -4888,7 +5202,7 @@ const INITSplSensorDataTools = function (goLib, cache) {
   /**
    *  INIT - Constructor, When an instance gets created
    *
-   *  @returns void
+   *  @return void
    */
   this._configure = function (goLib, cache) {
     if (goLib && typeof goLib === "object") {

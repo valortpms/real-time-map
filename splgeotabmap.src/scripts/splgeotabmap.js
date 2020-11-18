@@ -15,7 +15,7 @@ geotab.addin.splgeotabmap = (elt, service) => {
   const faultSearchRetryRangeInDays = [30, 60, 90];                   // Days from now to search for faults (on App Start)
   const faultSearchTimeRangeForRepeatSearchesInSeconds = 3600;        // 3600 Seconds from now to use for repeating fault search's (default: 1 Hour)
 
-  const uiUpdatePollingTime = 30;                                     // How frequently does update service refresh ToolTip / MenuItem UI (In seconds)
+  const uiUpdatePollingTime = 20;                                     // How frequently does update service refresh ToolTip / MenuItem UI (In seconds)
 
   const addInLocalStorageKeyName = "splGeotabMapStore";               // Lookup key to use when saving/retrieving/removing data from Browser Local Storage
   const addInLocalStorageSecret = "DKrKcInKvtb9wRB0le1qI7arr12yVTHU"; // Secret Passphrase used to encrypt/decryt storage data saved to Browser
@@ -45,15 +45,16 @@ geotab.addin.splgeotabmap = (elt, service) => {
   const splSelContainer = "#SplGeotabMapContainer";                   // Dom selector for splGeotabMap AddIn HTML container
   const splSelResetBtn = "#SplGeotabMapResetBtn button";              // Dom selector for splGeotabMap Reset button
   const splSelGeotabMapLogo = "#SplGeotabMapLogo";                    // Dom selector for splGeotabMap Logo
-  const splSelSensorContent = "#SplGeotabMapSensorData";              // Dom selector for splGeotabMap AddIn sensor data HTML content
   const splSelLabel = "#SplGeotabMapContainer .title label";          // Dom selector for Panel Label in output HTML
-  const splSelVehName = "#SplGeotabMapContainer .title strong";       // Dom selector for Vehicle Name in output HTML
-  const splSelVehSpeed = "#SplGeotabMapContainer .title div";         // Dom selector for Vehicle Speed in output HTML
+  const splSelTitleBold = "#SplGeotabMapContainer .title strong";     // Dom selector for Vehicle Name in output HTML
+  const splSelPnlJmprContainer = "#SplGeotabMapVehPicker";            // Dom selector for Panel Vehicle Jumper Container in output HTML
+  const splSelPnlJmprMenu = "#SplGeotabMapVehPicker > div";           // Dom selector for Panel Vehicle Jumper Menu Wrapper in output HTML
 
   // iFrame Parent Dom selector for MyGeotab Map page Add-In Panel Open/Close button
   const geotabAddInPanelOpenCloseBtnSel = "#liveMap_detailsPanelAndMapCanvasLayout .mapAddinResizer .resizerButton";
   const geotabAddInPanelSel = "#liveMap_addinsPanel";                 // iFrame Parent Dom selector for MyGeotab Map page Add-In Panel
   const geotabAddInPanelClass = "hiddenPane";                         // CSS class on the
+  const vehPanelContentIdPrefix = "vehSensorDataPanelId";             // Prefix to Dom ID for Vehicle-specific Sensor Data view in Panel UI
 
 
   // Private Vars
@@ -72,9 +73,12 @@ geotab.addin.splgeotabmap = (elt, service) => {
         cache: {},
         faultCache: {},
         ignitionCache: {},
+        watchlistData: {
+          index: []
+        },
         vehRegistry: {
           tooltip: "",
-          menuItem: "",
+          watchlist: [],
         },
       },
       credentials: {
@@ -97,12 +101,37 @@ geotab.addin.splgeotabmap = (elt, service) => {
       }
     },
 
+    mapAlertMarkers: {},
+    watchlistAndAlertSettings: {
+      mapVehMenuItemIcon: "data:image/svg+xml;base64,PHN2ZyBpZD0ic3BhcnRhbmx5bmMtd2F0Y2hsaXN0LWljb24iIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDMyIDMyIj48cGF0aCBpZD0id2hpdGUiIGQ9Ik02Ljg2LDMyYTIuMzgsMi4zOCwwLDAsMS0yLjM5LTIuMzZWOC43NkEyLjM4LDIuMzgsMCwwLDEsNi44Niw2LjRoMS4zYTMuMTEsMy4xMSwwLDAsMSwzLjA3LTIuN2guMTNhNC43Niw0Ljc2LDAsMCwxLDkuMjgsMGguMTJhMy4xMiwzLjEyLDAsMCwxLDMuMDgsMi43aDEuM2EyLjM4LDIuMzgsMCwwLDEsMi4zOSwyLjM2VjI5LjY0QTIuMzgsMi4zOCwwLDAsMSwyNS4xNCwzMloiIGZpbGw9IiNmZmYiLz48cGF0aCBpZD0iZGFyay1ncmF5IiBkPSJNMjUuMTQsNy40SDIyLjg3VjYuODFBMi4xMiwyLjEyLDAsMCwwLDIwLjc2LDQuN2gtMWEzLjc2LDMuNzYsMCwwLDAtNy41MiwwaC0xYTIuMTEsMi4xMSwwLDAsMC0yLjEsMi4xMVY3LjRINi44NkExLjM5LDEuMzksMCwwLDAsNS40Nyw4Ljc2VjI5LjY0QTEuMzksMS4zOSwwLDAsMCw2Ljg2LDMxSDI1LjE0YTEuMzksMS4zOSwwLDAsMCwxLjM5LTEuMzZWOC43NkExLjM5LDEuMzksMCwwLDAsMjUuMTQsNy40Wk0xNiwzQTEuNzksMS43OSwwLDAsMSwxNy43OSw0LjdIMTQuMjFBMS43OSwxLjc5LDAsMCwxLDE2LDNabTguNTMsMjZINy40N1Y5LjRIOS4xM3YuODZIMjIuODdWOS40aDEuNjZabS02LTExLjkyYTUuOTIsNS45MiwwLDEsMS04LjM3LDguMzcsMS4zLDEuMywwLDAsMSwwLTEuODQsMS4zMiwxLjMyLDAsMCwxLDEuODQsMCwzLjMyLDMuMzIsMCwxLDAsNC42OS00LjY5LDEuMzIsMS4zMiwwLDAsMSwwLTEuODRBMS4zLDEuMywwLDAsMSwxOC41NSwxNy4wOFoiIGZpbGw9IiMyZjNjNDMiLz48cGF0aCBpZD0ibGlnaHQtZ3JheSIgZD0iTTEzLjQ1LDIyLjE4YTUuOTIsNS45MiwwLDAsMSw4LjM3LTguMzdBMS4zLDEuMywwLDAsMSwyMCwxNS42NWEzLjMyLDMuMzIsMCwxLDAtNC42OSw0LjcsMS4zLDEuMywwLDAsMS0xLjg0LDEuODNaIiBmaWxsPSIjOTc5ZGExIi8+PC9zdmc+",
+
+      mapVehAlertIconAmber: "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHN2ZyB2ZXJzaW9uPSIxLjEiIGlkPSJzcGFydGFubHluYy1pY29uIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4PSIwcHgiCgkgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMTI4IDEyODsiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPgoJLnN0MHtmaWxsOiMyRjNDNDM7fQoJLnN0MXtmaWxsOiM5NzlEQTE7fQo8L3N0eWxlPgo8cGF0aCBpZD0iZGFyay1ncmF5IiBjbGFzcz0ic3QwIiBkPSJNMTA4LjMsNDkuN2MwLDI2LjMtNDcuNyw3Ni4zLTQ3LjcsNzYuM1MxMyw3NiwxMyw0OS43QzEzLDIzLjMsMzQuMywyLDYwLjcsMgoJUzEwOC4zLDIzLjMsMTA4LjMsNDkuN0wxMDguMyw0OS43eiBNOTQuMiw0OS43YzAtMTguNi0xNS0zMy42LTMzLjYtMzMuNmMtMTguNiwwLTMzLjYsMTUtMzMuNiwzMy42YzAsMTguNiwxNSwzMy42LDMzLjYsMzMuNgoJQzc5LjIsODMuMiw5NC4yLDY4LjIsOTQuMiw0OS43TDk0LjIsNDkuN3ogTTYyLDQwLjJjLTIuMiwyLjMtMi4yLDUuOSwwLDguMWMzLjcsMy43LDMuNyw5LjgsMCwxMy42cy05LjgsMy43LTEzLjYsMAoJYy0wLjgtMC43LTItMC42LTIuNywwLjJjLTAuNiwwLjctMC42LDEuOCwwLDIuNWM1LjIsNS4yLDEzLjgsNS4yLDE5LDBzNS4yLTEzLjgsMC0xOWMtMC44LTAuOC0wLjgtMiwwLTIuN3MyLTAuOCwyLjcsMAoJYzYuNyw2LjcsNi43LDE3LjcsMCwyNC40Yy02LjcsNi43LTE3LjcsNi43LTI0LjQsMGMtMC44LTAuNy0yLTAuNS0yLjcsMC4zYy0wLjYsMC43LTAuNiwxLjcsMCwyLjRjOC4zLDguMiwyMS42LDguMSwyOS44LTAuMgoJYzguMS04LjIsOC4xLTIxLjQsMC0yOS42QzY3LjksMzcuOSw2NC4yLDM3LjksNjIsNDAuMnoiPgoJIDxhbmltYXRlCiAgICAgICAgICAgICAgICBhdHRyaWJ1dGVUeXBlPSJYTUwiCiAgICAgICAgICAgICAgICBhdHRyaWJ1dGVOYW1lPSJmaWxsIgogICAgICAgICAgICAgICAgdmFsdWVzPSIjRkJCRDA0OyNGQkJEMDQ7I0ZCQkQwNDsjMkYzQzQzOyMyRjNDNDMiCiAgICAgICAgICAgICAgICBkdXI9IjEuNXMiCiAgICAgICAgICAgICAgICByZXBlYXRDb3VudD0iaW5kZWZpbml0ZSIvPgoJPC9wYXRoPgo8cGF0aCBpZD0ibGlnaHQtZ3JheSIgY2xhc3M9InN0MSIgZD0iTTUxLjIsMjkuM2MtOC4yLDguMi04LjIsMjEuNiwwLDI5LjhjMCwwLDAsMCwwLDBjMi4zLDIuMiw1LjksMi4yLDguMSwwYzIuMi0yLjMsMi4yLTUuOSwwLTguMQoJQzU1LjcsNDcuMSw1Niw0MSw2MCwzNy41YzMuNy0zLjMsOS4yLTMuMywxMi45LDBjMC44LDAuNywyLDAuNiwyLjctMC4yYzAuNi0wLjcsMC42LTEuOCwwLTIuNWMtNS4yLTUuMi0xMy44LTUuMi0xOSwwCglzLTUuMiwxMy44LDAsMTljMC43LDAuOCwwLjYsMi0wLjIsMi43Yy0wLjcsMC42LTEuOCwwLjYtMi41LDBjLTYuNy02LjctNi43LTE3LjcsMC0yNC40czE3LjctNi43LDI0LjQsMGMwLjgsMC44LDIsMC44LDIuNywwCgljMC44LTAuOCwwLjgtMiwwLTIuN2wwLDBDNzIuOCwyMS4xLDU5LjQsMjEuMSw1MS4yLDI5LjNDNTEuMiwyOS4zLDUxLjIsMjkuMyw1MS4yLDI5LjN6Ii8+Cjwvc3ZnPgo=",
+      mapVehAlertIconRed: "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPHN2ZyB2ZXJzaW9uPSIxLjEiIGlkPSJzcGFydGFubHluYy1pY29uIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB4PSIwcHgiCgkgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMTI4IDEyOCIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMTI4IDEyODsiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPgoJLnN0MHtmaWxsOiMyRjNDNDM7fQoJLnN0MXtmaWxsOiM5NzlEQTE7fQo8L3N0eWxlPgo8cGF0aCBpZD0iZGFyay1ncmF5IiBjbGFzcz0ic3QwIiBkPSJNMTA4LjMsNDkuN2MwLDI2LjMtNDcuNyw3Ni4zLTQ3LjcsNzYuM1MxMyw3NiwxMyw0OS43QzEzLDIzLjMsMzQuMywyLDYwLjcsMgoJUzEwOC4zLDIzLjMsMTA4LjMsNDkuN0wxMDguMyw0OS43eiBNOTQuMiw0OS43YzAtMTguNi0xNS0zMy42LTMzLjYtMzMuNmMtMTguNiwwLTMzLjYsMTUtMzMuNiwzMy42YzAsMTguNiwxNSwzMy42LDMzLjYsMzMuNgoJQzc5LjIsODMuMiw5NC4yLDY4LjIsOTQuMiw0OS43TDk0LjIsNDkuN3ogTTYyLDQwLjJjLTIuMiwyLjMtMi4yLDUuOSwwLDguMWMzLjcsMy43LDMuNyw5LjgsMCwxMy42cy05LjgsMy43LTEzLjYsMAoJYy0wLjgtMC43LTItMC42LTIuNywwLjJjLTAuNiwwLjctMC42LDEuOCwwLDIuNWM1LjIsNS4yLDEzLjgsNS4yLDE5LDBzNS4yLTEzLjgsMC0xOWMtMC44LTAuOC0wLjgtMiwwLTIuN3MyLTAuOCwyLjcsMAoJYzYuNyw2LjcsNi43LDE3LjcsMCwyNC40Yy02LjcsNi43LTE3LjcsNi43LTI0LjQsMGMtMC44LTAuNy0yLTAuNS0yLjcsMC4zYy0wLjYsMC43LTAuNiwxLjcsMCwyLjRjOC4zLDguMiwyMS42LDguMSwyOS44LTAuMgoJYzguMS04LjIsOC4xLTIxLjQsMC0yOS42QzY3LjksMzcuOSw2NC4yLDM3LjksNjIsNDAuMnoiPgoJIDxhbmltYXRlCiAgICAgICAgICAgICAgICBhdHRyaWJ1dGVUeXBlPSJYTUwiCiAgICAgICAgICAgICAgICBhdHRyaWJ1dGVOYW1lPSJmaWxsIgogICAgICAgICAgICAgICAgdmFsdWVzPSIjQkQyNzI3OyNCRDI3Mjc7I0JEMjcyNzsjMkYzQzQzOyMyRjNDNDMiCiAgICAgICAgICAgICAgICBkdXI9IjEuNXMiCiAgICAgICAgICAgICAgICByZXBlYXRDb3VudD0iaW5kZWZpbml0ZSIvPgoJPC9wYXRoPgo8cGF0aCBpZD0ibGlnaHQtZ3JheSIgY2xhc3M9InN0MSIgZD0iTTUxLjIsMjkuM2MtOC4yLDguMi04LjIsMjEuNiwwLDI5LjhjMCwwLDAsMCwwLDBjMi4zLDIuMiw1LjksMi4yLDguMSwwYzIuMi0yLjMsMi4yLTUuOSwwLTguMQoJQzU1LjcsNDcuMSw1Niw0MSw2MCwzNy41YzMuNy0zLjMsOS4yLTMuMywxMi45LDBjMC44LDAuNywyLDAuNiwyLjctMC4yYzAuNi0wLjcsMC42LTEuOCwwLTIuNWMtNS4yLTUuMi0xMy44LTUuMi0xOSwwCglzLTUuMiwxMy44LDAsMTljMC43LDAuOCwwLjYsMi0wLjIsMi43Yy0wLjcsMC42LTEuOCwwLjYtMi41LDBjLTYuNy02LjctNi43LTE3LjcsMC0yNC40czE3LjctNi43LDI0LjQsMGMwLjgsMC44LDIsMC44LDIuNywwCgljMC44LTAuOCwwLjgtMiwwLTIuN2wwLDBDNzIuOCwyMS4xLDU5LjQsMjEuMSw1MS4yLDI5LjNDNTEuMiwyOS4zLDUxLjIsMjkuMyw1MS4yLDI5LjN6Ii8+Cjwvc3ZnPgo=",
+      mapVehAlertIconWidth: 40,
+      mapVehAlertIconHeight: 40,
+      mapVehAlertIconXOffset: -20,
+      mapVehAlertIconYOffset: -60,
+      mapVehAlertIconZIndex: 30,
+
+      defaultCfg: {
+        type: [],
+        time: 0,
+        name: "",
+        speed: 0,
+        loc: {
+          lat: 0,
+          lng: 0
+        }
+      }
+    },
+
     // App Objects / Methods
     elt: elt,
     ui: null,
     tr: null,
     app: null,
     logo: null,
+    vehCompDb: {},
     sdataTools: null,
     resetBtnElemObj: elt.querySelector(splSelResetBtn),
 
@@ -114,6 +143,7 @@ geotab.addin.splgeotabmap = (elt, service) => {
     supportedLanguages: supportedLanguages,
     defaultLanguage: defaultLanguage,
     addInJSONName: addInJSONName,
+    vehPanelContentIdPrefix: vehPanelContentIdPrefix,
     addInBuildMetadataFilename: addInBuildMetadataFilename,
     sensorSearchRetryRangeInDays: sensorSearchRetryRangeInDays,
     sensorSearchTimeRangeForRepeatSearchesInSeconds: sensorSearchTimeRangeForRepeatSearchesInSeconds,
@@ -129,9 +159,11 @@ geotab.addin.splgeotabmap = (elt, service) => {
     my.faultSearchRetryRangeInDays,
     my.faultSearchTimeRangeForRepeatSearchesInSeconds
   );
+  my.vehCompDb = my.goLib.getVehComponentDB();
   my.ui = new InitOutputUI(my, elt,
-    splSelContainer, splSelSensorContent, splSelLabel, splSelVehName, splSelVehSpeed,
-    geotabAddInPanelOpenCloseBtnSel, geotabAddInPanelSel, geotabAddInPanelClass
+    splSelContainer, splSelLabel, splSelTitleBold,
+    geotabAddInPanelOpenCloseBtnSel, geotabAddInPanelSel, geotabAddInPanelClass,
+    splSelPnlJmprContainer, splSelPnlJmprMenu
   );
   my.localStore = new InitLocalStorage(my, addInLocalStorageKeyName, addInLocalStorageSecret);
   my.sdataTools = new INITSplSensorDataTools(my.goLib, my.storage.sensorData.cache);

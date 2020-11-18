@@ -26,6 +26,8 @@ window.splgeotabmap.lang.en = {
   "sensors_menuitm_not_Found_msg":      "No Temptrac / TPMS Sensors Found on Vehicle [ <b>{veh}</b> ]",
 
   "map_menuitm_label":                  "Show SpartanLync Sensors",
+  "map_menuitm_watchlist_add":          "Add to SpartanLync Watchlist",
+  "map_menuitm_watchlist_remove":       "Remove from SpartanLync Watchlist",
   "panel_btn_close_title":              "Close",
   "panel_title":                        "SpartanLync Sensors For:",
   "panel_sensor_timestamp":             "Sensor Timestamp",
@@ -33,10 +35,12 @@ window.splgeotabmap.lang.en = {
   "panel_switchto_spltools_instruction":"View In SpartanLync Tools",
   "panel_user_instruction":             "Hover over or click on a vehicle to view the latest SpartanLync sensor information",
   "panel_search_busy_msg":              "BUSY",
+  "panel_veh_jump_widget_title":        "Jump To Vehicle",
 
   "error_title":                        "Error",
   "error_app_title":                    "SplGeotabMap Error",
   "error_startup_general":              "getSplSettings() FAILED:",
+  "error_failed_saving_watchlist":      "saveWatchlist() FAILED:",
   "error_startup_nosettings":           "Invalid or missing SpartanLync Tools/Map Settings",
   "error_startup_nosplmap":             "Missing SpartanLync Map configuration.<br />Please run Spartanlync Map first",
   "error_startup_nospltools":           "Missing SpartanLync Tools configuration.<br />Please run Spartanlync Tools first",
@@ -55,11 +59,23 @@ window.splgeotabmap.lang.en = {
 
   // Fault Alerts
   "alert_tooltip":                      "{alert_msg}<br />on<br />{timestamp}",
-  "alert_header":                       "Alert",
+  "alert_header":                       "Post-Ignition Alert",
+  "alert_sensor_location_header":       "Sensor Location",
   "alert_missing_sensor":               "Missing Sensor",
+  "alert_temperature_over":             "Over Temperature",
   "alert_pressure_extreme_over":        "Extreme Over Pressure",
   "alert_pressure_extreme_under":       "Extreme Under Pressure",
   "alert_pressure_over":                "Over Pressure",
   "alert_pressure_under":               "Under Pressure",
   "alert_battery_low_voltage":          "Vehicle Battery has LOW Voltage",
+  "alert_tire_temperature_fault":       "Tire Temperature Fault",
+  "alert_tire_pressure_fault":          "Tire Pressure Fault",
+  "alert_desc_zone":                    "Zone",
+  "alert_desc_axle":                    "Axle",
+  "alert_desc_tire":                    "Tire",
+  "alert_desc_tractor":                 "Tractor",
+  "alert_desc_trailer":                 "Trailer",
+  "alert_desc_dolly":                   "Dolly",
+  "alert_tooltip_instruction_msg":      "( Click for more details on THE RIGHT-SIDE PANEL ===> )",
+
 }

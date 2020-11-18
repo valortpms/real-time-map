@@ -686,7 +686,6 @@ export const splSensorDataParser = {
       };
       me._lastReadTimestampUnix = 0;
 
-      console.log("============= fdata =", fdata);
       // Process Single/Multi-Component source sensor data
       data.foundTemptracSensors = false;
       data.foundTpmsTempSensors = false;
@@ -721,11 +720,13 @@ export const splSensorDataParser = {
                               class: "alert-" + faultObj.alert.color.toLowerCase(),
                               html:
                                  "<p class='spl-vehicle-alert-tooltip-header'>" + splmap.tr("alert_header") + ":</p>" +
-                                 splmap.tr("alert_tire_pressure_fault") + "<br />" + splmap.tr(faultObj.alert.trId) + "<p>"
+                                 splmap.tr(faultObj.alert.trId) + "<br />( " + splmap.tr("alert_tire_pressure_fault") + " )<br />" +
+                                 "@" + splSrv.convertUnixToTzHuman(faultObj.time) + "<p>"
                            };
                         }
                      }
                   }
+
                   // TPMS Temperature Alerts
                   if (typeof locObj.vehComp !== "undefined" &&
                      typeof cloneData[compId].tpmstemp !== "undefined" &&
@@ -742,7 +743,8 @@ export const splSensorDataParser = {
                               class: "alert-" + faultObj.alert.color.toLowerCase(),
                               html:
                                  "<p class='spl-vehicle-alert-tooltip-header'>" + splmap.tr("alert_header") + ":</p>" +
-                                 splmap.tr("alert_tire_temperature_fault") + "<br />" + splmap.tr(faultObj.alert.trId) + "<p>"
+                                 splmap.tr(faultObj.alert.trId) + "<br />( " + splmap.tr("alert_tire_temperature_fault") + " )<br />" +
+                                 "@" + splSrv.convertUnixToTzHuman(faultObj.time) + "<p>"
                            };
                         }
                      }
@@ -750,7 +752,6 @@ export const splSensorDataParser = {
                });
             }
          });
-         console.log("============= cloneData[compId] =", cloneData[compId]); //DEBUG
 
          data[compId] = {};
          if (Object.keys(cloneData[compId].temptrac).length) {
@@ -869,7 +870,7 @@ export const splSensorDataParser = {
 
    /**
    * Convert Location Array of Objects to HTML string
-   * [0: {axle: 1, tire: 2, vehComp: "tractor"}] =>
+   * [0: {axle: 1, tire: 2, vehComp: "tractor"}] => "<div><span>Axle 1 Tire 2 &hyphen; Tractor</span></div>"
    *
    *  @returns string
    */

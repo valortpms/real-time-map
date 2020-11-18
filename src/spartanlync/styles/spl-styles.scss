@@ -392,7 +392,7 @@
 #RTM-ViewContainer .spl-vehicle-alert-tooltip-location-items {
    display: flex;
    flex-direction: column;
-   justify-content: flex-start;
+   justify-content: center;
    align-items: flex-start;
    padding: 0px;
    margin: 0px;
@@ -843,19 +843,94 @@
    padding: 0px;
 }
 
-#RTM-ViewContainer #RTM-config-container {
-   max-width: 0%;
-}
 #RTM-ViewContainer #RTM-Map {
    max-width: 100%;
-}
-#RTM-ViewContainer #RTM-config-container.panel-open {
-   max-width: 100%;
-   min-width: 260px;
 }
 #RTM-ViewContainer #RTM-Map.panel-open {
    max-width: 75%;
 }
+
+#RTM-ViewContainer #RTM-config-container.panel-close {
+   max-width: 0%;
+   -webkit-animation: openVehConfigPanel 0.5 ease-in;
+   -moz-animation: openVehConfigPanel 0.5 ease-in;
+   animation: openVehConfigPanel 0.5s ease-in;
+}
+@keyframes openVehConfigPanel {
+   0% {
+      max-width: 100%;
+      min-width: 260px;
+      }
+   100% {
+      max-width: 0%;
+      min-width: 0px;
+      }
+ }
+#RTM-ViewContainer #RTM-config-container.panel-open {
+   max-width: 100%;
+   min-width: 260px;
+   -webkit-animation: closeVehConfigPanel 0.5 ease-in;
+   -moz-animation: closeVehConfigPanel 0.5 ease-in;
+   animation: closeVehConfigPanel 0.5s ease-in;
+}
+@keyframes closeVehConfigPanel {
+   0% {
+      max-width: 0%;
+      min-width: 0px;
+      }
+   100% {
+      max-width: 100%;
+      min-width: 260px;
+      }
+ }
+
+#RTM-ViewContainer #RTM-config-container.panel-close #RTM-config-header > div {
+   opacity: 0;
+   -webkit-animation: fadeOutVehConfigPanelContent 0.5 ease-out;
+   -moz-animation: fadeOutVehConfigPanelContent 0.5 ease-out;
+   animation: fadeOutVehConfigPanelContent 0.5s ease-out;
+}
+@keyframes fadeOutVehConfigPanelContent {
+   0% { opacity: 1; }
+   70% { opacity: 0; }
+   100% { opacity: 0; }
+}
+#RTM-ViewContainer #RTM-config-container.panel-open #RTM-config-header > div {
+   opacity: 1;
+   -webkit-animation: fadeInVehConfigPanelContent 0.5 ease-out;
+   -moz-animation: fadeInVehConfigPanelContent 0.5 ease-out;
+   animation: fadeInVehConfigPanelContent 0.5s ease-out;
+}
+@keyframes fadeInVehConfigPanelContent {
+   0% { opacity: 0; }
+   70% { opacity: 0; }
+   100% { opacity: 1; }
+}
+
+#real-time-map-container.width-large #RTM-Map.panel-open button.closeConfigPanel,
+#real-time-map-container.width-medium #RTM-Map.panel-open button.closeConfigPanel,
+#real-time-map-container.width-small #RTM-Map.panel-open button.closeConfigPanel {
+   right: 260px;
+   -webkit-animation: openVehConfigPanelButton 0.5 ease-in;
+   -moz-animation: openVehConfigPanelButton 0.5 ease-in;
+   animation: openVehConfigPanelButton 0.5s ease-in;
+ }
+ @keyframes openVehConfigPanelButton {
+   0% { right: 0px; }
+   100% { right: 260px; }
+ }
+#real-time-map-container.width-large #RTM-Map button.openConfigPanel,
+#real-time-map-container.width-medium #RTM-Map button.openConfigPanel,
+#real-time-map-container.width-small #RTM-Map button.openConfigPanel {
+   right: 0px;
+   -webkit-animation: closeVehConfigPanelButton 0.5 ease-in;
+   -moz-animation: closeVehConfigPanelButton 0.5 ease-in;
+   animation: closeVehConfigPanelButton 0.5s ease-in;
+ }
+ @keyframes closeVehConfigPanelButton {
+   0% { right: 260px; }
+   100% { right: 0px; }
+ }
 
 #RTM-config-view .RTM-Tab {
    padding: 14px 5px;
@@ -934,11 +1009,6 @@
    #RTM-ViewContainer #RTM-Map.panel-open {
       max-width: 100%;
    }
-
-   #RTM-ViewContainer #RTM-Map.panel-open button.collapsible {
-      right: 260px;
-   }
-
 }
 
 
@@ -946,10 +1016,6 @@
 
    #RTM-ViewContainer #RTM-Map.panel-open {
       max-width: 100%;
-   }
-
-   #RTM-ViewContainer #RTM-Map.panel-open button.collapsible {
-      right: 260px;
    }
 
    #RTM-ControlBarContainer {
@@ -983,10 +1049,6 @@
 
    #RTM-ViewContainer #RTM-Map.panel-open {
       max-width: 100%;
-   }
-
-   #RTM-ViewContainer #RTM-Map.panel-open button.collapsible {
-      right: 260px;
    }
 
    #RTM-ViewContainer #RTM-config-container {

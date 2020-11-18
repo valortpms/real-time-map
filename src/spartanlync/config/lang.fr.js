@@ -111,7 +111,7 @@ window.splmap.lang.fr = {
 
   // Fault Alerts
   "alert_tooltip":                                 "{alert_msg}<br />sur<br />{timestamp}",
-  "alert_header":                                  "Alerte",
+  "alert_header":                                  "Alerte post-allumage",
   "alert_sensor_location_header":                  "Emplacement du capteur",
   "alert_missing_sensor":                          "Capteur manquant",
   "alert_temperature_over":                        "Exceso de temperatura",

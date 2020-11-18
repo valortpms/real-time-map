@@ -283,6 +283,7 @@ export const deviceMarkerModel = {
    },
 
    moveToLatLng(newLatlng) {
+      return false; // LMIT.2020.11.16 - Allow user to freely navigate map while popups are open
       if (!newLatlng) {
          return false;
       }

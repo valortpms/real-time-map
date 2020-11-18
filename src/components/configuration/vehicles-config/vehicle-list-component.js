@@ -73,7 +73,7 @@ const createDeviceListElement = (id, name, color, flyFunction) => {
             data-tip="Fly to Vehicle on Map"
             data-for="splTooltip"
             onClick={() => {
-               storage.map.closePopup();
+               //storage.map.closePopup();
                flyFunction(id);
             }}
          ></span>

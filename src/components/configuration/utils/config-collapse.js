@@ -16,6 +16,7 @@ export const initCollapse = () => {
          button.classList.remove("closeConfigPanel");
          button.classList.add("openConfigPanel");
          content.classList.remove("panel-open");
+         content.classList.add("panel-close");
          map.classList.remove("panel-open");
       }
       else {
@@ -23,6 +24,7 @@ export const initCollapse = () => {
          button.classList.remove("openConfigPanel");
          button.classList.add("closeConfigPanel");
          content.classList.add("panel-open");
+         content.classList.remove("panel-close");
          map.classList.add("panel-open");
       }
 

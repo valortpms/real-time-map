@@ -81,10 +81,10 @@ export class ConfigView extends React.Component {
                         alertlevel.class = "strobe-" + faultObj.alert.color.toLowerCase();
                         alertlevel.alertSummary = splmap.tr("alert_header") + ": " + splmap.tr(faultObj.alert.trId);
                         alertlevel.tooltipHtml =
-                           '<p class="spl-vehicle-alert-tooltip-header">' + splmap.tr("alert_header") + ":</p>" +
-                           (faultObj.alert.type === "Tire Pressure Fault" ? splmap.tr("alert_tire_pressure_fault") + "<br />" : "") +
-                           (faultObj.alert.type === "Tire Temperature Fault" ? splmap.tr("alert_temperature_over") + "<br />" : "") +
-                           splmap.tr(faultObj.alert.trId) +
+                           '<p class="spl-vehicle-alert-tooltip-header">' + splmap.tr("alert_header") + ":</p>" + splmap.tr(faultObj.alert.trId) + "<br />" +
+                           (faultObj.alert.type === "Tire Pressure Fault" ? "( " + splmap.tr("alert_tire_pressure_fault") + " )<br />" : "") +
+                           (faultObj.alert.type === "Tire Temperature Fault" ? "( " + splmap.tr("alert_temperature_over") + " )<br />" : "") +
+                           "@" + splSrv.convertUnixToTzHuman(faultObj.time) +
                            (sensorLocHtml ? '<p class="spl-vehicle-alert-tooltip-location-header">' + splmap.tr("alert_sensor_location_header") + ":</p>" + sensorLocHtml : "");
                      }
                   }

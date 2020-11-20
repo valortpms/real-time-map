@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import configuration from "../index";
 import { VehicleFormComponent } from "./vehicle-form-component";
 import { VehicleToggleButtons } from "./vehicle-toggle-buttons";
-import { VehicleListComponent } from "./vehicle-list-component";
+import { VehicleListComponent, Test } from "./vehicle-list-component";
 
 export const VehiclesTab = props => (
    <div>

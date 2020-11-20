@@ -20,9 +20,10 @@ export class SplSensorDataTypesButton extends Component {
       super(props);
 
       this.init = this.init.bind(this);
-      this.renderSplButton = this.renderSplButton.bind(this);
       this.onClickHandler = this.onClickHandler.bind(this);
+      this.renderSplButton = this.renderSplButton.bind(this);
       this.onCloseContentHandler = this.onCloseContentHandler.bind(this);
+      this.locExistsInSensorData = this.locExistsInSensorData.bind(this);
 
       this.state = {
          components: [],
@@ -34,6 +35,7 @@ export class SplSensorDataTypesButton extends Component {
       this.vehId = this.props.id;
       this.vehName = this.props.name.trim();
       this.faultAlertEventHandlerId = null;
+      this.sdataCache = null;
 
       this.goLib = null;
       this.sdataTools = null;
@@ -91,9 +93,6 @@ export class SplSensorDataTypesButton extends Component {
 
       // Fetch SpartanLync Sensor Types installed into vehicle
       me.fetchSensorTypes();
-
-      // Fetch vehicle faults and ignition data for Alert cache(s)
-      me.fetchFaultsAndIgnitionData();
    }
 
    // eslint-disable-next-line no-unused-vars
@@ -130,7 +129,7 @@ export class SplSensorDataTypesButton extends Component {
 
             // Invoke New Fault event handlers by throwing a New Fault Event
             if (typeof faults !== "undefined" && faults !== null && Array.isArray(faults) && faults.length) {
-               splSrv.events.exec("onFaultAlert", me.vehId);
+               splSrv.events.exec("onFaultAlert", me.vehId, me);
             }
          })
          .catch((reason) => {
@@ -151,6 +150,9 @@ export class SplSensorDataTypesButton extends Component {
       fetchVehSensorDataAsync(me.vehId)
          .then((sdata) => {
             const btn = [];
+
+            me.sdataCache = sdata; // Save this Sensor data for later filtering of alerts
+
             if (typeof sdata.vehCfg.ids !== "undefined" && Array.isArray(sdata.vehCfg.ids)) {
                const stypes = [];
                sdata.vehCfg.ids.forEach(function (comp) {
@@ -186,7 +188,39 @@ export class SplSensorDataTypesButton extends Component {
             if (reason === splSrv.sensorDataNotFoundMsg) {
                console.log("---- NO SENSORS FOUND for VehicleID [ " + me.vehId + " ] named [ " + me.vehName + " ]");
             }
+         })
+         .finally(() => {
+
+            // Fetch vehicle faults and ignition data for Alert cache(s)
+            me.fetchFaultsAndIgnitionData();
          });
+   }
+
+   /**
+    * Check for existence of sensor location object in cahced sensor data
+    * Return TRUE if found, otherwise FALSE if not found or error
+    *
+    *  @returns boolean
+    */
+   locExistsInSensorData(locType, locObj) {
+      const me = this;
+      if (!locType || !locObj) {
+         return false;
+      }
+      const sdataType = locType === "Tire Temperature Fault" ? "tpmstemp" : "tpmspress";
+      const locId = (locType === "Tire Temperature Fault" ? "tiretemp_axle" : "tirepress_axle") + locObj.axle + "tire" + locObj.tire;
+
+      if (me.sdataCache && typeof me.sdataCache.vehCfg !== "undefined" && typeof me.sdataCache.vehCfg.compsdata !== "undefined" &&
+         typeof locObj.vehComp !== "undefined" && locObj.vehComp && typeof me.sdataCache.vehCfg.compsdata[locObj.vehComp] !== "undefined") {
+         const sdata = me.sdataCache.vehCfg.compsdata[locObj.vehComp];
+         for (const sdataLocId in sdata[sdataType]) {
+            const sdataLocObj = sdata[sdataType][sdataLocId];
+            if (sdataLocObj.id === locId) {
+               return true;
+            }
+         }
+      }
+      return false;
    }
 
    /**

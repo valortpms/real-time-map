@@ -22,22 +22,7 @@ export const deviceSearch = {
       debouncedInput.subscribe((searchInput) => deviceSearch.buildSearchList(searchInput, mapPropsToComponent));
    },
 
-   loadSavedDeviceConfig(mapPropsToComponent) {
-
-      return getBlobStorage().then(val => {
-         if (val.length === 0) { return; }
-         const cachedDevices = JSON.parse(val[0].data);
-
-         if (cachedDevices.configData.Vehicle) {
-            deviceSearch.selectedIDS = cachedDevices.configData.Vehicle;
-            deviceSearch.applyFilter();
-            deviceSearch.buildDeviceDisplayList(mapPropsToComponent);
-         }
-      });
-   },
-
-   buildSearchList(searchInput, mapPropsToComponent) {
-
+   buildSea111rchList(searchInput, mapPropsToComponent) {
       const nameSearchMultiCall = [
          createDeviceByNameCall(searchInput),
          createGroupsByNameCall(searchInput)
@@ -57,7 +42,27 @@ export const deviceSearch = {
             .map(deviceSearch.saveGroupDataToCache);
          mapPropsToComponent(Object.values(deviceSearch.deviceResultsCache));
       });
+   },
 
+   loadSavedDeviceConfig(mapPropsToComponent) {
+      return getBlobStorage().then(val => {
+         if (val.length === 0) { return; }
+         const cachedDevices = JSON.parse(val[0].data);
+         if (cachedDevices.configData.Vehicle) {
+            deviceSearch.selectedIDS = cachedDevices.configData.Vehicle;
+            deviceSearch.removeAlerts();
+            deviceSearch.applyFilter();
+            deviceSearch.buildDeviceDisplayList(mapPropsToComponent);
+         }
+      });
+   },
+
+   removeAlerts() {
+      for (const deviceID in deviceSearch.selectedIDS) {
+         const deviceObj = deviceSearch.selectedIDS[deviceID];
+         delete deviceObj.alertClass;
+         delete deviceObj.tooltip;
+      }
    },
 
    saveDeviceDataToCache(deviceData) {

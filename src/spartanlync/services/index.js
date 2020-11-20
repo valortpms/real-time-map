@@ -98,7 +98,11 @@ const SpartanLyncServices = {
       getFaultData: function (vehId) {
          const me = this;
          if (typeof me._faultCache[vehId] !== "undefined") {
-            return me._faultCache[vehId];
+            const fdataArr = [];
+            for (const faultId in me._faultCache[vehId]) {
+               fdataArr.push(me._faultCache[vehId][faultId]);
+            }
+            return fdataArr;
          }
          return null;
       },
@@ -107,16 +111,24 @@ const SpartanLyncServices = {
          const me = this;
          if (typeof data !== "undefined" && data !== null && Array.isArray(data) && data.length) {
             if (typeof me._faultCache[vehId] === "undefined") {
-               me._faultCache[vehId] = data;
+               me._faultCache[vehId] = {};
             }
-            else {
-               data.forEach(faultObj => {
-                  const faultId = "fault_" + faultObj.id;
-                  // Update fault data cache with individual updates to each fault
-                  if (typeof me._faultCache[vehId][faultId] === "undefined" || faultObj.time > me._faultCache[vehId][faultId].time) {
-                     me._faultCache[vehId][faultId] = faultObj;
+
+            // Update fault data cache with individual updates for each fault
+            for (const faultObj of data) {
+               const faultId = "fault_" + faultObj.id;
+               if (typeof me._faultCache[vehId][faultId] === "undefined") {
+                  me._faultCache[vehId][faultId] = {};
+               }
+               if (typeof me._faultCache[vehId][faultId].time === "undefined" || faultObj.time > me._faultCache[vehId][faultId].time) {
+                  // Exclude "Sensor Fault" from cache
+                  if (typeof faultObj.alert !== "undefined" && typeof faultObj.alert.type !== "undefined" &&
+                     faultObj.alert.type === "Sensor Fault") {
+                     delete me._faultCache[vehId][faultId];
+                     continue;
                   }
-               });
+                  me._faultCache[vehId][faultId] = faultObj;
+               }
             }
          }
       },
@@ -162,18 +174,16 @@ const SpartanLyncServices = {
          const me = this;
          if (typeof vehId !== "undefined" && vehId !== null &&
             typeof me._ignitionCache !== "undefined" && me._ignitionCache !== null &&
-            typeof me._faultCache !== "undefined" && me._faultCache !== null &&
-            typeof me._faultCache[vehId] !== "undefined" && typeof me._ignitionCache[vehId] !== "undefined" &&
-            typeof me._ignitionCache === "object" && Array.isArray(me._faultCache[vehId]) && me._faultCache[vehId].length &&
+            typeof me._ignitionCache[vehId] !== "undefined" && typeof me._ignitionCache === "object" &&
+            typeof me._faultCache !== "undefined" && me._faultCache !== null && typeof me._faultCache[vehId] !== "undefined" &&
+            typeof me._faultCache[vehId] === "object" && Object.keys(me._faultCache[vehId]).length &&
             typeof me._ignitionCache[vehId]["on-latest"] !== "undefined" && me._ignitionCache[vehId]["on-latest"]
          ) {
-            console.log("--------- me._faultCache[" + vehId + "] = ", JSON.stringify(me._faultCache[vehId])); //DEBUG
-            console.log("--------- me._ignitionCache[" + vehId + "] = ", JSON.stringify(me._ignitionCache[vehId])); //DEBUG
-            for (const idx in me._faultCache[vehId]) {
-               me._faultCache[vehId][idx].occurredOnLatestIgnition =
+            for (const faultId in me._faultCache[vehId]) {
+               me._faultCache[vehId][faultId].occurredOnLatestIgnition =
                   (
-                     typeof me._faultCache[vehId][idx].time !== "undefined" &&
-                     me._faultCache[vehId][idx].time >= me._ignitionCache[vehId]["on-latest"]
+                     typeof me._faultCache[vehId][faultId].time !== "undefined" &&
+                     me._faultCache[vehId][faultId].time >= me._ignitionCache[vehId]["on-latest"]
                   ) ? true : false;
             }
          }

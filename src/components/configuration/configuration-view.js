@@ -51,15 +51,16 @@ export class ConfigView extends React.Component {
          if (!vehicleFaultAlertEventHandlerId &&
             typeof state.vehicleDisplayList !== "undefined" && state.vehicleDisplayList !== null &&
             Array.isArray(state.vehicleDisplayList) && state.vehicleDisplayList.length) {
-            vehicleFaultAlertEventHandlerId = splSrv.events.register("onFaultAlert", (vehId) => {
 
+            // eslint-disable-next-line complexity
+            vehicleFaultAlertEventHandlerId = splSrv.events.register("onFaultAlert", (vehId, vehObj) => {
                const alertlevel = {
                   time: 0,
                   color: "",
                   tooltipHtml: ""
                };
-               // Get most recent / urgent post-ignition fault level
-               splSrv.cache.getFaultData(vehId).forEach(faultObj => {
+               // Process Alerts
+               for (const faultObj of splSrv.cache.getFaultData(vehId)) {
                   if (typeof faultObj.time !== "undefined" &&
                      typeof faultObj.alert !== "undefined" &&
                      typeof faultObj.alert.color !== "undefined" &&
@@ -70,6 +71,19 @@ export class ConfigView extends React.Component {
                      faultObj.alert.type !== "Sensor Fault" &&
                      faultObj.alert.color.toString().trim() !== ""
                   ) {
+                     // Remove Alerts with locations that do not exist
+                     let skipFault = false;
+                     if (typeof faultObj.loc !== "undefined" && Array.isArray(faultObj.loc) && faultObj.loc.length) {
+                        faultObj.loc = faultObj.loc.filter((locObj) => {
+                           return vehObj.locExistsInSensorData(faultObj.alert.type, locObj);
+                        });
+                        if (!faultObj.loc.length) {
+                           skipFault = true;
+                        }
+                     }
+                     if (skipFault) { continue; }
+
+                     // Get most recent / urgent post-ignition fault level alert
                      if (!alertlevel.color ||
                         (alertlevel.color && alertlevel.color.toUpperCase() === "AMBER" && faultObj.alert.color.toUpperCase() === "RED") ||
                         (alertlevel.color.toUpperCase() === faultObj.alert.color.toUpperCase() && faultObj.time > alertlevel.time)) {
@@ -88,7 +102,7 @@ export class ConfigView extends React.Component {
                            (sensorLocHtml ? '<p class="spl-vehicle-alert-tooltip-location-header">' + splmap.tr("alert_sensor_location_header") + ":</p>" + sensorLocHtml : "");
                      }
                   }
-               });
+               }
 
                // Update Alert status of Vehicle List on Vehicle Config Tab
                this.setState((state) => {

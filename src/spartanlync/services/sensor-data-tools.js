@@ -677,7 +677,6 @@ export const splSensorDataParser = {
       const me = this;
       const cloneData = JSON.parse(JSON.stringify(sdata)); // clone sensor data object... can't modify the original
       const compIds = cloneData.vehCfg.total === 1 ? [cloneData.vehCfg.active] : cloneData.vehCfg.ids;
-      const fdata = splSrv.cache.getFaultData(cloneData.vehId);
       const data = {
          compIds: [],
          vehId: cloneData.vehId,
@@ -693,7 +692,7 @@ export const splSensorDataParser = {
       compIds.map(compId => {
 
          // Merge in cached Fault/Alert data into sensor data, for Vehicle component
-         fdata.forEach(faultObj => {
+         splSrv.cache.getFaultData(cloneData.vehId).forEach(faultObj => {
             if (typeof faultObj.alert !== "undefined" &&
                typeof faultObj.alert.type !== "undefined" &&
                typeof faultObj.occurredOnLatestIgnition !== "undefined" &&

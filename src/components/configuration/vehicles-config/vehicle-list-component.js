@@ -4,7 +4,10 @@ import { SplSensorDataTypesButton } from "../../../spartanlync/components/ui-veh
 import storage from "../../../dataStore";
 import splSrvTools from "../../../spartanlync/services/tools";
 
-export const VehicleListComponent = props => {
+export const VehicleListComponent = (props) => {
+   if (props && props.vehicleDisplayList && !props.vehicleDisplayList.length) {
+      return [];
+   }
    const mapPropsToComponent = props.setVehicleDisplay;
    const vehicleList =
       props.vehicleDisplayList.length > 0

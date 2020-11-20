@@ -58,7 +58,7 @@ const onLoadInitEvents = function (my) {
 
   // Event: The state of the page has changed
   my.service.page.attach("stateChange", (evt) => {
-    console.log("--- StateChange Occured", JSON.stringify(evt)); //DEBUG
+    console.log("--- StateChange Occured", JSON.stringify(evt));
   });
 
   // Create handler for dynamic closeMenuItem() button 'click' event
@@ -534,11 +534,11 @@ const SplGeotabMapUtils = function (my) {
       },
 
       /**
-       * getWatchlistVehNameByIds(): Returns vehicle Name from Watchlist using its Id
+       * getWatchlistVehNameById(): Returns vehicle Name from Watchlist using its Id
        *
        * @return string ("" if not found)
        */
-      getWatchlistVehNameByIds: function (vehId) {
+      getWatchlistVehNameById: function (vehId) {
         let vehName = "";
         if (vehId) {
           for (const vehObj of my.storage.sensorData.vehRegistry.watchlist) {
@@ -601,16 +601,44 @@ const SplGeotabMapUtils = function (my) {
 
         // Init watchlistData for MapFaults + Sensor-Data-Watches
         my.storage.sensorData.watchlistData = {
-          index: []
+          index: [],
+          get sortedIndex() {
+            const me = this;
+            me.index.sort((vehIdA, vehIdB) => {
+              return (me.getVehName(vehIdA) > me.getVehName(vehIdB)) ? 1 : -1;
+            });
+            return me.index;
+          },
+          getVehName: (vehId) => {
+            return typeof my.storage.sensorData.cache[vehId] !== "undefined" &&
+              my.storage.sensorData.cache[vehId].data &&
+              my.storage.sensorData.cache[vehId].data.vehName ?
+              my.storage.sensorData.cache[vehId].data.vehName :
+              my.app.getWatchlistVehNameById(vehId);
+          }
         };
 
         // Include search for vehicles with "post-Ignition" Fault Alerts
-        for (const vehId of my.app.getVehFaultIDs()) {
-          for (const faultObj of my.app.getFaultData(vehId)) {
+        for (const vehId of me.getVehFaultIDs()) {
+          for (const faultObjOriginal of me.getFaultData(vehId)) {
+            const faultObj = JSON.parse(JSON.stringify(faultObjOriginal)); // clone fault object... can't modify the original
             if (typeof faultObj.occurredOnLatestIgnition !== "undefined" &&
               typeof faultObj.alert !== "undefined" &&
               faultObj.occurredOnLatestIgnition) {
 
+              // Remove Fault alert with locations that do not exist
+              let skipFault = false;
+              if (typeof faultObj.loc !== "undefined" && Array.isArray(faultObj.loc) && faultObj.loc.length) {
+                faultObj.loc = faultObj.loc.filter((locObj) => {
+                  return me.locExistsInSensorData(vehId, faultObj.alert.type, locObj);
+                });
+                if (!faultObj.loc.length) {
+                  skipFault = true;
+                }
+              }
+              if (skipFault) { continue; }
+
+              // Process Fault
               if (!my.storage.sensorData.watchlistData.index.includes(vehId)) {
                 // Init
                 my.storage.sensorData.watchlistData.index.push(vehId);
@@ -731,9 +759,40 @@ const SplGeotabMapUtils = function (my) {
       },
 
       /**
-       *  Perform page-redirect navigation to SpartanLync Tools Add-in
+       * locExistsInSensorData(): Check for existence of sensor location object in cahced sensor data
+       * @param {string} [vehId] The vehicle Id to search on sensor data
+       * @param {string} [locType] Type of sensor associated with specified location object (Temperature or Pressure)
+       * @param {object} [locObj] location object with properties for axle, tire and vehicle component
        *
-       *  @return void
+       * @return boolean - TRUE if found, otherwise FALSE if not found or error
+       */
+      locExistsInSensorData: function (vehId, locType, locObj) {
+        if (!vehId || !locType || !locObj || typeof my.storage.sensorData.cache[vehId] === "undefined" || my.storage.sensorData.cache[vehId].data === null) {
+          return false;
+        }
+        const sdataCache = my.storage.sensorData.cache[vehId].data;
+        const sdataType = locType === "Tire Temperature Fault" ? "tpmstemp" : "tpmspress";
+        const locId = (locType === "Tire Temperature Fault" ? "tiretemp_axle" : "tirepress_axle") + locObj.axle + "tire" + locObj.tire;
+
+        if (sdataCache && typeof sdataCache.vehCfg !== "undefined" && typeof sdataCache.vehCfg.compsdata !== "undefined" &&
+          typeof locObj.vehComp !== "undefined" && locObj.vehComp && typeof sdataCache.vehCfg.compsdata[locObj.vehComp] !== "undefined") {
+          const sdata = sdataCache.vehCfg.compsdata[locObj.vehComp];
+          for (const sdataLocId in sdata[sdataType]) {
+            const sdataLocObj = sdata[sdataType][sdataLocId];
+            if (sdataLocObj.id === locId) {
+              return true;
+            }
+          }
+        }
+        return false;
+      },
+
+      /**
+       * Perform page-redirect navigation to SpartanLync Tools Add-in
+       * @param {string} [vehId] The vehicle Id to navigate to
+       * @param {string} [vehName] The vehicle name shown in UI on error
+       *
+       * @return void
        */
       navigateToSplTools: (vehId, vehName) => {
         const splToolsPageName = my.storage.splStore.splMap.toolsPageName;
@@ -758,6 +817,8 @@ const SplGeotabMapUtils = function (my) {
 
       /**
        * getCachedSensorDataStatusForVeh() Reporting current status of Sensor data for Vehicle
+       * @param {string} [vehId] The vehicle Id to search on sensor data
+       * @param {string} [vehName] The vehicle name shown in UI on error
        *
        * @return "BUSY"     - Searching for NEW data
        *         "BUSY-NEW" - Searching for NEW data, But STALE data found
@@ -765,6 +826,7 @@ const SplGeotabMapUtils = function (my) {
        *         "FOUND"    - Found Sensor data
        */
       getCachedSensorDataStatusForVeh: function (vehId, vehName) {
+
         if (typeof my.sdataTools._cache[vehId] === "undefined") {
           me.getSensorData(vehId, vehName);
           return "BUSY";
@@ -802,6 +864,8 @@ const SplGeotabMapUtils = function (my) {
 
       /**
        * getSensorData() Invoke the retrieval process for sensor data + vehicle fault/ignition data into cache
+       * @param {string} [vehId] The vehicle Id to search on sensor data
+       * @param {string} [vehName] The vehicle name shown in UI on error
        *
        * @return void
        */
@@ -860,6 +924,8 @@ const SplGeotabMapUtils = function (my) {
 
       /**
        * postGetSensorData() Operations perfromed after fetching sensor data into cache
+       * @param {string} [vehId] The vehicle Id to process
+       * @param {string} [vehName] The vehicle name shown in UI on error
        *
        * @return void
        */
@@ -873,6 +939,7 @@ const SplGeotabMapUtils = function (my) {
 
       /**
        * fetchSensorTypes() Analyse sensor data looking for Temptrac/TPMS Sensor Types
+       * @param {string} [vehId] The vehicle Id to fetch on
        *
        * @return Array() of strings "Temptrac" / "TPMS"
        */
@@ -913,6 +980,7 @@ const SplGeotabMapUtils = function (my) {
 
       /**
        * fetchAdditionalComponents() Analyse sensor data looking for Vehicle Components additional to 'tractor'
+       * @param {string} [vehId] The vehicle Id to fetch on
        *
        * @return Array() of strings
        */
@@ -935,9 +1003,12 @@ const SplGeotabMapUtils = function (my) {
       },
 
       /**
-      *  fetchVehSensorDataAsync() Asynchronously fetch Temptrac/TPMS sensor data
+      * fetchVehSensorDataAsync() Asynchronously fetch Temptrac/TPMS sensor data
+      * @param {string} [vehId] The vehicle Id to fetch on
+      * @param {string} [vehComp] The vehicle component to filter by
+      * @param {string} [firstTimeCallOverride] Override default behaviour and use date range based on firstTime/Update state
       *
-      *  @return object / string (on Error)
+      * @return object / string (on Error)
       */
       fetchVehSensorDataAsync: function (vehId, vehComp, firstTimeCallOverride) {
         const vehComponent = vehComp || "";
@@ -961,9 +1032,11 @@ const SplGeotabMapUtils = function (my) {
       },
 
       /**
-      *  Asynchronously Fetch Vehicle Faults and Ignition data
+      * Asynchronously Fetch Vehicle Faults and Ignition data
+      * @param {string} [vehId] The vehicle Id to fetch on
+      * @param {string} [firstTimeCallOverride] Override default behaviour and use date range based on firstTime/Update state
       *
-      *  @return {array} objects
+      * @return {array} objects
       */
       fetchVehFaultsAndIgnitionAsync: function (vehId, firstTimeCallOverride) {
         const overrideFirstTimeCall = typeof firstTimeCallOverride === "undefined" ? null : firstTimeCallOverride;
@@ -1018,6 +1091,7 @@ const SplGeotabMapUtils = function (my) {
             my.storage.sensorData.cache = {};
             my.storage.sensorData.faultCache = {};
             my.storage.sensorData.ignitionCache = {};
+            my.storage.sensorData.watchlistData = { index: [] };
             me.init(() => {
               setTimeout(function () {
                 my.ui.showMsg(my.tr("reset_btn_msg") + "<p>" + my.tr("panel_user_instruction"));
@@ -1086,26 +1160,39 @@ const SplGeotabMapUtils = function (my) {
 
       getFaultData: function (vehId) {
         if (typeof my.storage.sensorData.faultCache[vehId] !== "undefined") {
-          return my.storage.sensorData.faultCache[vehId];
+          const fdataArr = [];
+          for (const faultId in my.storage.sensorData.faultCache[vehId]) {
+            fdataArr.push(my.storage.sensorData.faultCache[vehId][faultId]);
+          }
+          return fdataArr;
         }
         return null;
       },
 
       storeFaultData: function (vehId, data) {
+
         if (typeof data !== "undefined" && data !== null && Array.isArray(data) && data.length) {
           if (typeof my.storage.sensorData.faultCache[vehId] === "undefined") {
-            my.storage.sensorData.faultCache[vehId] = data;
+            my.storage.sensorData.faultCache[vehId] = {};
           }
-          else {
-            data.forEach(faultObj => {
-              const faultId = "fault_" + faultObj.id;
-              // Update fault data cache with individual updates to each fault
-              if (typeof my.storage.sensorData.faultCache[vehId][faultId] === "undefined" ||
-                faultObj.time > my.storage.sensorData.faultCache[vehId][faultId].time) {
-                my.storage.sensorData.faultCache[vehId][faultId] = faultObj;
+
+          // Update fault data cache with individual updates for each fault
+          for (const faultObj of data) {
+            const faultId = "fault_" + faultObj.id;
+            if (typeof my.storage.sensorData.faultCache[vehId][faultId] === "undefined") {
+              my.storage.sensorData.faultCache[vehId][faultId] = {};
+            }
+            if (typeof my.storage.sensorData.faultCache[vehId][faultId].time === "undefined" || faultObj.time > my.storage.sensorData.faultCache[vehId][faultId].time) {
+              // Exclude "Sensor Fault" from cache
+              if (typeof faultObj.alert !== "undefined" && typeof faultObj.alert.type !== "undefined" &&
+                faultObj.alert.type === "Sensor Fault") {
+                delete my.storage.sensorData.faultCache[vehId][faultId];
+                continue;
               }
-            });
+              my.storage.sensorData.faultCache[vehId][faultId] = faultObj;
+            }
           }
+          console.log("============== my.storage.sensorData.faultCache[", vehId, "] =", my.storage.sensorData.faultCache[vehId]);//DEBUG
         }
       },
 
@@ -1147,16 +1234,16 @@ const SplGeotabMapUtils = function (my) {
       updateFaultStatusUsingIgnData: function (vehId) {
         if (typeof vehId !== "undefined" && vehId !== null &&
           typeof my.storage.sensorData.ignitionCache !== "undefined" && my.storage.sensorData.ignitionCache !== null &&
-          typeof my.storage.sensorData.faultCache !== "undefined" && my.storage.sensorData.faultCache !== null &&
-          typeof my.storage.sensorData.faultCache[vehId] !== "undefined" && typeof my.storage.sensorData.ignitionCache[vehId] !== "undefined" &&
-          typeof my.storage.sensorData.ignitionCache === "object" && Array.isArray(my.storage.sensorData.faultCache[vehId]) && my.storage.sensorData.faultCache[vehId].length &&
+          typeof my.storage.sensorData.ignitionCache[vehId] !== "undefined" && typeof my.storage.sensorData.ignitionCache === "object" &&
+          typeof my.storage.sensorData.faultCache !== "undefined" && my.storage.sensorData.faultCache !== null && typeof my.storage.sensorData.faultCache[vehId] !== "undefined" &&
+          typeof my.storage.sensorData.faultCache[vehId] === "object" && Object.keys(my.storage.sensorData.faultCache[vehId]).length &&
           typeof my.storage.sensorData.ignitionCache[vehId]["on-latest"] !== "undefined" && my.storage.sensorData.ignitionCache[vehId]["on-latest"]
         ) {
-          for (const idx in my.storage.sensorData.faultCache[vehId]) {
-            my.storage.sensorData.faultCache[vehId][idx].occurredOnLatestIgnition =
+          for (const faultId in my.storage.sensorData.faultCache[vehId]) {
+            my.storage.sensorData.faultCache[vehId][faultId].occurredOnLatestIgnition =
               (
-                typeof my.storage.sensorData.faultCache[vehId][idx].time !== "undefined" &&
-                my.storage.sensorData.faultCache[vehId][idx].time >= my.storage.sensorData.ignitionCache[vehId]["on-latest"]
+                typeof my.storage.sensorData.faultCache[vehId][faultId].time !== "undefined" &&
+                my.storage.sensorData.faultCache[vehId][faultId].time >= my.storage.sensorData.ignitionCache[vehId]["on-latest"]
               ) ? true : false;
           }
         }

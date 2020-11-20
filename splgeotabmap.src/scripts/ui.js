@@ -130,7 +130,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, panelLabelId, panelT
     }
 
     me.resetUI("skeleton-vehicle-sensor-data-html", () => {
-      for (const vehId of watchlistData.index) {
+      for (const vehId of watchlistData.sortedIndex) {
         const vehName = watchlistData[vehId].name;
         const vehSpeed = watchlistData[vehId].speed;
         const vehPanelContentId = my.vehPanelContentIdPrefix + vehId;
@@ -765,7 +765,11 @@ const InitOutputUI = function (my, rootDomObj, containerId, panelLabelId, panelT
         // Invoke per-Vehicle updates via API, when cached sensor data has expired
         for (const vehId in my.storage.sensorData.cache) {
           if (!my.storage.sensorData.cache[vehId].searching) {
-            const vehName = my.app.getWatchlistVehNameByIds(vehId);
+            const vehName = typeof my.storage.sensorData.cache[vehId] !== "undefined" &&
+              my.storage.sensorData.cache[vehId].data &&
+              my.storage.sensorData.cache[vehId].data.vehName ?
+              my.storage.sensorData.cache[vehId].data.vehName :
+              my.app.getWatchlistVehNameById(vehId);
             my.app.getCachedSensorDataStatusForVeh(vehId, vehName);
           }
         }
@@ -776,7 +780,11 @@ const InitOutputUI = function (my, rootDomObj, containerId, panelLabelId, panelT
         // Update Tooltip (if Open)
         if (vehReg.tooltip && typeof my.storage.sensorData.cache[vehReg.tooltip] !== "undefined") {
           const vehId = vehReg.tooltip;
-          const vehName = my.storage.sensorData.cache[vehId].data.vehName;
+          const vehName = typeof my.storage.sensorData.cache[vehId] !== "undefined" &&
+            my.storage.sensorData.cache[vehId].data &&
+            my.storage.sensorData.cache[vehId].data.vehName ?
+            my.storage.sensorData.cache[vehId].data.vehName :
+            my.app.getWatchlistVehNameById(vehId);
           ui.showTooltip(vehId, vehName);
         }
       },

@@ -1183,7 +1183,7 @@ const SplGeotabMapUtils = function (my) {
               my.storage.sensorData.faultCache[vehId][faultId] = {};
             }
             if (typeof my.storage.sensorData.faultCache[vehId][faultId].time === "undefined" || faultObj.time > my.storage.sensorData.faultCache[vehId][faultId].time) {
-              // Exclude "Sensor Fault" from cache
+              // Exclude "Sensor Fault" Types / "Missing Sensor" Fault from cache
               if (typeof faultObj.alert !== "undefined" && typeof faultObj.alert.type !== "undefined" &&
                 faultObj.alert.type === "Sensor Fault") {
                 delete my.storage.sensorData.faultCache[vehId][faultId];

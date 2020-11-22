@@ -155,9 +155,12 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
          * @return {array} Array of Fault objects, sorted by time from oldest to newest
          * @return {array} Array of Ignition data objects, sorted by time from oldest to newest
          */
-         getFaults: function (devId, callback) {
+         getFaults: function (devId, callback, firstTimeCallOverride) {
             if (devId.toString().trim() === "" || typeof callback === "undefined" || typeof callback !== "function") {
                return;
+            }
+            if (typeof firstTimeCallOverride !== "undefined" && firstTimeCallOverride !== null) {
+               me._apiFaultFirstTimeCall = firstTimeCallOverride;
             }
             me._devId = devId;
             me._fDataCallback = callback;
@@ -242,6 +245,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
 
          _setDateRangeAndInvokeFaultCalls: function () {
             me._toFaultDate = moment().utc().format();
+            console.log("=========== me._apiFaultFirstTimeCall = ", me._apiFaultFirstTimeCall);
 
             // First call, search for data over last few days
             if (me._apiFaultFirstTimeCall) {
@@ -259,6 +263,8 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
             else {
                me._fromFaultDate = moment().utc().subtract(me._timeRangeForRepeatFaultSearchesInSeconds, "seconds").format();
             }
+
+
 
             // Build then perform TPMS/Temptrac Multicall
             console.log("Please Wait...Attempt#" + (me._apiCallFaultRetryCount + 1) +

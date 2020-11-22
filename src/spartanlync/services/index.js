@@ -110,9 +110,11 @@ const SpartanLyncServices = {
       storeFaultData: function (vehId, data) {
          const me = this;
          if (typeof data !== "undefined" && data !== null && Array.isArray(data) && data.length) {
+
             if (typeof me._faultCache[vehId] === "undefined") {
                me._faultCache[vehId] = {};
             }
+            let newOrUpdatedFaultCount = 0;
 
             // Update fault data cache with individual updates for each fault
             for (const faultObj of data) {
@@ -121,14 +123,25 @@ const SpartanLyncServices = {
                   me._faultCache[vehId][faultId] = {};
                }
                if (typeof me._faultCache[vehId][faultId].time === "undefined" || faultObj.time > me._faultCache[vehId][faultId].time) {
-                  // Exclude "Sensor Fault" from cache
+                  // Exclude "Sensor Fault" Types / "Missing Sensor" Fault from cache
                   if (typeof faultObj.alert !== "undefined" && typeof faultObj.alert.type !== "undefined" &&
                      faultObj.alert.type === "Sensor Fault") {
                      delete me._faultCache[vehId][faultId];
                      continue;
                   }
+                  if (typeof faultObj.alert !== "undefined" &&
+                     typeof faultObj.occurredOnLatestIgnition !== "undefined" &&
+                     faultObj.occurredOnLatestIgnition) {
+                     newOrUpdatedFaultCount++;
+                  }
                   me._faultCache[vehId][faultId] = faultObj;
                }
+            }
+            if (newOrUpdatedFaultCount) {
+               console.log("[" + newOrUpdatedFaultCount + "] NEW FAULTS FOUND or UPDATED after the last search.");
+            }
+            else {
+               console.log("NO NEW FAULT DATA FOUND for this date range!");
             }
          }
       },

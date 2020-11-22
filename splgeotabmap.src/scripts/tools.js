@@ -599,8 +599,8 @@ const SplGeotabMapUtils = function (my) {
         const watchListIds = my.app.getWatchlistByIds();
         const calls = [];
 
-        // Init watchlistData for MapFaults + Sensor-Data-Watches
-        my.storage.sensorData.watchlistData = {
+        // Init watchlistAndAlertData for MapFaults + Sensor-Data-Watches
+        my.storage.sensorData.watchlistAndAlertData = {
           index: [],
           get sortedIndex() {
             const me = this;
@@ -639,15 +639,15 @@ const SplGeotabMapUtils = function (my) {
               if (skipFault) { continue; }
 
               // Process Fault
-              if (!my.storage.sensorData.watchlistData.index.includes(vehId)) {
+              if (!my.storage.sensorData.watchlistAndAlertData.index.includes(vehId)) {
                 // Init
-                my.storage.sensorData.watchlistData.index.push(vehId);
-                my.storage.sensorData.watchlistData[vehId] = JSON.parse(JSON.stringify(my.watchlistAndAlertSettings.defaultCfg));
+                my.storage.sensorData.watchlistAndAlertData.index.push(vehId);
+                my.storage.sensorData.watchlistAndAlertData[vehId] = JSON.parse(JSON.stringify(my.watchlistAndAlertSettings.defaultCfg));
 
                 // Alert notification data
-                my.storage.sensorData.watchlistData[vehId].type.push("alert");
-                my.storage.sensorData.watchlistData[vehId].alerts = [];
-                my.storage.sensorData.watchlistData[vehId].alertlevel = {
+                my.storage.sensorData.watchlistAndAlertData[vehId].type.push("alert");
+                my.storage.sensorData.watchlistAndAlertData[vehId].alerts = [];
+                my.storage.sensorData.watchlistAndAlertData[vehId].alertlevel = {
                   time: 0,
                   color: "",
                   iconName: "",
@@ -664,14 +664,14 @@ const SplGeotabMapUtils = function (my) {
                   search: { deviceSearch: { id: vehId } }
                 }]);
               }
-              my.storage.sensorData.watchlistData[vehId].alerts.push(faultObj);
+              my.storage.sensorData.watchlistAndAlertData[vehId].alerts.push(faultObj);
 
               if (faultObj.occurredOnLatestIgnition &&
                 faultObj.time &&
                 faultObj.alert.type !== "Sensor Fault" &&
                 faultObj.alert.color.toString().trim() !== ""
               ) {
-                const alertlevel = my.storage.sensorData.watchlistData[vehId].alertlevel;
+                const alertlevel = my.storage.sensorData.watchlistAndAlertData[vehId].alertlevel;
                 if (!alertlevel.color ||
                   (alertlevel.color && alertlevel.color.toUpperCase() === "AMBER" && faultObj.alert.color.toUpperCase() === "RED") ||
                   (alertlevel.color.toUpperCase() === faultObj.alert.color.toUpperCase() && faultObj.time > alertlevel.time)) {
@@ -699,11 +699,11 @@ const SplGeotabMapUtils = function (my) {
         if (watchListIds.length) {
 
           for (const vehId of watchListIds) {
-            if (!my.storage.sensorData.watchlistData.index.includes(vehId)) {
-              my.storage.sensorData.watchlistData.index.push(vehId);
-              my.storage.sensorData.watchlistData[vehId] = JSON.parse(JSON.stringify(my.watchlistAndAlertSettings.defaultCfg));
+            if (!my.storage.sensorData.watchlistAndAlertData.index.includes(vehId)) {
+              my.storage.sensorData.watchlistAndAlertData.index.push(vehId);
+              my.storage.sensorData.watchlistAndAlertData[vehId] = JSON.parse(JSON.stringify(my.watchlistAndAlertSettings.defaultCfg));
             }
-            my.storage.sensorData.watchlistData[vehId].type.push("watchlist");
+            my.storage.sensorData.watchlistAndAlertData[vehId].type.push("watchlist");
             calls.push(["Get", {
               typeName: "Device",
               search: { id: vehId }
@@ -739,11 +739,11 @@ const SplGeotabMapUtils = function (my) {
                   const [vehInfo] = result[i + 1];
                   const vehId = veh.id;
 
-                  my.storage.sensorData.watchlistData[vehId].name = veh.name;
-                  my.storage.sensorData.watchlistData[vehId].time = moment(vehInfo.dateTime).unix();
-                  my.storage.sensorData.watchlistData[vehId].speed = vehInfo.speed;
-                  my.storage.sensorData.watchlistData[vehId].loc.lat = vehInfo.latitude;
-                  my.storage.sensorData.watchlistData[vehId].loc.lng = vehInfo.longitude;
+                  my.storage.sensorData.watchlistAndAlertData[vehId].name = veh.name;
+                  my.storage.sensorData.watchlistAndAlertData[vehId].time = moment(vehInfo.dateTime).unix();
+                  my.storage.sensorData.watchlistAndAlertData[vehId].speed = vehInfo.speed;
+                  my.storage.sensorData.watchlistAndAlertData[vehId].loc.lat = vehInfo.latitude;
+                  my.storage.sensorData.watchlistAndAlertData[vehId].loc.lng = vehInfo.longitude;
                 }
 
                 // Render Vehicle Watchlist sensor data data in UI
@@ -902,7 +902,7 @@ const SplGeotabMapUtils = function (my) {
         }
 
         // Get Vehicle Faults / Ignition data
-        const overrideFirstTimeCall = my.app.getFaultData(vehId) === null ? null : true;
+        const overrideFirstTimeCall = my.app.getFaultData(vehId) === null ? null : false;
         me.fetchVehFaultsAndIgnitionAsync(vehId, overrideFirstTimeCall)
           .then(([faults, vehIgnitionInfo]) => {
 
@@ -1086,12 +1086,13 @@ const SplGeotabMapUtils = function (my) {
 
             me.cancelPendingTasks();
             me.resetSearch();
+            my.ui.clearMapAlerts();
             my.storage.splStore = null;
             my.sdataTools.resetCache();
             my.storage.sensorData.cache = {};
             my.storage.sensorData.faultCache = {};
             my.storage.sensorData.ignitionCache = {};
-            my.storage.sensorData.watchlistData = { index: [] };
+            my.storage.sensorData.watchlistAndAlertData = { index: [] };
             me.init(() => {
               setTimeout(function () {
                 my.ui.showMsg(my.tr("reset_btn_msg") + "<p>" + my.tr("panel_user_instruction"));
@@ -1172,9 +1173,11 @@ const SplGeotabMapUtils = function (my) {
       storeFaultData: function (vehId, data) {
 
         if (typeof data !== "undefined" && data !== null && Array.isArray(data) && data.length) {
+
           if (typeof my.storage.sensorData.faultCache[vehId] === "undefined") {
             my.storage.sensorData.faultCache[vehId] = {};
           }
+          let newOrUpdatedFaultCount = 0;
 
           // Update fault data cache with individual updates for each fault
           for (const faultObj of data) {
@@ -1189,10 +1192,20 @@ const SplGeotabMapUtils = function (my) {
                 delete my.storage.sensorData.faultCache[vehId][faultId];
                 continue;
               }
+              if (typeof faultObj.alert !== "undefined" &&
+                typeof faultObj.occurredOnLatestIgnition !== "undefined" &&
+                faultObj.occurredOnLatestIgnition) {
+                newOrUpdatedFaultCount++;
+              }
               my.storage.sensorData.faultCache[vehId][faultId] = faultObj;
             }
           }
-          console.log("============== my.storage.sensorData.faultCache[", vehId, "] =", my.storage.sensorData.faultCache[vehId]);//DEBUG
+          if (newOrUpdatedFaultCount) {
+            console.log("[" + newOrUpdatedFaultCount + "] NEW FAULTS FOUND or UPDATED after the last search.");
+          }
+          else {
+            console.log("NO NEW FAULT DATA FOUND for this date range!");
+          }
         }
       },
 
@@ -1903,9 +1916,12 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
       * @return {array} Array of Fault objects, sorted by time from oldest to newest
       * @return {array} Array of Ignition data objects, sorted by time from oldest to newest
       */
-      getFaults: function (devId, callback) {
+      getFaults: function (devId, callback, firstTimeCallOverride) {
         if (devId.toString().trim() === "" || typeof callback === "undefined" || typeof callback !== "function") {
           return;
+        }
+        if (typeof firstTimeCallOverride !== "undefined" && firstTimeCallOverride !== null) {
+          me._apiFaultFirstTimeCall = firstTimeCallOverride;
         }
         me._devId = devId;
         me._fDataCallback = callback;

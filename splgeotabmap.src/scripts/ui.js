@@ -119,23 +119,23 @@ const InitOutputUI = function (my, rootDomObj, containerId, panelLabelId, panelT
     const me = this;
     const my = me._my;
     const rootEl = me._containerElemObj;
-    const watchlistData = my.storage.sensorData.watchlistData;
+    const watchlistAndAlertData = my.storage.sensorData.watchlistAndAlertData;
     let contentHtml = "";
 
-    if (typeof watchlistData === "undefined" ||
-      typeof watchlistData.index === "undefined" ||
-      !Array.isArray(watchlistData.index) ||
-      !watchlistData.index.length) {
+    if (typeof watchlistAndAlertData === "undefined" ||
+      typeof watchlistAndAlertData.index === "undefined" ||
+      !Array.isArray(watchlistAndAlertData.index) ||
+      !watchlistAndAlertData.index.length) {
       return;
     }
 
     me.resetUI("skeleton-vehicle-sensor-data-html", () => {
-      for (const vehId of watchlistData.sortedIndex) {
-        const vehName = watchlistData[vehId].name;
-        const vehSpeed = watchlistData[vehId].speed;
+      for (const vehId of watchlistAndAlertData.sortedIndex) {
+        const vehName = watchlistAndAlertData[vehId].name;
+        const vehSpeed = watchlistAndAlertData[vehId].speed;
         const vehPanelContentId = my.vehPanelContentIdPrefix + vehId;
 
-        if (!watchlistData[vehId].type.includes("watchlist")) { continue; }
+        if (!watchlistAndAlertData[vehId].type.includes("watchlist")) { continue; }
 
         // Add Vehicle to Panel Jumper Widget, if sensor data content in Panel UI
         setTimeout(function () {
@@ -200,30 +200,31 @@ const InitOutputUI = function (my, rootDomObj, containerId, panelLabelId, panelT
   this.renderMapAlerts = function () {
     const me = this;
     const my = me._my;
-    const watchlistData = my.storage.sensorData.watchlistData;
+    const watchlistAndAlertData = my.storage.sensorData.watchlistAndAlertData;
     const mapAlertMarkers = my.mapAlertMarkers;
 
-    if (typeof watchlistData === "undefined" ||
-      typeof watchlistData.index === "undefined" ||
-      !Array.isArray(watchlistData.index) ||
-      !watchlistData.index.length) {
+    if (typeof watchlistAndAlertData === "undefined" ||
+      typeof watchlistAndAlertData.index === "undefined" ||
+      !Array.isArray(watchlistAndAlertData.index) ||
+      !watchlistAndAlertData.index.length) {
       return;
     }
 
-    for (const vehId of watchlistData.index) {
-      const locLat = watchlistData[vehId].loc.lat;
-      const locLng = watchlistData[vehId].loc.lng;
-      const alertlevel = watchlistData[vehId].alertlevel;
-      const vehName = watchlistData[vehId].name;
+    for (const vehId of watchlistAndAlertData.index) {
+      const locLat = watchlistAndAlertData[vehId].loc.lat;
+      const locLng = watchlistAndAlertData[vehId].loc.lng;
+      const alertlevel = watchlistAndAlertData[vehId].alertlevel;
+      const vehName = watchlistAndAlertData[vehId].name;
 
       // Only look at Alerts
-      if (!watchlistData[vehId].type.includes("alert")) { continue; }
+      if (!watchlistAndAlertData[vehId].type.includes("alert")) { continue; }
 
       // Remove old marker from map
       if (typeof mapAlertMarkers[vehId] !== "undefined") {
         mapAlertMarkers[vehId].remove();
       }
 
+      // Re-create new marker positon on map
       mapAlertMarkers[vehId] = my.service.canvas.marker({
         lat: locLat,
         lng: locLng
@@ -274,6 +275,31 @@ const InitOutputUI = function (my, rootDomObj, containerId, panelLabelId, panelT
         .attach("out", () => {
           my.service.tooltip.hide();
         });
+    }
+
+    // Remove expired Alert Markers no longer in Alert Watchlist
+    if (typeof mapAlertMarkers !== "undefined" && typeof mapAlertMarkers === "object" && Object.keys(mapAlertMarkers).length) {
+      for (const vehId of Object.keys(mapAlertMarkers)) {
+        if (watchlistAndAlertData[vehId] === "undefined" || (
+          typeof watchlistAndAlertData[vehId] !== "undefined" && !watchlistAndAlertData[vehId].type.includes("alert")
+        )) {
+          mapAlertMarkers[vehId].remove();
+          delete my.mapAlertMarkers[vehId];
+        }
+      }
+    }
+  };
+
+  this.clearMapAlerts = function () {
+    const me = this;
+    const my = me._my;
+    const mapAlertMarkers = my.mapAlertMarkers;
+
+    if (typeof mapAlertMarkers !== "undefined" && typeof mapAlertMarkers === "object" && Object.keys(mapAlertMarkers).length) {
+      for (const vehId of Object.keys(mapAlertMarkers)) {
+        mapAlertMarkers[vehId].remove();
+      }
+      my.mapAlertMarkers = {};
     }
   };
 

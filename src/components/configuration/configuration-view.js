@@ -54,12 +54,18 @@ export class ConfigView extends React.Component {
 
             // eslint-disable-next-line complexity
             vehicleFaultAlertEventHandlerId = splSrv.events.register("onFaultAlert", (vehId, vehObj) => {
+
+               // Flag next invocation of sensor data update task
+               // to re-render the Map & VehConfig Panel sensor data content using new fault data
+               vehObj.sdataTools.releaseStaleCachedSensorDataOnNextFetch(vehId); // for VehConfig sensor data
+               splSrv.sdataTools.releaseStaleCachedSensorDataOnNextFetch(vehId); // for Map sensor data
+
+               // Process Alerts
                const alertlevel = {
                   time: 0,
                   color: "",
                   tooltipHtml: ""
                };
-               // Process Alerts
                for (const faultObj of splSrv.cache.getFaultData(vehId)) {
                   if (typeof faultObj.time !== "undefined" &&
                      typeof faultObj.alert !== "undefined" &&
@@ -140,7 +146,6 @@ export class ConfigView extends React.Component {
                            vehMapElem.classList.add(alertlevel.class);
 
                            // On Vehicle Map tooltip, update Vehicle Storage Object with Alert info
-                           console.log("--- Alert[" + vehId + "] SET on Map Tooltip"); //DEBUG
                            if (typeof storage.selectedDevices[vehId] !== "undefined") {
                               const devObj = storage.selectedDevices[vehId];
                               devObj.alert = alertlevel;
@@ -150,7 +155,6 @@ export class ConfigView extends React.Component {
                            // On Vehicle Map tooltip, Remove Alert info
                            if (typeof storage.selectedDevices[vehId] !== "undefined" &&
                               typeof storage.selectedDevices[vehId].alert !== "undefined") {
-                              console.log("--- Alert[" + vehId + "] CLEARED on Map Tooltip"); //DEBUG
                               delete storage.selectedDevices[vehId].alert;
                            }
                         }

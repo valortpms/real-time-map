@@ -138,12 +138,25 @@ const SpartanLyncServices = {
                }
             }
             if (newOrUpdatedFaultCount) {
-               console.log("[" + newOrUpdatedFaultCount + "] NEW FAULTS FOUND or UPDATED after the last search.");
+               console.log("[" + newOrUpdatedFaultCount + "] NEW POST-IGNITION SPARTANLYNC FAULTS FOUND or UPDATED after the last search.");
             }
             else {
-               console.log("NO NEW FAULT DATA FOUND for this date range!");
+               console.log("NO NEW POST-IGNITION SPARTANLYNC FAULT DATA FOUND for this date range!");
             }
          }
+      },
+
+      isFaultFound: function (data) {
+         if (typeof data !== "undefined" && data !== null && Array.isArray(data) && data.length) {
+            for (const faultObj of data) {
+               if (typeof faultObj.alert !== "undefined" &&
+                  typeof faultObj.occurredOnLatestIgnition !== "undefined" &&
+                  faultObj.occurredOnLatestIgnition) {
+                  return true;
+               }
+            }
+         }
+         return false;
       },
 
       getIgnVehIDs: function () {

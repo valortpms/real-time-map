@@ -19,10 +19,12 @@ export const deviceSearch = {
       // Init rxjs debounce search.
       const searchInputObservable = fromEvent(deviceSearch.searchInput, "input").pipe(map(i => i.currentTarget.value));
       const debouncedInput = searchInputObservable.pipe(debounceTime(250));
-      debouncedInput.subscribe((searchInput) => deviceSearch.buildSearchList(searchInput, mapPropsToComponent));
+      debouncedInput.subscribe((searchInput) => {
+         deviceSearch.buildSearchList(searchInput, mapPropsToComponent);
+      });
    },
 
-   buildSea111rchList(searchInput, mapPropsToComponent) {
+   buildSearchList(searchInput, mapPropsToComponent) {
       const nameSearchMultiCall = [
          createDeviceByNameCall(searchInput),
          createGroupsByNameCall(searchInput)

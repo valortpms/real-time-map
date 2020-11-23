@@ -23,6 +23,8 @@ export const INITSplSensorDataTools = function (goLib, cache) {
    this._sensorDataNotFoundMsg = "";
    this._vehComponents = {};
 
+   this._onFetchReleaseStaleCachedSensorDataFlagObj = {};
+
    /**
     * Fetch vehicle sensor data from cache or API
     * ( cached is refreshed after X minutes, as defined in _sensorDataLifetime )
@@ -209,15 +211,43 @@ export const INITSplSensorDataTools = function (goLib, cache) {
                   // Resetting when we will search again for new data
                   me._cache[vehId].expiry = moment().utc().add(me._sensorDataLifetime, "seconds").unix();
 
+                  // Release cached stale sensor data, if explicitly requested by UI
+                  if (typeof me._cache[vehId].data !== "undefined" &&
+                     typeof me._onFetchReleaseStaleCachedSensorDataFlagObj[vehId] !== "undefined" &&
+                     me._onFetchReleaseStaleCachedSensorDataFlagObj[vehId] === true) {
+                     me._onFetchReleaseStaleCachedSensorDataFlagObj[vehId] = false;
+                     resolve(me._cache[vehId].data);
+                  }
                   // Nothing new with this data, so don't send anything to UI
-                  resolve({});
+                  else {
+                     resolve({});
+                  }
                });
          }
          else {
+            // Release cached stale sensor data, if explicitly requested by UI
+            if (typeof me._cache[vehId].data !== "undefined" &&
+               typeof me._onFetchReleaseStaleCachedSensorDataFlagObj[vehId] !== "undefined" &&
+               me._onFetchReleaseStaleCachedSensorDataFlagObj[vehId] === true) {
+               me._onFetchReleaseStaleCachedSensorDataFlagObj[vehId] = false;
+               resolve(me._cache[vehId].data);
+            }
             // Nothing new with this data, so don't send anything to UI
-            resolve({});
+            else {
+               resolve({});
+            }
          }
       });
+   };
+
+   /**
+    * Method for toggling _onFetchReleaseStaleCachedSensorData flag object
+    */
+   this.releaseStaleCachedSensorDataOnNextFetch = function (vehId) {
+      const me = this;
+      if (vehId && typeof me._cache[vehId] !== "undefined" && me._cache[vehId].data) {
+         me._onFetchReleaseStaleCachedSensorDataFlagObj[vehId] = true;
+      }
    };
 
    /**
@@ -693,6 +723,7 @@ export const splSensorDataParser = {
 
          // Merge in cached Fault/Alert data into sensor data, for Vehicle component
          splSrv.cache.getFaultData(cloneData.vehId).forEach(faultObj => {
+
             if (typeof faultObj.alert !== "undefined" &&
                typeof faultObj.alert.type !== "undefined" &&
                typeof faultObj.occurredOnLatestIgnition !== "undefined" &&

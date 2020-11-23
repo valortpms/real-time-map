@@ -40,6 +40,7 @@ export class SplSensorDataTypesButton extends Component {
       this.goLib = null;
       this.sdataTools = null;
       this.contentRefreshTimerHandle = null;
+      this.faultMonitoringTimerHandle = null;
    }
 
    componentDidMount() {
@@ -63,6 +64,7 @@ export class SplSensorDataTypesButton extends Component {
    componentWillUnmount() {
       const me = this;
       me.onCloseContentHandler();
+      me.stopFaultMonitoringTask();
    }
 
    /**
@@ -92,7 +94,7 @@ export class SplSensorDataTypesButton extends Component {
       me.sdataTools.setSensorSearchInProgressResponseMsg(splmap.tr("sensor_search_busy_msg"));
 
       // Fetch SpartanLync Sensor Types installed into vehicle
-      me.fetchSensorTypes();
+      me.fetchSensorTypesAndFaults();
    }
 
    // eslint-disable-next-line no-unused-vars
@@ -109,16 +111,16 @@ export class SplSensorDataTypesButton extends Component {
     */
    fetchFaultsAndIgnitionData() {
       const me = this;
+      const overrideFirstTimeCall = splSrv.cache.getFaultData(me.vehId) === null ? null : false;
 
       //Splunk for fault & ignition data for specific vehicle
-      fetchVehFaultsAndIgnitionAsync(me.vehId)
+      fetchVehFaultsAndIgnitionAsync(me.vehId, overrideFirstTimeCall)
          .then(([faults, vehIgnitionInfo]) => {
+            const faultsFoundPriorToUpdate = splSrv.cache.isFaultFound(splSrv.cache.getFaultData(me.vehId));
 
             // Update Fault & Ignition data caches
             splSrv.cache.storeFaultData(me.vehId, faults);
             splSrv.cache.storeIgnData(me.vehId, vehIgnitionInfo);
-            console.log("---------------------------- faults[" + me.vehId + "] = ", JSON.stringify(faults));
-            console.log("---------------------------- vehIgnitionInfo[" + me.vehId + "] = ", JSON.stringify(vehIgnitionInfo));
 
             // Update Faults cache with new ignition data
             if (typeof vehIgnitionInfo !== "undefined" && vehIgnitionInfo !== null &&
@@ -127,8 +129,8 @@ export class SplSensorDataTypesButton extends Component {
                splSrv.cache.updateFaultStatusUsingIgnData(me.vehId);
             }
 
-            // Invoke New Fault event handlers by throwing a New Fault Event
-            if (typeof faults !== "undefined" && faults !== null && Array.isArray(faults) && faults.length) {
+            // Invoke New Fault event handlers by throwing a New-Fault Event
+            if (splSrv.cache.isFaultFound(faults) || faultsFoundPriorToUpdate !== splSrv.cache.isFaultFound(faults)) {
                splSrv.events.exec("onFaultAlert", me.vehId, me);
             }
          })
@@ -143,7 +145,7 @@ export class SplSensorDataTypesButton extends Component {
     *
     *  @returns void
     */
-   fetchSensorTypes() {
+   fetchSensorTypesAndFaults() {
       const me = this;
 
       //Splunk for presence of sensor data types & vehicle components
@@ -190,6 +192,8 @@ export class SplSensorDataTypesButton extends Component {
             }
          })
          .finally(() => {
+            // Start fault update timer
+            me.startFaultMonitoringTask();
 
             // Fetch vehicle faults and ignition data for Alert cache(s)
             me.fetchFaultsAndIgnitionData();
@@ -245,14 +249,17 @@ export class SplSensorDataTypesButton extends Component {
          me.sdataTools.fetchCachedSensorData(me.vehId, me.vehName)
             .then(sensorData => {
                splHtmlOut = splSensorDataParser.generateSensorDataHtml(sensorData, me.vehId, me.sdataTools);
-               me.startContentRefresh();  // Start content update timer
 
-               // Register Handler for showing changes to vehicle Alert Status
+               // Start sensor data update task
+               me.startContentRefresh();
+
+               // Register Handler for showing timely possible changes to vehicle sensor data content,
+               // instead of waiting for the sensor data update task
                me.faultAlertEventHandlerId = splSrv.events.register("onFaultAlert", (vehId) => {
-                  console.log("----------- Sensor Data Panel: onFaultAlert OCCURRED for vehId =", vehId); //DEBUG
                   if (vehId === me.vehId) {
-                     console.log("----------- Sensor Data Panel: Update UI for vehId =", vehId); //DEBUG
-                     me.updateSensorDataContent();
+                     setTimeout(() => {
+                        me.updateSensorDataContent(); // After a 1 second delay, refresh sensor data content using new fault data
+                     }, 1000);
                   }
                }, false);
             })
@@ -313,21 +320,47 @@ export class SplSensorDataTypesButton extends Component {
    }
 
    /**
-    * Start/Stop sensor data refresh process
+    * Start/Stop vehicle sensor data content update task
     *
     *  @returns void
     */
    startContentRefresh() {
       const me = this;
-      me.contentRefreshTimerHandle = setInterval(
-         () => me.updateSensorDataContent(),
-         (splSrv.sensorDataLifetime * 1000)
-      );
+      if (me.contentRefreshTimerHandle === null) {
+         me.contentRefreshTimerHandle = setInterval(
+            () => me.updateSensorDataContent(),
+            (splSrv.sensorDataLifetime * 1000)
+         );
+      }
    }
    stopContentRefresh() {
       const me = this;
-      clearInterval(me.contentRefreshTimerHandle);
+      if (me.contentRefreshTimerHandle !== null) {
+         clearInterval(me.contentRefreshTimerHandle);
+      }
    }
+
+   /**
+    * Start/Stop vehicle fault monitoring task
+    *
+    *  @returns void
+    */
+   startFaultMonitoringTask() {
+      const me = this;
+      if (me.faultMonitoringTimerHandle === null) {
+         me.faultMonitoringTimerHandle = setInterval(
+            () => me.fetchFaultsAndIgnitionData(),
+            (splSrv.sensorDataLifetime * 1000)
+         );
+      }
+   }
+   stopFaultMonitoringTask() {
+      const me = this;
+      if (me.faultMonitoringTimerHandle !== null) {
+         clearInterval(me.faultMonitoringTimerHandle);
+      }
+   }
+
 
    /**
     * Renders Temptrac or TPMS button for UI

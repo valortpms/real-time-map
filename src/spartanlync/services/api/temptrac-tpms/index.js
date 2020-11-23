@@ -245,7 +245,6 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
 
          _setDateRangeAndInvokeFaultCalls: function () {
             me._toFaultDate = moment().utc().format();
-            console.log("=========== me._apiFaultFirstTimeCall = ", me._apiFaultFirstTimeCall);
 
             // First call, search for data over last few days
             if (me._apiFaultFirstTimeCall) {
@@ -264,11 +263,9 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                me._fromFaultDate = moment().utc().subtract(me._timeRangeForRepeatFaultSearchesInSeconds, "seconds").format();
             }
 
-
-
             // Build then perform TPMS/Temptrac Multicall
             console.log("Please Wait...Attempt#" + (me._apiCallFaultRetryCount + 1) +
-               " Retrieving Fault data using " + (
+               " Retrieving Fault data on VehicleID [ " + me._devId + " ] using " + (
                   me._apiFaultFirstTimeCall ?
                      me._timeFaultSearchRetryRangeInDays[me._apiCallFaultRetryCount] + " day" :
                      me._convertSecondsToHMS(me._timeRangeForRepeatFaultSearchesInSeconds)

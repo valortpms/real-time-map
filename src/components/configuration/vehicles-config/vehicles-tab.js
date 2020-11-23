@@ -10,9 +10,7 @@ export const VehiclesTab = props => (
          id="RTM-VehicleTitle"
          className="RTM-Tab RTM-TabSelected"
          onClick={() => configuration.selectTab("RTM-VehicleTitle")}
-      >
-         Vehicles
-    </button>
+      >Vehicles</button>
       <div id="vehicle-tab" className="RTM-config-info">
          <VehicleFormComponent
             devices={props.devices}

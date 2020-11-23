@@ -3,14 +3,19 @@ import { diagnosticSearch } from "./status-search";
 import splSrvTools from "../../../spartanlync/services/tools";
 
 export const StatusListComponent = props => {
+   if (props && props.statusDisplayList && !props.statusDisplayList.length) {
+      return [];
+   }
+   // Sort by Vehicle Name
+   props.statusDisplayList.sort((a, b) => (a.name > b.name) ? 1 : -1);
+
    const mapPropsToComponent = props.setStatusDisplay;
    const statusList =
       props.statusDisplayList.length > 0
          ? props.statusDisplayList.map(prop => (
             <li key={prop.id} className="mdc-list-item">
                <span
-                  className={`RTM-iconSquare mdc-list-item__graphic material-icons filterIcon ${
-                     prop.visible ? "showConfig" : "hideConfig"
+                  className={`RTM-iconSquare mdc-list-item__graphic material-icons filterIcon ${prop.visible ? "showConfig" : "hideConfig"
                      }`}
                   data-tip="Hide/Show Status"
                   data-for="splTooltip"

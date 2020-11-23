@@ -3,14 +3,19 @@ import { exceptionSearch } from "./exception-search";
 import splSrvTools from "../../../spartanlync/services/tools";
 
 export const ExceptionListComponent = props => {
+   if (props && props.exceptionDisplayList && !props.exceptionDisplayList.length) {
+      return [];
+   }
+   // Sort by Vehicle Name
+   props.exceptionDisplayList.sort((a, b) => (a.name > b.name) ? 1 : -1);
+
    const mapPropsToComponent = props.setExceptionsDisplay;
    const exceptionList =
       props.exceptionDisplayList.length > 0
          ? props.exceptionDisplayList.map(prop => (
             <li key={prop.id} className="mdc-list-item">
                <span
-                  className={`RTM-iconSquare mdc-list-item__graphic material-icons filterIcon ${
-                     prop.visible ? "showConfig" : "hideConfig"
+                  className={`RTM-iconSquare mdc-list-item__graphic material-icons filterIcon ${prop.visible ? "showConfig" : "hideConfig"
                      } `}
                   data-tip="Hide/Show Exception"
                   data-for="splTooltip"

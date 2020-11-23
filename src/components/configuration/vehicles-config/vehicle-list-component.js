@@ -8,6 +8,9 @@ export const VehicleListComponent = (props) => {
    if (props && props.vehicleDisplayList && !props.vehicleDisplayList.length) {
       return [];
    }
+   // Sort by Vehicle Name
+   props.vehicleDisplayList.sort((a, b) => (a.name > b.name) ? 1 : -1);
+
    const mapPropsToComponent = props.setVehicleDisplay;
    const vehicleList =
       props.vehicleDisplayList.length > 0

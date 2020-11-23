@@ -1201,10 +1201,10 @@ const SplGeotabMapUtils = function (my) {
             }
           }
           if (newOrUpdatedFaultCount) {
-            console.log("[" + newOrUpdatedFaultCount + "] NEW FAULTS FOUND or UPDATED after the last search.");
+            console.log("[" + newOrUpdatedFaultCount + "] NEW POST-IGNITION SPARTANLYNC FAULTS FOUND or UPDATED after the last search.");
           }
           else {
-            console.log("NO NEW FAULT DATA FOUND for this date range!");
+            console.log("NO NEW POST-IGNITION SPARTANLYNC FAULT DATA FOUND for this date range!");
           }
         }
       },

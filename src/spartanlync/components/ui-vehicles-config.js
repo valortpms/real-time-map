@@ -37,6 +37,8 @@ export class SplSensorDataTypesButton extends Component {
       this.faultAlertEventHandlerId = null;
       this.sdataCache = null;
 
+      this.noSensorsFoundOnThisVehicle = false;
+
       this.goLib = null;
       this.sdataTools = null;
       this.contentRefreshTimerHandle = null;
@@ -189,14 +191,17 @@ export class SplSensorDataTypesButton extends Component {
          .catch((reason) => {
             if (reason === splSrv.sensorDataNotFoundMsg) {
                console.log("---- NO SENSORS FOUND for VehicleID [ " + me.vehId + " ] named [ " + me.vehName + " ]");
+               me.noSensorsFoundOnThisVehicle = true;
             }
          })
          .finally(() => {
-            // Start fault update timer
-            me.startFaultMonitoringTask();
+            if (!me.noSensorsFoundOnThisVehicle) {
+               // Start fault update timer
+               me.startFaultMonitoringTask();
 
-            // Fetch vehicle faults and ignition data for Alert cache(s)
-            me.fetchFaultsAndIgnitionData();
+               // Fetch vehicle faults and ignition data for Alert cache(s)
+               me.fetchFaultsAndIgnitionData();
+            }
          });
    }
 

@@ -336,7 +336,10 @@ const SpartanLyncServiceTools = {
             "#RTM-ControlsContainer .inputControls label | splmap_controlspanel_label_date",
             "#RTM-ControlsContainer .inputControls label | splmap_controlspanel_label_time_start",
             "#RTM-ControlsContainer .inputControls label | splmap_controlspanel_label_time_current",
+            "#RTM-ControlsContainer .inputControls button.apply-changes-btn | splmap_controlspanel_label_apply_changes_btn",
 
+            "#RTM-ControlsContainer #timeRangeStart [data-tip] | datepicker_enter_to_apply_change",
+            "#RTM-ControlsContainer #currentTimeInput [data-tip] | datepicker_enter_to_apply_change",
             "#timeControls .RTM-pauseIcon [data-tip] | splmap_controlspanel_tooltip_pause",
             "#SpeedControlDropUp [data-tip] | splmap_controlspanel_label_speed_tooltip",
             "#RTM-Map .leaflet-control-zoom .leaflet-control-zoom-in [title] | splmap_map_zoom_in",
@@ -541,6 +544,9 @@ const SpartanLyncServiceTools = {
             me._postDomLoaded = true;
             me._translateInlineElements();
             me._translateElementsInDom();
+
+            // SpartanLync Translation tasks invoked on DOM load
+            splSrv.events.exec("trOnDomLoaded");
          },
 
          langTokens: function (html) {

@@ -32,39 +32,61 @@ export class ControlsView extends React.Component {
                      <SpeedControlComponent />
                   </div>
 
-                  <div className="inputControls ">
-                     <label> Date: </label>
+                  <div className="inputControls">
+                     <label for="dateInputBox"> Date: </label>
                      <input
                         className="timeInputBox mdc-button"
                         type="date"
                         id="dateInputBox"
                         step="1"
                      ></input>
+                     <button
+                        className="apply-changes-btn"
+                        data-input-name="dateInputBox"
+                        data-tip="Click to Apply Changes"
+                        data-for="splTooltip"
+                     >Apply</button>
                   </div>
 
-                  <div className="inputControls ">
-                     <label> Start Time: </label>
+                  <div className="inputControls">
+                     <label for="timeRangeStart"> Start Time: </label>
                      <input
                         className="timeInputBox mdc-button"
                         type="time"
                         id="timeRangeStart"
                         step="1"
+                        data-tip="In Popup, please hit ENTER to apply your time change"
+                        data-for="splTooltip"
                      ></input>
+                     <button
+                        className="apply-changes-btn"
+                        data-input-name="timeRangeStart"
+                        data-tip="Click to Apply Changes"
+                        data-for="splTooltip"
+                     >Apply</button>
                   </div>
 
-                  <div className="inputControls ">
-                     <label> Current Time: </label>
+                  <div className="inputControls">
+                     <label for="currentTimeInput"> Current Time: </label>
                      <input
                         className="timeInputBox mdc-button"
                         type="time"
                         id="currentTimeInput"
                         step="1"
+                        data-tip="In Popup, please hit ENTER to apply your time change"
+                        data-for="splTooltip"
                      ></input>
+                     <button
+                        className="apply-changes-btn"
+                        data-input-name="currentTimeInput"
+                        data-tip="Click to Apply Changes"
+                        data-for="splTooltip"
+                     >Apply</button>
                   </div>
-
                   {/* //Jump to live time. */}
                   <LiveButtonComponent />
                </div>
+               <div className="disableScreen"></div>
             </div>
          </React.Fragment>
       );

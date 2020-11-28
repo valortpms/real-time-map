@@ -52,11 +52,13 @@ window.splmap.lang.en = {
   "splmap_configpanel_exceptiontab_title":         "Exceptions",
   "splmap_configpanel_exceptiontab_list_label":    "Selected Exceptions",
   "splmap_controlspanel_label_live":               "LIVE",
+  "splmap_controlspanel_label_live_help":          "( Click to revert back to LIVE )",
   "splmap_controlspanel_label_speed":              "Speed",
   "splmap_controlspanel_label_speed_tooltip":      "Playback Speed Menu (Speed cannot be changed when Live)",
   "splmap_controlspanel_label_date":               "Date",
   "splmap_controlspanel_label_time_start":         "Start Time",
   "splmap_controlspanel_label_time_current":       "Current Time",
+  "splmap_controlspanel_label_apply_changes_btn":  "Apply",
   "splmap_controlspanel_tooltip_play":             "Play",
   "splmap_controlspanel_tooltip_pause":            "Pause",
   "splmap_controlspanel_group":                    "Group",
@@ -72,8 +74,8 @@ window.splmap.lang.en = {
   "error_invalid_user":                            "Missing or Invalid User Object",
   "error_systemsettings_missing_invalid":          "Missing or Invalid SystemSettings Object",
 
+  "datepicker_enter_to_apply_change":              "In Popup, please hit ENTER to apply your time change",
   "datepicker_date_in_future":                     "Selected date is in future!",
-  "datepicker_enter_to_apply_change":              "Please hit Enter to apply your changes!",
   "map_fetching_historical_data_inprogress":       "Fetching Historical Data",
   "map_fetching_historical_data_completed":        "Historical Data Load Complete",
 

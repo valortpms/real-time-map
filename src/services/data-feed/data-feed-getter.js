@@ -10,6 +10,7 @@ import { apiConfig } from "../../dataStore/api-config";
 import { showSnackBar } from "../../components/snackbar/snackbar";
 import { progressBar } from "../../components/progress-bar/progress-indicator";
 import { throttleTime } from "rxjs/operators";
+import { pausePlayModel } from "../../components/controls/play-pause/play-pause-model";
 
 export const feedDataGetter = {
 
@@ -203,6 +204,16 @@ export function historicalFeedDataComplete(historicalFeedDataList) {
    if (storage.isLiveDay) {
       configStorage.setItem("historicalFeedDataList", historicalFeedDataList).then(() => {
          console.log("Updated historical data saved!");
+
+         // Ensure time-keeping operations continue to run, by restarting dateKeeper heartbeat if stopped
+         if (pausePlayModel.playing && !storage.dateKeeper$.paused) {
+            const momentInTime = storage.currentTime;
+            setTimeout(function () {
+               if (momentInTime === storage.currentTime) {
+                  storage.dateKeeper$.resume();
+               }
+            }, 1000);
+         }
 
          // Execute any SpartanLync Listeners waiting for this moment in the SplMap lifecycle
          splSrv.events.exec("onLoadMapDataCompleted");

@@ -122,8 +122,8 @@
    font-weight: bold;
 }
 #RTM-LiveDot {
-  height: 0.5em;
-  width: 0.5em;
+  height: 7px;
+  width: 7px;
   display: inline-block;
   background-color: #ffffff;
   border-radius: 50%;
@@ -138,64 +138,62 @@
   background-color: #dedede;
 }
 
-
 .pmd-range-slider .noUi-tooltip {
   transition: none !important;
-  }
+}
 
+.noUi-value.noUi-value-horizontal.noUi-value-large {
+   font-size: xx-small !important;;
+   display: block !important;;
+}
 
-  .noUi-value.noUi-value-horizontal.noUi-value-large {
-    font-size: xx-small !important;;
-    display: block !important;;
+.noUi-handle.noUi-handle-lower {
+   width: 9px !important;
+   height: 18px !important;
+   left: -9px !important;
+   top: -6px !important;
+
+   &:before {
+   background: royalblue !important;
+   border-radius: 0 !important;
    }
+}
 
-  .noUi-handle.noUi-handle-lower {
-    width: 9px !important;
-    height: 18px !important;
-    left: -9px !important;
-    top: -6px !important;
+.noUi-handle.noUi-handle-upper {
 
-    &:before {
-      background: royalblue !important;
-      border-radius: 0 !important;
-    }
-  }
+   width: 0 !important;
+   height: 0 !important;
+   border-top: 9px solid transparent !important;
+   border-left: 12px solid #4285f4 !important;
+   border-bottom: 9px solid transparent !important;
+   top: -6px !important;
+   left: 0px !important;
+   border-radius: 0 !important;
 
-  .noUi-handle.noUi-handle-upper {
+}
 
-    width: 0 !important;
-    height: 0 !important;
-    border-top: 9px solid transparent !important;
-    border-left: 12px solid #4285f4 !important;
-    border-bottom: 9px solid transparent !important;
-    top: -6px !important;
-    left: 0px !important;
-    border-radius: 0 !important;
-
-  }
-
-  .noUi-handle.noUi-handle-upper:active {
-    width: 9px !important;
-    height: 18px !important;
-    border: none !important;
-  }
+.noUi-handle.noUi-handle-upper:active {
+   width: 9px !important;
+   height: 18px !important;
+   border: none !important;
+}
 
 
-  .noUi-origin{
-    border-radius: 0 !important;
-  }
+.noUi-origin{
+   border-radius: 0 !important;
+}
 
-  .mdc-button{
-    font-weight: inherit;
-    color: rgba(0, 0, 0, 0.8) !important;
-    padding: 0 0 1px 0 !important;
-    &:before {
-      background-color:  rgba(0, 0, 0, 0.6);
-    }
-    &:after {
-      background-color:  rgba(0, 0, 0, 0.6);
-    }
-  }
+.mdc-button{
+   font-weight: inherit;
+   color: rgba(0, 0, 0, 0.8) !important;
+   padding: 0 0 1px 0 !important;
+   &:before {
+   background-color:  rgba(0, 0, 0, 0.6);
+   }
+   &:after {
+   background-color:  rgba(0, 0, 0, 0.6);
+   }
+}
 
   // playback speed menu dropdown
 

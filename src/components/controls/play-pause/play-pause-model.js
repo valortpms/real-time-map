@@ -1,7 +1,6 @@
 import storage from "../../../dataStore/index";
 
 export const pausePlayModel = {
-   playBackBox: undefined,
    playing: true,
    pausePlayIcon: undefined,
 

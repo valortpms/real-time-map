@@ -52,11 +52,13 @@ window.splmap.lang.es = {
   "splmap_configpanel_exceptiontab_title":         "Excepciones",
   "splmap_configpanel_exceptiontab_list_label":    "Excepciones seleccionadas",
   "splmap_controlspanel_label_live":               "EN VIVO",
+  "splmap_controlspanel_label_live_help":          "( Haga clic para volver a VIVO )",
   "splmap_controlspanel_label_speed":              "Velocidad",
   "splmap_controlspanel_label_speed_tooltip":      "Menú de velocidad de reproducción (la velocidad no se puede cambiar en tiempo real)",
   "splmap_controlspanel_label_date":               "Fecha",
   "splmap_controlspanel_label_time_start":         "Hora de inicio",
   "splmap_controlspanel_label_time_current":       "Tiempo actual",
+  "splmap_controlspanel_label_apply_changes_btn":  "aplicar",
   "splmap_controlspanel_tooltip_play":             "Reproducir",
   "splmap_controlspanel_tooltip_pause":            "Pausa",
   "splmap_controlspanel_group":                    "Grupo",
@@ -72,8 +74,8 @@ window.splmap.lang.es = {
   "error_invalid_user":                            "Usuario no válido",
   "error_systemsettings_missing_invalid":          "Objeto SystemSettings faltante o no v&aacute;lido",
 
+  "datepicker_enter_to_apply_change":              "En la ventana emergente, presione ENTER para aplicar su cambio de hora",
   "datepicker_date_in_future":                     "&iexcl;La fecha seleccionada es futura!",
-  "datepicker_enter_to_apply_change":              "Por favor presione Enter para aplicar sus cambios.",
   "map_fetching_historical_data_inprogress":       "Obtenci&oacute;n de datos hist&oacute;ricos",
   "map_fetching_historical_data_completed":        "Carga de datos hist&oacute;ricos completa",
 

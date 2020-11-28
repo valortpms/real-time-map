@@ -52,11 +52,13 @@ window.splmap.lang.fr = {
   "splmap_configpanel_exceptiontab_title":         "Des exceptions",
   "splmap_configpanel_exceptiontab_list_label":    "Exceptions s&eacute;lectionn&eacute;es",
   "splmap_controlspanel_label_live":               "VIVRE",
+  "splmap_controlspanel_label_live_help":          "( Cliquez pour revenir au VIVRE )",
   "splmap_controlspanel_label_speed":              "La vitesse",
   "splmap_controlspanel_label_speed_tooltip":      "Menu de vitesse de lecture (la vitesse ne peut pas &ecirc;tre modifi&eacute;e en direct)",
   "splmap_controlspanel_label_date":               "Date",
   "splmap_controlspanel_label_time_start":         "Heure de d&eacute;but",
   "splmap_controlspanel_label_time_current":       "Heure actuelle",
+  "splmap_controlspanel_label_apply_changes_btn":  "appliquer",
   "splmap_controlspanel_tooltip_play":             "Jouer",
   "splmap_controlspanel_tooltip_pause":            "Pause",
   "splmap_controlspanel_group":                    "Groupe",
@@ -72,8 +74,8 @@ window.splmap.lang.fr = {
   "error_invalid_user":                            "Objet utilisateur manquant ou non valide",
   "error_systemsettings_missing_invalid":          "Objet SystemSettings manquant ou non valide",
 
+  "datepicker_enter_to_apply_change":              "Dans Popup, appuyez sur ENTER pour appliquer votre changement d'heure",
   "datepicker_date_in_future":                     "La date s&eacute;lectionn&eacute;e est dans le futur!",
-  "datepicker_enter_to_apply_change":              "Veuillez appuyer sur Entr&eacute;e pour appliquer vos modifications!",
   "map_fetching_historical_data_inprogress":       "R&eacute;cup&eacute;ration des donn&eacute;es historiques",
   "map_fetching_historical_data_completed":        "Chargement des donn&eacute;es historiques termin&eacute;",
 

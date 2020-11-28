@@ -1,5 +1,6 @@
 import storage from "../../../dataStore/index";
 import { checkIfLive, getLiveTime } from "../../../utils/helper";
+import splSrv from "../../../spartanlync/services";
 
 export const liveButtonModel = {
    liveDot: undefined,
@@ -10,11 +11,14 @@ export const liveButtonModel = {
       this.liveDot = document.getElementById("RTM-LiveDot");
       this.liveButton = document.getElementById("RTM-LiveButton");
       this.setLiveBackground();
-      storage.dateKeeper$.subscribe(this.checkIfLive.bind(this));
+      storage.dateKeeper$.subscribe(this.monitorLiveBtnStatus.bind(this));
+
+      splSrv.events.register("trOnDomLoaded", () => {
+         document.querySelector("#RTM-LiveButton .go-live-help").innerHTML = splmap.tr("splmap_controlspanel_label_live_help");
+      }, false);
    },
 
-   checkIfLive(currentSecond) {
-
+   monitorLiveBtnStatus(currentSecond) {
       const timeAhead = checkIfLive(currentSecond);
 
       if (timeAhead) {

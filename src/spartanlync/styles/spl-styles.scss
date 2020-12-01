@@ -456,7 +456,7 @@
 }
 
 #RTM-ViewContainer .splTable {
-   margin: 5px 0px 0px 0px;
+   margin: 5px 5px 0px 5px;
 }
 #RTM-ViewContainer .leaflet-popup-content .splTable {
    margin-right: 5px;
@@ -614,6 +614,33 @@
    margin: 0px 5px 0px 0px;
    padding: 0px;
    font-size: 9px;
+}
+
+#RTM-ViewContainer .splTable.time-warp {
+   background-color: #fad9d9;
+   border-radius: 5px;
+   padding-top: 6px;
+}
+#RTM-ViewContainer .splTable.time-warp .splTableRow.footer .splTableCell label {
+   margin: 0px;
+   line-height: normal;
+}
+#RTM-ViewContainer .splTable.time-warp .splTableRow.footer strong {
+   display: block;
+   margin: 0px;
+   padding: 0px;
+   font-size: 10px;
+   font-weight: bold;
+   line-height: normal;
+   text-align: center;
+
+   -webkit-animation: time-warp-strobe 1.2s ease-in-out infinite alternate;
+   -moz-animation: time-warp-strobe 1.2s ease-in-out infinite alternate;
+   animation: time-warp-strobe 1.2s ease-in-out infinite alternate;
+}
+@keyframes time-warp-strobe {
+   from { color: #000000; }
+   to { color: #BD2727; }
 }
 
 

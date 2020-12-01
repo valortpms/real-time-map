@@ -14,6 +14,7 @@ window.splmap.lang.fr = {
   "sensor_search_busy_msg":                        "OCCUP&Eacute;",
   "sensor_search_busy_getting_data_msg":           "Obtenir des donn&eacute;es",
   "sensor_search_last_reading":                    "Derni&egrave;re lecture",
+  "sensor_search_back_in_time":                    "Voyager dans le temps",
   "sensor_search_sensor_timestamp":                "Horodatage du capteur",
   "sensor_search_switchto_spltools_instruction":   "Voir dans SpartanLync Tools",
   "sensor_search_status_data_msg":                 "Donn&eacute;es d&apos;&eacute;tat",

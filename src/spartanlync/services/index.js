@@ -65,7 +65,7 @@ const SpartanLyncServices = {
     */
 
    sessionMgr: null,
-   goLib: null,
+   goLibCreatorFunc: null,
    sdataTools: null,
 
    runningOnSpartanLyncDomain: false,

@@ -1,10 +1,10 @@
 import noUiSlider from "propellerkit-range-slider/node_modules/nouislider/distribute/nouislider";
 import storage from "../../../dataStore";
+import splSrv from "../../../spartanlync/services";
 
 import {
    checkIfLive,
-   getLiveTime,
-   resetTransitionAnimation,
+   getLiveTime
 } from "../../../utils/helper";
 
 import {
@@ -19,7 +19,7 @@ import {
 
 export const sliderModel = {
 
-   userCurrentlySlidng: false,
+   userCurrentlySliding: false,
    currentHandle: 2,
 
    range: {
@@ -79,7 +79,7 @@ export const sliderModel = {
 
    updateSlider(currentSecond) {
 
-      if (!this.userCurrentlySlidng) {
+      if (!this.userCurrentlySliding) {
          const endHandleValue = getMinuteOfDay(currentSecond);
          const start = [getMinuteOfDay(storage.timeRangeStart), endHandleValue];
 
@@ -99,7 +99,7 @@ export const sliderModel = {
    startSliding(values, handle) {
       this.toolTipOverFlowFix(values, handle);
       this.currentHandle = handle;
-      this.userCurrentlySlidng = true;
+      this.userCurrentlySliding = true;
    },
 
    userSliding(values, handle) {
@@ -107,12 +107,12 @@ export const sliderModel = {
          this.handleOverFlowFix(values, handle);
       }
       this.toolTipOverFlowFix(values, handle);
-      this.userCurrentlySlidng = true;
+      this.userCurrentlySliding = true;
    },
 
    sliderValueSet(values, handle) {
       // handle 0 = first handle, 1 = second handle
-      this.userCurrentlySlidng = false;
+      this.userCurrentlySliding = false;
       this.handleOverFlowFix(values, handle);
 
       storage.timeRangeStart = calulateCurrentTime(values[0]);
@@ -129,6 +129,7 @@ export const sliderModel = {
             newTime = getLiveTime();
          }
          storage.dateKeeper$.setNewTime(newTime);
+         splSrv.events.exec("onDateTimeChangeTriggerEvents");
       }
 
       this.currentHandle = 2;

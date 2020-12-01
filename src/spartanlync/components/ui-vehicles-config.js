@@ -3,10 +3,10 @@ import React, { Component, Fragment } from "react";
 import ReactTooltip from "react-tooltip";
 import splSrv from "../services";
 import splCfg from "../config";
-import { apiConfig } from "../../dataStore/api-config";
 import { INITSplSensorDataTools, splSensorDataParser } from "../services/sensor-data-tools";
 import { fetchVehSensorDataAsync, fetchVehFaultsAndIgnitionAsync } from "../services/api/temptrac-tpms/utils";
-import { INITGeotabTpmsTemptracLib } from "../services/api/temptrac-tpms";
+import { liveButtonModel } from "../../components/controls/live-button-model/live-button-model";
+
 
 /**
  * Renders a SpartanLync Sensor Data Button / Content window
@@ -35,6 +35,7 @@ export class SplSensorDataTypesButton extends Component {
       this.vehId = this.props.id;
       this.vehName = this.props.name.trim();
       this.faultAlertEventHandlerId = null;
+      this.dateTimeChangedEventHandlerId = null;
       this.sdataCache = null;
 
       this.noSensorsFoundOnThisVehicle = false;
@@ -79,15 +80,8 @@ export class SplSensorDataTypesButton extends Component {
    init() {
       const me = this;
 
-      // Init SpartanLync sensor data services / tools
-      me.goLib = INITGeotabTpmsTemptracLib(
-         apiConfig.api,
-         splSrv.sensorSearchRetryRangeInDays,
-         splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds,
-         splSrv.faultSearchRetryRangeInDays,
-         splSrv.faultSearchTimeRangeForRepeatSearchesInSeconds
-      );
-      me.sdataTools = new INITSplSensorDataTools(me.goLib);
+      // Init SpartanLync sensor data searches in Veh Config Panel
+      me.sdataTools = new INITSplSensorDataTools(splSrv.goLibCreatorFunc);
       me.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
       me.sdataTools.setSensorDataNotFoundMsg(splSrv.sensorDataNotFoundMsg);
       me.sdataTools.setVehComponents(splSrv.vehCompTr.toEn);
@@ -249,8 +243,8 @@ export class SplSensorDataTypesButton extends Component {
             loading: true
          });
 
-         //Splunk for sensor data
-         me.sdataTools.resetCache();
+         // Splunk for sensor data
+         me.sdataTools.resetCache(me.vehId);
          me.sdataTools.fetchCachedSensorData(me.vehId, me.vehName)
             .then(sensorData => {
                splHtmlOut = splSensorDataParser.generateSensorDataHtml(sensorData, me.vehId, me.sdataTools);
@@ -258,14 +252,24 @@ export class SplSensorDataTypesButton extends Component {
                // Start sensor data update task
                me.startContentRefresh();
 
+               // IF LIVE,
                // Register Handler for showing timely possible changes to vehicle sensor data content,
                // instead of waiting for the sensor data update task
                me.faultAlertEventHandlerId = splSrv.events.register("onFaultAlert", (vehId) => {
-                  if (vehId === me.vehId) {
+                  if (vehId === me.vehId && !liveButtonModel.getToDateOverride()) {
                      setTimeout(() => {
                         me.updateSensorDataContent(); // After a 1 second delay, refresh sensor data content using new fault data
                      }, 1000);
                   }
+               }, false);
+
+               // On a Date/Time change
+               // Flush vehicle cache and fetch new sensor data
+               me.dateTimeChangedEventHandlerId = splSrv.events.register("onDateTimeChanged", () => {
+                  me.sdataTools.resetCache(me.vehId);
+                  setTimeout(() => {
+                     me.updateSensorDataContent(); // After a 1 second delay, refresh sensor data content using new date/time
+                  }, 500);
                }, false);
             })
             .catch(reason => {
@@ -292,8 +296,12 @@ export class SplSensorDataTypesButton extends Component {
       manageSensorDataContentUI.cleanup(me.vehId);
       me.stopContentRefresh();
       me.setState({ html: "" });
+
       splSrv.events.delete("onFaultAlert", me.faultAlertEventHandlerId);
       me.faultAlertEventHandlerId = null;
+
+      splSrv.events.delete("onDateTimeChanged", me.dateTimeChangedEventHandlerId);
+      me.dateTimeChangedEventHandlerId = null;
    }
 
    /**
@@ -365,7 +373,6 @@ export class SplSensorDataTypesButton extends Component {
          clearInterval(me.faultMonitoringTimerHandle);
       }
    }
-
 
    /**
     * Renders Temptrac or TPMS button for UI

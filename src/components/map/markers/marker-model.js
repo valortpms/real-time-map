@@ -119,6 +119,7 @@ export const deviceMarkerModel = {
    currentLayers: undefined,
    timeChanged: false,
 
+   // eslint-disable-next-line no-unused-vars
    periodChangedUpdate(currentPeriod) {
       this.popupModel.resetAnimation();
       this.popupModel.setTransitionAnimation();
@@ -178,15 +179,18 @@ export const deviceMarkerModel = {
 
          this.speed = this.deviceData[currentSecond].speed;
          this.setCurrentDateTime(currentSecond);
-         this.moveToLatLng(realLatLng);
+
+         // LMIT.2020.11.16 - Allow user to freely navigate map while popups are open
+         //this.moveToLatLng(realLatLng);
 
          const nextLatLng = getInterpolatedLatLng(currentSecond + 1000, this.deviceData, this.dateTimeIndex);
          this.setHeading(realLatLng, nextLatLng);
-
       }
       else {
          interpolatedLatLng = getInterpolatedLatLng(currentSecond, this.deviceData, this.dateTimeIndex);
-         this.moveToLatLng(interpolatedLatLng);
+
+         // LMIT.2020.11.16 - Allow user to freely navigate map while popups are open
+         //this.moveToLatLng(interpolatedLatLng);
       }
 
       return [realLatLng, interpolatedLatLng];
@@ -283,7 +287,6 @@ export const deviceMarkerModel = {
    },
 
    moveToLatLng(newLatlng) {
-      return false; // LMIT.2020.11.16 - Allow user to freely navigate map while popups are open
       if (!newLatlng) {
          return false;
       }
@@ -352,7 +355,6 @@ export const deviceMarkerModel = {
 
    veryifyDateTimeIndex() {
       if (this.orderedDateTimes[this.dateTimeIndex] != this.prevRealDateTime) {
-         // console.log('Index mismatch!', this.dateTimeIndex, this.prevRealDateTime, this.orderedDateTimes);
          this.dateTimeIndex = this.orderedDateTimes.indexOf(this.prevRealDateTime);
       }
    },

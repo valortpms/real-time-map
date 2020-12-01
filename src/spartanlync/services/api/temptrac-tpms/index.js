@@ -98,6 +98,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
 
          _fromDate: null,
          _toDate: null,
+         _toDateOverride: null,
 
          _fromFaultDate: null,
          _toFaultDate: null,
@@ -127,12 +128,15 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
          *
          * @return {array} Array of Sensor objects, sorted by time from oldest to newest
          */
-         getData: function (devId, devComp, callback, firstTimeCallOverride) {
+         getData: function (devId, devComp, callback, firstTimeCallOverride, toDateOverride) {
             if (devId.toString().trim() === "" || typeof callback === "undefined" || typeof callback !== "function") {
                return;
             }
             if (typeof firstTimeCallOverride !== "undefined" && firstTimeCallOverride !== null) {
                me._apiFirstTimeCall = firstTimeCallOverride;
+            }
+            if (typeof toDateOverride !== "undefined" && toDateOverride !== null) {
+               me._toDateOverride = toDateOverride;
             }
             me._devId = devId;
             me._devSelectedComp = devComp;
@@ -512,7 +516,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
 
          _setDateRangeAndInvokeCall: function () {
             let vehComps = "";
-            me._toDate = moment().utc().format();
+            me._toDate = me._toDateOverride ? moment.unix(me._toDateOverride).utc().format() : moment().utc().format();
 
             // First call, search for data over last few days
             if (me._apiFirstTimeCall) {
@@ -520,17 +524,27 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                // If retry limit is reached without sensor data, send a failure response to callback func
                if (me._apiCallRetryCount === me._timeSearchRetryRangeInDays.length) {
                   me._apiCallRetryCount = 0;
+                  me._toDateOverride = null;
                   me._sDataCallback(null);
                   return;
                }
 
                // Iterate date range array USING _apiCallRetryCount until a successful API response
                me._fromDate = moment().utc().subtract(me._timeSearchRetryRangeInDays[me._apiCallRetryCount], "day").format();
+               if (me._toDateOverride) {
+                  // Calculate FROM using user-supplied UNIX timestamp instead of NOW
+                  me._fromDate = moment.unix(me._toDateOverride).utc().subtract(me._timeSearchRetryRangeInDays[me._apiCallRetryCount], "day").format();
+               }
             }
             // Repeat call, search over the last few minutes
             else {
                me._fromDate = moment().utc().subtract(me._timeRangeForRepeatSearchesInSeconds, "seconds").format();
+               if (me._toDateOverride) {
+                  // Calculate FROM using user-supplied UNIX timestamp instead of NOW
+                  me._fromDate = moment.unix(me._toDateOverride).utc().subtract(me._timeRangeForRepeatSearchesInSeconds, "seconds").format();
+               }
             }
+
             // Search for all Vehicle componenents, if a specific component not specified
             vehComps = me._devSelectedComp ? me._devSelectedComp : me._devComponents.ids;
 
@@ -654,6 +668,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
 
                            // Repeat calls will fails with "No Results" found. No Retry. Return "No Results" response to callback
                            me._apiCallRetryCount = 0;
+                           me._toDateOverride = null;
                            me._sDataCallback(null);
                            return;
                         }
@@ -695,6 +710,12 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                         const compdata = JSON.parse(JSON.stringify(sdata[me._devSelectedComp]));
                         compdata.vehId = me._devId;
                         compdata.vehCfg = me._devConfig;
+
+                        // If toDate override supplied in parameters, return toDate property in result data
+                        if (compdata && me._toDateOverride) {
+                           compdata.toDate = me._toDateOverride;
+                        }
+                        me._toDateOverride = null;
                         me._sDataCallback(compdata);
                         return;
                      }

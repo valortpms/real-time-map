@@ -14,6 +14,7 @@ window.splmap.lang.en = {
   "sensor_search_busy_msg":                        "BUSY",
   "sensor_search_busy_getting_data_msg":           "Getting Data",
   "sensor_search_last_reading":                    "Last Reading",
+  "sensor_search_back_in_time":                    "Travelling Back In Time",
   "sensor_search_sensor_timestamp":                "Sensor Timestamp",
   "sensor_search_switchto_spltools_instruction":   "View In SpartanLync Tools",
   "sensor_search_status_data_msg":                 "Status Data",

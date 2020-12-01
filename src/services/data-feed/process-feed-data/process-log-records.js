@@ -1,6 +1,6 @@
 import { logRecordsData } from "../../../dataStore/map-data";
 import { createObjectKeyIfNotExist, insertIntoOrderedArray } from "../../../utils/helper";
-import { createDeviceMarker } from "../../../components/map/markers";
+import { createDeviceMarker } from "../../../components/map/markers/marker-model";
 
 export function processLogRecords(data) {
    data.map(processDeviceData)

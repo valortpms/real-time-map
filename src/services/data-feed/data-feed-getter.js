@@ -5,7 +5,7 @@ import { initPaths } from "../../components/map/paths";
 import { resetTransitionAnimation, getDayPerentage } from "../../utils/helper";
 import { configStorage } from "../../dataStore/database/config-storage";
 import { markerList } from "../../dataStore/map-data";
-import { processFeedData } from "./process-feed-data";
+import { processFeedData } from "./process-feed-data/process-feed-data";
 import { apiConfig } from "../../dataStore/api-config";
 import { showSnackBar } from "../../components/snackbar/snackbar";
 import { progressBar } from "../../components/progress-bar/progress-indicator";

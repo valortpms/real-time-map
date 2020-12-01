@@ -1,6 +1,6 @@
 import storage from "../dataStore";
-import { markerList } from "../dataStore/map-data";
 import splSrv from "../spartanlync/services";
+import { markerList } from "../dataStore/map-data";
 
 export function createObjectKeyIfNotExist(obj, key) {
    if (!obj.hasOwnProperty(key)) {
@@ -63,15 +63,24 @@ export function checkIfLive(dateTime) {
    if (!checkSameDay(date, new Date())) {
       return false;
    }
+   const liveTime = getLiveTime();
+   const difference = date.getTime() - liveTime;
 
-   const difference = date.getTime() - getLiveTime();
    if (difference < 0) {
-      return false;
+      // Correct for variances of a 30 seconds or less, by reseting the CurrentTime clock
+      // Note: Variance happens when Javascript processing halts causing the datekeeper timer clock to fall behind
+      if (difference < -30000) {
+         return false;
+      }
+      else {
+         splSrv.events.exec("onUpdateCurrentSecond", liveTime);
+         storage.dateKeeper$.setNewTime(liveTime);
+         return true;
+      }
    }
    if (difference > 0) {
       return difference;
    }
-
    return true;
 }
 

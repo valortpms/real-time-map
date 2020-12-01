@@ -1,7 +1,7 @@
 import storage from "../../../dataStore";
+import splSrv from "../../../spartanlync/services";
 import { getLiveTime } from "../../../utils/helper";
 import { showSnackBar } from "../../snackbar/snackbar";
-import splSrv from "../../../spartanlync/services";
 
 export const dateTimeModel = {
 
@@ -39,6 +39,7 @@ export const dateTimeModel = {
          applyBtn.addEventListener("click", this.onApplyBtnClicked.bind(this));
       }
       storage.dateKeeper$.subscribe(this.updateCurrentSecond.bind(this));
+      splSrv.events.register("onUpdateCurrentSecond", (timestamp) => this.updateCurrentSecond(timestamp));
    },
 
    setDefaultDateValue() {
@@ -84,6 +85,11 @@ export const dateTimeModel = {
 
    applyAndUpdate(newTime, disableTimeControls) {
       if (typeof disableTimeControls !== "undefined" && disableTimeControls) {
+
+         // Note which map popups were open, and re-open after dateTime update
+         splSrv.events.exec("onMapDateChangeResetReOpenPopups", newTime);
+
+         // Disable UI while Map is reset to new date/time, then enable UI after Map date/time update
          this.disableTimeControls();
          splSrv.events.register("onDateUpdate", () => this.enableTimeControls());
       }
@@ -206,6 +212,8 @@ export const dateTimeModel = {
          }
          this.applyAndUpdate(newTime);
       }
+
+      splSrv.events.exec("onDateTimeChangeTriggerEvents");
    },
 
    checkDateInFuture(selectedTime) {

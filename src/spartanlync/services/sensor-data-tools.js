@@ -5,11 +5,12 @@ import splSrv from ".";
 import { renderToString } from "react-dom/server";
 import { Html5Entities } from "html-entities";
 import { fetchVehSensorDataAsync } from "../services/api/temptrac-tpms/utils";
+import { liveButtonModel } from "../../components/controls/live-button-model/live-button-model";
 
 /**
  *  Manage / Generate cached Vehicle Sensor data for UI
  */
-export const INITSplSensorDataTools = function (goLib, cache) {
+export const INITSplSensorDataTools = function (goLibCreatorFunc) {
 
    /**
     *  Private Variables
@@ -17,8 +18,9 @@ export const INITSplSensorDataTools = function (goLib, cache) {
    this._sensorDataLifetime = 180;                 // (Default: 180 seconds) Afer this period, cached data is refreshed from API (in seconds)
    this._sensorSearchInProgressResponse = "BUSY";  // Do not allow simultaneous searches on the same vehicle
 
-   this._goLib = null;
-   this._cache = null;
+   this._goLibCreatorFunc = null;
+   this._goLibVeh = {};
+   this._cache = {};
 
    this._sensorDataNotFoundMsg = "";
    this._vehComponents = {};
@@ -33,16 +35,17 @@ export const INITSplSensorDataTools = function (goLib, cache) {
     */
    this.fetchCachedSensorData = function (vehId, vehName) {
       const me = this;
+      if (typeof me._cache[vehId] === "undefined") {
+         me._cache[vehId] = {
+            searching: false,
+            firstTime: true,
+            noSensorDataFound: false,
+            expiry: moment().utc().add(me._sensorDataLifetime, "seconds").unix(),
+            data: null
+         };
+         me._goLibVeh[vehId] = me._goLibCreatorFunc(); // Create TEMPTRAC-TPMS library object vehicle instance
+      }
       return new Promise((resolve, reject) => {
-         if (typeof me._cache[vehId] === "undefined") {
-            me._cache[vehId] = {
-               searching: false,
-               firstTime: true,
-               noSensorDataFound: false,
-               expiry: moment().utc().add(me._sensorDataLifetime, "seconds").unix(),
-               data: null
-            };
-         }
          // Do not allow simultaneous searches on the same vehicle
          if (me._cache[vehId].searching) {
             reject(me._sensorSearchInProgressResponse);
@@ -54,7 +57,7 @@ export const INITSplSensorDataTools = function (goLib, cache) {
             // On first-time search of a vehicle
             // In Geotab library, reset the Sensor Search Parameters to a new Vehicle configuration
             if (me._cache[vehId].data === null) {
-               me._goLib.resetAsFirstTime();
+               me._goLibVeh[vehId].resetAsFirstTime();
             }
 
             // DEBUG TEMP
@@ -326,20 +329,24 @@ export const INITSplSensorDataTools = function (goLib, cache) {
    };
 
    /**
-    * Clear the Sensor data cache of all vehicles
-    * IF a SEARCH OPERATION is NOT occuring
+    * Delete cache for vehicle
+    * If busy, recursively keep checking until free, then delete
     *
-    *  @returns boolean
+    *  @returns void
     */
-   this.resetCache = function () {
+   this.resetCache = function (vehId) {
       const me = this;
-      for (const vehId in me._cache) {
+      if (typeof vehId !== "undefined" && vehId !== null &&
+         typeof me._cache !== null &&
+         typeof me._cache === "object" &&
+         typeof me._cache[vehId] !== "undefined") {
          if (me._cache[vehId].searching) {
-            return false;
+            setTimeout(() => me.resetCache(vehId), 100);
+         }
+         else {
+            delete me._cache[vehId];
          }
       }
-      me._cache = {};
-      return true;
    };
 
    /**
@@ -350,7 +357,7 @@ export const INITSplSensorDataTools = function (goLib, cache) {
    this._fetchData = function (vehId) {
       const me = this;
       return new Promise((resolve, reject) => {
-         me._goLib.getData(vehId, "", function (sensorData) {
+         me._goLibVeh[vehId].getData(vehId, "", function (sensorData) {
             if (sensorData === null) {
                reject(me._sensorDataNotFoundMsg);
             }
@@ -367,6 +374,13 @@ export const INITSplSensorDataTools = function (goLib, cache) {
                      vehCfg: sensorData.vehCfg,
                      vehId: sensorData.vehId,
                   };
+
+                  // If toDate override supplied in parameters, return toDate property in result data
+                  if (typeof sensorData.toDate !== "undefined") {
+                     data.toDate = sensorData.toDate;
+                  }
+
+                  // Search & Assemble vehicle component data
                   data[vehCompFound] = {
                      temptrac: sensorData.temptrac,
                      tpmspress: sensorData.tpmspress,
@@ -395,7 +409,7 @@ export const INITSplSensorDataTools = function (goLib, cache) {
                      });
                }
             }
-         }, typeof me._cache[vehId].firstTime !== "undefined" ? me._cache[vehId].firstTime : null);
+         }, typeof me._cache[vehId].firstTime !== "undefined" ? me._cache[vehId].firstTime : null, liveButtonModel.getToDateOverride());
       });
    };
 
@@ -503,19 +517,13 @@ export const INITSplSensorDataTools = function (goLib, cache) {
     *
     *  @returns void
     */
-   this._configure = function (goLib, cache) {
-      if (goLib && typeof goLib === "object") {
-         this._goLib = goLib;
-      }
-      if (typeof cache !== "undefined" && cache && typeof goLib === "object") {
-         this._cache = cache;
-      }
-      else {
-         this._cache = {};
+   this._configure = function (goLibCreatorFunc) {
+      if (goLibCreatorFunc && typeof goLibCreatorFunc === "function") {
+         this._goLibCreatorFunc = goLibCreatorFunc;
       }
    };
 
-   this._configure(goLib, cache);
+   this._configure(goLibCreatorFunc);
 };
 
 
@@ -539,6 +547,8 @@ export const splSensorDataParser = {
       const data = me.do(sdata, !sdataToolsLib.getFirstTime(vehId));
       const lastReadingLabel = splmap.tr("sensor_search_last_reading");
       const splToolsSwitchTooltip = splmap.tr("sensor_search_switchto_spltools_instruction");
+      const timeWarpHtml = typeof sdata.toDate !== "undefined" ? "<strong>" + splmap.tr("sensor_search_back_in_time") + "</strong>" : "";
+      const timeWarpClass = typeof sdata.toDate !== "undefined" ? "time-warp" : "";
       let headerTopHtml = "";
       let headerHtml = "";
       let contentHtml = "";
@@ -571,7 +581,7 @@ export const splSensorDataParser = {
       return htmlEntities.decode(
          renderToString((
             <Fragment>
-               <div className="splTable">
+               <div className={`splTable ${timeWarpClass}`}>
                   <div className="splTableRow pointer" data-tip={`${splToolsSwitchTooltip}`} data-for="splTooltip" myclick={`navigateToSplTools('${data.vehId}','${data.vehName}')`}>
                      {`${headerTopHtml}`}
                   </div>
@@ -580,7 +590,7 @@ export const splSensorDataParser = {
                   </div>
                   {`${contentHtml}`}
                   <div className="splTableRow footer">
-                     <div className="splTableCell"><label>{`${lastReadingLabel}`}:</label>{`${data.lastReadTimestamp}`}</div>
+                     <div className="splTableCell"><label>{`${lastReadingLabel}`}:</label>{`${timeWarpHtml}`}{`${data.lastReadTimestamp}`}</div>
                   </div>
                </div>
                <script type="text/javascript">
@@ -721,67 +731,69 @@ export const splSensorDataParser = {
       data.foundTpmsPressSensors = false;
       compIds.map(compId => {
 
-         // Merge in cached Fault/Alert data into sensor data, for Vehicle component
-         splSrv.cache.getFaultData(cloneData.vehId).forEach(faultObj => {
+         // IF LIVE, Merge in cached Fault/Alert data into sensor data, for Vehicle component
+         if (!liveButtonModel.getToDateOverride()) {
+            splSrv.cache.getFaultData(cloneData.vehId).forEach(faultObj => {
 
-            if (typeof faultObj.alert !== "undefined" &&
-               typeof faultObj.alert.type !== "undefined" &&
-               typeof faultObj.occurredOnLatestIgnition !== "undefined" &&
-               typeof faultObj.loc !== "undefined" &&
-               Array.isArray(faultObj.loc) && faultObj.loc.length &&
-               faultObj.occurredOnLatestIgnition &&
-               (faultObj.alert.type === "Tire Pressure Fault" || faultObj.alert.type === "Tire Temperature Fault")
-            ) {
-               faultObj.loc.forEach(locObj => {
+               if (typeof faultObj.alert !== "undefined" &&
+                  typeof faultObj.alert.type !== "undefined" &&
+                  typeof faultObj.occurredOnLatestIgnition !== "undefined" &&
+                  typeof faultObj.loc !== "undefined" &&
+                  Array.isArray(faultObj.loc) && faultObj.loc.length &&
+                  faultObj.occurredOnLatestIgnition &&
+                  (faultObj.alert.type === "Tire Pressure Fault" || faultObj.alert.type === "Tire Temperature Fault")
+               ) {
+                  faultObj.loc.forEach(locObj => {
 
-                  // TPMS Pressure Alerts
-                  if (typeof locObj.vehComp !== "undefined" &&
-                     typeof cloneData[compId].tpmspress !== "undefined" &&
-                     faultObj.alert.type === "Tire Pressure Fault" &&
-                     locObj.vehComp === compId) {
+                     // TPMS Pressure Alerts
+                     if (typeof locObj.vehComp !== "undefined" &&
+                        typeof cloneData[compId].tpmspress !== "undefined" &&
+                        faultObj.alert.type === "Tire Pressure Fault" &&
+                        locObj.vehComp === compId) {
 
-                     const locId = "tirepress_axle" + locObj.axle + "tire" + locObj.tire;
-                     if (typeof cloneData[compId].tpmspress[locId] !== "undefined") {
-                        if (typeof cloneData[compId].tpmspress[locId].alert === "undefined" || (
-                           typeof cloneData[compId].tpmspress[locId].alert !== "undefined" &&
-                           faultObj.time > cloneData[compId].tpmspress[locId].alert.time)) {
-                           cloneData[compId].tpmspress[locId].alert = {
-                              time: faultObj.time,
-                              class: "alert-" + faultObj.alert.color.toLowerCase(),
-                              html:
-                                 "<p class='spl-vehicle-alert-tooltip-header'>" + splmap.tr("alert_header") + ":</p>" +
-                                 splmap.tr(faultObj.alert.trId) + "<br />( " + splmap.tr("alert_tire_pressure_fault") + " )<br />" +
-                                 "@" + splSrv.convertUnixToTzHuman(faultObj.time) + "<p>"
-                           };
+                        const locId = "tirepress_axle" + locObj.axle + "tire" + locObj.tire;
+                        if (typeof cloneData[compId].tpmspress[locId] !== "undefined") {
+                           if (typeof cloneData[compId].tpmspress[locId].alert === "undefined" || (
+                              typeof cloneData[compId].tpmspress[locId].alert !== "undefined" &&
+                              faultObj.time > cloneData[compId].tpmspress[locId].alert.time)) {
+                              cloneData[compId].tpmspress[locId].alert = {
+                                 time: faultObj.time,
+                                 class: "alert-" + faultObj.alert.color.toLowerCase(),
+                                 html:
+                                    "<p class='spl-vehicle-alert-tooltip-header'>" + splmap.tr("alert_header") + ":</p>" +
+                                    splmap.tr(faultObj.alert.trId) + "<br />( " + splmap.tr("alert_tire_pressure_fault") + " )<br />" +
+                                    "@" + splSrv.convertUnixToTzHuman(faultObj.time) + "<p>"
+                              };
+                           }
                         }
                      }
-                  }
 
-                  // TPMS Temperature Alerts
-                  if (typeof locObj.vehComp !== "undefined" &&
-                     typeof cloneData[compId].tpmstemp !== "undefined" &&
-                     faultObj.alert.type === "Tire Temperature Fault" &&
-                     locObj.vehComp === compId) {
+                     // TPMS Temperature Alerts
+                     if (typeof locObj.vehComp !== "undefined" &&
+                        typeof cloneData[compId].tpmstemp !== "undefined" &&
+                        faultObj.alert.type === "Tire Temperature Fault" &&
+                        locObj.vehComp === compId) {
 
-                     const locId = "tiretemp_axle" + locObj.axle + "tire" + locObj.tire;
-                     if (typeof cloneData[compId].tpmstemp[locId] !== "undefined") {
-                        if (typeof cloneData[compId].tpmstemp[locId].alert === "undefined" || (
-                           typeof cloneData[compId].tpmstemp[locId].alert !== "undefined" &&
-                           faultObj.time > cloneData[compId].tpmstemp[locId].alert.time)) {
-                           cloneData[compId].tpmstemp[locId].alert = {
-                              time: faultObj.time,
-                              class: "alert-" + faultObj.alert.color.toLowerCase(),
-                              html:
-                                 "<p class='spl-vehicle-alert-tooltip-header'>" + splmap.tr("alert_header") + ":</p>" +
-                                 splmap.tr(faultObj.alert.trId) + "<br />( " + splmap.tr("alert_tire_temperature_fault") + " )<br />" +
-                                 "@" + splSrv.convertUnixToTzHuman(faultObj.time) + "<p>"
-                           };
+                        const locId = "tiretemp_axle" + locObj.axle + "tire" + locObj.tire;
+                        if (typeof cloneData[compId].tpmstemp[locId] !== "undefined") {
+                           if (typeof cloneData[compId].tpmstemp[locId].alert === "undefined" || (
+                              typeof cloneData[compId].tpmstemp[locId].alert !== "undefined" &&
+                              faultObj.time > cloneData[compId].tpmstemp[locId].alert.time)) {
+                              cloneData[compId].tpmstemp[locId].alert = {
+                                 time: faultObj.time,
+                                 class: "alert-" + faultObj.alert.color.toLowerCase(),
+                                 html:
+                                    "<p class='spl-vehicle-alert-tooltip-header'>" + splmap.tr("alert_header") + ":</p>" +
+                                    splmap.tr(faultObj.alert.trId) + "<br />( " + splmap.tr("alert_tire_temperature_fault") + " )<br />" +
+                                    "@" + splSrv.convertUnixToTzHuman(faultObj.time) + "<p>"
+                              };
+                           }
                         }
                      }
-                  }
-               });
-            }
-         });
+                  });
+               }
+            });
+         }
 
          data[compId] = {};
          if (Object.keys(cloneData[compId].temptrac).length) {

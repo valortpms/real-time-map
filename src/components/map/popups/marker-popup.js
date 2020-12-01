@@ -1,5 +1,6 @@
 import L from "leaflet";
 import storage from "../../../dataStore";
+import splSrv from "../../../spartanlync/services";
 import { devicesPropertyData } from "../../../dataStore/map-data";
 import { splSensorsOnMap } from "../../../spartanlync/components/ui-maps";
 
@@ -60,7 +61,11 @@ export function initMarkerPopup(deviceMarker) {
    });
 
    mapMarker.on("popupclose", () => {
+
+      // Reset popup UI for first-time use on future openings
       splSensorsOnMap.resetVehCache(deviceID);
+
+      // Reset popup content
       popup.setContent(
          filterMarkerButton(deviceID) +
          "<strong class='loading'>" +

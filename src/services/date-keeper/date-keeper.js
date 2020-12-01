@@ -148,7 +148,6 @@ export const dateKeeper = {
    },
 
    setNewTime(newTimeInput) {
-
       this.newTime = Math.round(newTimeInput / 1000) * 1000;
 
       if (this.newTime < storage.dayStart.getTime() || this.newTime > storage.dayEnd.getTime()) {

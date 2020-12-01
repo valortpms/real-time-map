@@ -1,6 +1,6 @@
 import storage from "../../../dataStore/index";
-import { checkIfLive, getLiveTime } from "../../../utils/helper";
 import splSrv from "../../../spartanlync/services";
+import { checkIfLive, getLiveTime } from "../../../utils/helper";
 
 export const liveButtonModel = {
    liveDot: undefined,
@@ -20,7 +20,6 @@ export const liveButtonModel = {
 
    monitorLiveBtnStatus(currentSecond) {
       const timeAhead = checkIfLive(currentSecond);
-
       if (timeAhead) {
          if (timeAhead > 1800) {
             this.islive = false;
@@ -63,10 +62,27 @@ export const liveButtonModel = {
    goToLive() {
       if (!this.islive) {
          const liveTime = new Date(getLiveTime());
+
+         // Note which map popups were open, and re-open after GoLIVE dateTime update
+         splSrv.events.exec("onMapDateChangeResetReOpenPopups", liveTime);
+
          this.islive = true;
          this.setLiveBackground();
          storage.dateKeeper$.period = 1000;
          storage.dateKeeper$.setNewTime(liveTime);
       }
+   },
+
+   /**
+   *  If status is NOT LIVE, override the temptrac-tpms library _toDate with user-defined UNIX CurrentTime
+   *
+   *  @returns {int} Override with UNIX Timestamp or NULL if not override
+   */
+   getToDateOverride() {
+      const currentTimeUnix = storage.currentTime / 1000;
+      if (!this.islive) {
+         return currentTimeUnix;
+      }
+      return null;
    }
 };

@@ -3,6 +3,7 @@ import React from "react";
 import splSrv from "../..";
 import { INITGeotabTpmsTemptracLib } from "../temptrac-tpms";
 import { apiConfig } from "../../../../dataStore/api-config";
+import { liveButtonModel } from "../../../../components/controls/live-button-model/live-button-model";
 
 /**
 *  Asynchronously Fetch Temptrac and TPMS sensor data
@@ -26,7 +27,7 @@ export function fetchVehSensorDataAsync(vehId, vehComp, firstTimeCallOverride) {
          } else {
             resolve(sensorData);
          }
-      }, overrideFirstTimeCall);
+      }, overrideFirstTimeCall, liveButtonModel.getToDateOverride());
    });
 };
 

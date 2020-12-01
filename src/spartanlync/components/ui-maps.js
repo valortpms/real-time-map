@@ -1,7 +1,10 @@
 // eslint-disable-next-line no-unused-vars
 import React, { Fragment } from "react";
 import splSrv from "../services";
+import storage from "../../dataStore";
 import { splSensorDataParser } from "../services/sensor-data-tools";
+import { markerList } from "../../dataStore/map-data";
+//import { dateKeeper } from "../../services/date-keeper/date-keeper";
 
 /**
  *  Manage the Vehicle Sensor Data shown on Map
@@ -17,6 +20,8 @@ export const splSensorsOnMap = {
       return new Promise((resolve, reject) => {
          splSrv.sdataTools.fetchCachedSensorData(vehId, vehName)
             .then((sensorData) => {
+
+               // The first time map sensor data popup opens, send content to popup by creating first-time flag
                if (vehId && splSrv.sdataTools._cache !== null &&
                   typeof splSrv.sdataTools._cache[vehId] !== "undefined" &&
                   typeof splSrv.sdataTools._cache[vehId].popupOpenForFirstTime === "undefined") {
@@ -50,7 +55,7 @@ export const splSensorsOnMap = {
    },
 
    /**
-    * Reset state of a vehicle cache
+    * Reset state of cache for vehicle
     *
     *  @returns void
     */
@@ -63,5 +68,106 @@ export const splSensorsOnMap = {
          splSrv.sdataTools._cache[vehId].expiry = 0;
          splSrv.sdataTools._cache[vehId].popupOpenForFirstTime = true;
       }
+   },
+
+   /**
+    * Delete cache for a vehicle
+    *
+    *  @returns void
+    */
+   clearVehCache: function (vehId) {
+      splSrv.sdataTools.resetCache(vehId);
    }
+};
+
+/**
+ *  Map Date/Time Utilities
+ */
+export const splMapUtil = {
+
+   // Note which map popups were open, and re-open after Map reset due to map dateTime update on a date change
+   // If only the time change but not the date, simply throw a dateTime change event
+   reOpenPopupsAfterMapDateChangeReset(newTimeStamp) {
+      const me = this;
+      const reOpenPopupsArr = [];
+      const hasDateChanged = me.hasDateChanged(newTimeStamp);
+
+      // Date + Time changed
+      if (hasDateChanged) {
+         if (Object.keys(markerList).length) {
+            Object.values(markerList).forEach(marker => {
+               const markerPopup = marker.mapMarker._popup;
+               if (typeof markerPopup.isOpen === "function" && markerPopup.isOpen()) {
+                  reOpenPopupsArr.push(marker.deviceID);
+               }
+            });
+         }
+
+         // reOpen marker popups, 1sec apart after a short delay for the map to load
+         splSrv.events.register("onDateUpdate", () => {
+            me.throwOnDateTimeChangedEvent();
+
+            if (reOpenPopupsArr.length) {
+               setTimeout(() => {
+                  me.reOpenPopups(reOpenPopupsArr);
+               }, 2000);
+            }
+         });
+      }
+      // Time changed
+      else {
+         me.throwOnDateTimeChangedEvent();
+      }
+   },
+
+   hasDateChanged(timeStamp) {
+      const newTime = Math.round(timeStamp / 1000) * 1000;
+      if (newTime < storage.dayStart.getTime() || newTime > storage.dayEnd.getTime()) {
+         return true;
+      }
+      return false;
+   },
+
+   reOpenPopups(vehIds, idx) {
+      const me = this;
+      const i = typeof idx === "undefined" ? 0 : idx;
+      const vehId = vehIds[i];
+      let vehIdFound = false;
+
+      if (i < vehIds.length) {
+         setTimeout(() => {
+            const vehName = typeof storage.selectedDevices[vehId] !== "undefined" ? storage.selectedDevices[vehId].name : vehId;
+            for (const marker of Object.values(markerList)) {
+               if (marker.deviceID === vehId && typeof marker.mapMarker !== "undefined") {
+                  console.log(`--- reOpenPopupsAfterMapDateChangeReset() After date change on map; Opening popup for vehicle [ ${vehName} ]`);
+                  marker.mapMarker.fire("click");
+                  vehIdFound = true;
+               }
+            }
+            if (!vehIdFound) {
+               console.log(`--- reOpenPopupsAfterMapDateChangeReset() After date change on map; Could not re-open previously open popup for vehicle [ ${vehName} ]. Possibly GPS data not found.`);
+            }
+            me.reOpenPopups(vehIds, i + 1);
+         }, 1000);
+      }
+   },
+
+   throwOnDateTimeChangedEvent() {
+      const me = this;
+
+      // Clear sensor data cache when datetime changes
+      me.clearAllMapMarkerVehCaches();
+
+      // Throw onDateTimeChanged Event, for sensor data UI refresh on map and veh config panel
+      splSrv.events.exec("onDateTimeChanged");
+   },
+
+   clearAllMapMarkerVehCaches() {
+      for (const marker of Object.values(markerList)) {
+         const vehId = marker.deviceID;
+         if (vehId) {
+            splSensorsOnMap.clearVehCache(vehId); // Clear stale sensor data
+         }
+      }
+   },
 };

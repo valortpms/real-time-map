@@ -7,6 +7,7 @@ import { INITSplSensorDataTools } from "./sensor-data-tools";
 import { userInfo, apiConfig } from "../../dataStore/api-config";
 import { showMsg, splToolsHelper } from "../components/ui-components";
 import { makeAPICall } from "../../services/api/helpers";
+import { splMapUtil } from "../components/ui-maps";
 
 /**
  *
@@ -32,16 +33,17 @@ const SpartanLyncServiceTools = {
       splSrv._api = new INITSplAPI(splCfg.splApiUrl);
       splSrv.sessionMgr = new INITSplSessionMgr(splSrv._api, splSrv._credentials);
       splSrv.sessionMgr.enableDebug(splCfg.appEnv === "dev" && splSrv.debug ? true : false);
-      splSrv.goLib = INITGeotabTpmsTemptracLib(
-         apiConfig.api,
-         splSrv.sensorSearchRetryRangeInDays,
-         splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds,
-         splSrv.faultSearchRetryRangeInDays,
-         splSrv.faultSearchTimeRangeForRepeatSearchesInSeconds
-      );
-      splSrv.vehCompDb = splSrv.goLib.getVehComponentDB();
-
-      splSrv.sdataTools = new INITSplSensorDataTools(splSrv.goLib);
+      splSrv.goLibCreatorFunc = () => {
+         return INITGeotabTpmsTemptracLib(
+            apiConfig.api,
+            splSrv.sensorSearchRetryRangeInDays,
+            splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds,
+            splSrv.faultSearchRetryRangeInDays,
+            splSrv.faultSearchTimeRangeForRepeatSearchesInSeconds
+         );
+      };
+      splSrv.vehCompDb = splSrv.goLibCreatorFunc().getVehComponentDB();
+      splSrv.sdataTools = new INITSplSensorDataTools(splSrv.goLibCreatorFunc);
       splSrv.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
       splSrv.sdataTools.setSensorDataNotFoundMsg(splSrv.sensorDataNotFoundMsg);
       splSrv.sdataTools.setVehComponents(splSrv.vehCompTr.toEn);
@@ -70,6 +72,10 @@ const SpartanLyncServiceTools = {
 
       // Initialize root-element media-width Classes
       me.initRootElemWidthClasses.init();
+
+      // Register Handler(s) for dateTime update events
+      splSrv.events.register("onMapDateChangeResetReOpenPopups", (newTimeStamp) => splMapUtil.reOpenPopupsAfterMapDateChangeReset(newTimeStamp), false);
+      splSrv.events.register("onDateTimeChangeTriggerEvents", () => splMapUtil.throwOnDateTimeChangedEvent(), false);
    },
 
    /**

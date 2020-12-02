@@ -29,16 +29,25 @@ export const deviceSearch = {
          createDeviceByNameCall(searchInput),
          createGroupsByNameCall(searchInput)
       ];
+      const selectedDeviceIds = Object.values(storage.selectedDevices).map(vehObj => { return vehObj.id; });
 
       return makeAPIMultiCall(nameSearchMultiCall).then(results => {
          // deviceList = results[0];
-         results[0]
+         const deviceList = results[0];
+
+         // Sort Alphabetically by vehicle name
+         deviceList.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+
+         deviceList
             .map(devObj => {
-               // Exclude historical devices
-               if (devObj.serialNumber !== "000-000-0000") {
+               // Exclude from search results;
+               // - Historical devices
+               // - Vehicles already added to panel
+               if (devObj.serialNumber !== "000-000-0000" && !selectedDeviceIds.includes(devObj.id)) {
                   deviceSearch.saveDeviceDataToCache(devObj);
                }
             });
+
          // groupList = results[1];
          results[1]
             .map(deviceSearch.saveGroupDataToCache);

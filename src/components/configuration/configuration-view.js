@@ -47,6 +47,7 @@ export class ConfigView extends React.Component {
 
       // Register Handler for showing changes to Vehicle Alert Status
       this.setState((state) => {
+
          let vehicleFaultAlertEventHandlerId = typeof state.vehicleFaultAlertEventHandlerId === "undefined" ? null : state.vehicleFaultAlertEventHandlerId;
          if (!vehicleFaultAlertEventHandlerId &&
             typeof state.vehicleDisplayList !== "undefined" && state.vehicleDisplayList !== null &&
@@ -196,22 +197,47 @@ export class ConfigView extends React.Component {
    }
 
    render() {
+
+      // Purge from VehiclesTab Array, any vehicles in the vehicleDisplayList Array
+      const vehicleDisplayListIds = Object.values(this.state.vehicleDisplayList).map(listObj => { return listObj.id; });
+      const newDevicesArr = Object.values(this.state.devices).filter(devObj => {
+         if (!vehicleDisplayListIds.includes(devObj.id)) {
+            return true;
+         }
+      });
+
+      // Purge from StatusTab Array, any statuses in the statusDisplayList Array
+      const statusDisplayListIds = Object.values(this.state.statusDisplayList).map(listObj => { return listObj.id; });
+      const newStatusArr = Object.values(this.state.statuses).filter(statusObj => {
+         if (!statusDisplayListIds.includes(statusObj.id)) {
+            return true;
+         }
+      });
+
+      // Purge from ExceptionsTab Array, any exceptions in the exceptionDisplayList Array
+      const exceptionDisplayListIds = Object.values(this.state.exceptionDisplayList).map(listObj => { return listObj.id; });
+      const newExceptionArr = Object.values(this.state.exceptionsSearchList).filter(exceptionObj => {
+         if (!exceptionDisplayListIds.includes(exceptionObj.id)) {
+            return true;
+         }
+      });
+
       return (
          <div id="RTM-config-view">
             <div id="RTM-config-container">
                <div id="RTM-config-header" className="">
                   <VehiclesTab
-                     devices={this.state.devices}
+                     devices={newDevicesArr}
                      vehicleDisplayList={this.state.vehicleDisplayList}
                      onClick={this.setVehicleList}
                   />
                   <StatusTab
-                     statuses={this.state.statuses}
+                     statuses={newStatusArr}
                      statusDisplayList={this.state.statusDisplayList}
                      onClick={this.setStatusList}
                   />
                   <ExceptionsTab
-                     exceptions={this.state.exceptionsSearchList}
+                     exceptions={newExceptionArr}
                      exceptionDisplayList={this.state.exceptionDisplayList}
                      onClick={this.setExceptionsList}
                   />

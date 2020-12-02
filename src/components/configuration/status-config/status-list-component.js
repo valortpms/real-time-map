@@ -7,7 +7,7 @@ export const StatusListComponent = props => {
       return [];
    }
    // Sort by Vehicle Name
-   props.statusDisplayList.sort((a, b) => (a.name > b.name) ? 1 : -1);
+   props.statusDisplayList.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
 
    const mapPropsToComponent = props.setStatusDisplay;
    const statusList =

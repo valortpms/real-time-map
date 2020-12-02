@@ -4,7 +4,6 @@ import splSrv from "../services";
 import storage from "../../dataStore";
 import { splSensorDataParser } from "../services/sensor-data-tools";
 import { markerList } from "../../dataStore/map-data";
-//import { dateKeeper } from "../../services/date-keeper/date-keeper";
 
 /**
  *  Manage the Vehicle Sensor Data shown on Map

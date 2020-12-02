@@ -7,7 +7,7 @@ export const ExceptionListComponent = props => {
       return [];
    }
    // Sort by Vehicle Name
-   props.exceptionDisplayList.sort((a, b) => (a.name > b.name) ? 1 : -1);
+   props.exceptionDisplayList.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
 
    const mapPropsToComponent = props.setExceptionsDisplay;
    const exceptionList =

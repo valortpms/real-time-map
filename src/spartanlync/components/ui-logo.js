@@ -64,7 +64,7 @@ export class SplLogo extends Component {
                .catch(() => callback(null));
          }
          else {
-            console.log(`--- SplLogo: fetchBuildMetaData(): Failed to load buildMetadata [ ${splSrv.buildMetadataFilename} ]`);
+            console.log(`--- SplLogo: fetchBuildMetaData(): Failed to load SplMap buildMetadata [ ${splSrv.buildMetadataFilename} ] from URL [ ${buildUrl} ]`);
             callback(null);
          }
       });
@@ -116,6 +116,7 @@ export class SplLogo extends Component {
                callback(buildMetaUrl);
                return;
             }
+            console.log("--- SplLogo: getBuildMetaDataUrl() SplMap Add-In Installation not found!");
             callback(null);
          })
          .catch(reason => {

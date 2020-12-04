@@ -7,7 +7,6 @@ import { INITSplSensorDataTools, splSensorDataParser } from "../services/sensor-
 import { fetchVehSensorDataAsync, fetchVehFaultsAndIgnitionAsync } from "../services/api/temptrac-tpms/utils";
 import { liveButtonModel } from "../../components/controls/live-button-model/live-button-model";
 
-
 /**
  * Renders a SpartanLync Sensor Data Button / Content window
  * meant to insert into a Vehicle List Item within Vehicle Configuration Panel
@@ -251,32 +250,34 @@ export class SplSensorDataTypesButton extends Component {
 
                // Start sensor data update task
                me.startContentRefresh();
-
-               // IF LIVE,
-               // Register Handler for showing timely possible changes to vehicle sensor data content,
-               // instead of waiting for the sensor data update task
-               me.faultAlertEventHandlerId = splSrv.events.register("onFaultAlert", (vehId) => {
-                  if (vehId === me.vehId && !liveButtonModel.getToDateOverride()) {
-                     setTimeout(() => {
-                        me.updateSensorDataContent(); // After a 1 second delay, refresh sensor data content using new fault data
-                     }, 1000);
-                  }
-               }, false);
-
-               // On a Date/Time change
-               // Flush vehicle cache and fetch new sensor data
-               me.dateTimeChangedEventHandlerId = splSrv.events.register("onDateTimeChanged", () => {
-                  me.sdataTools.resetCache(me.vehId);
-                  setTimeout(() => {
-                     me.updateSensorDataContent(); // After a 1 second delay, refresh sensor data content using new date/time
-                  }, 500);
-               }, false);
             })
             .catch(reason => {
-               splHtmlOut = reason;
+               splHtmlOut = me.renderSplSensorSearchErrorHtml(reason);
             })
             .finally(() => {
                if (manageSensorDataContentUI.confirmed(me.vehId)) {
+
+                  // IF LIVE,
+                  // Register Handler for showing timely possible changes to vehicle sensor data content,
+                  // instead of waiting for the sensor data update task
+                  me.faultAlertEventHandlerId = splSrv.events.register("onFaultAlert", (vehId) => {
+                     if (vehId === me.vehId && !liveButtonModel.getToDateOverride()) {
+                        setTimeout(() => {
+                           me.updateSensorDataContent(); // After a 1 second delay, refresh sensor data content using new fault data
+                        }, 1000);
+                     }
+                  }, false);
+
+                  // On a Date/Time change
+                  // Flush vehicle cache and fetch new sensor data
+                  me.dateTimeChangedEventHandlerId = splSrv.events.register("onDateTimeChanged", () => {
+                     me.sdataTools.resetCache(me.vehId);
+                     setTimeout(() => {
+                        me.updateSensorDataContent(); // After a 1 second delay, refresh sensor data content using new date/time
+                     }, 500);
+                  }, false);
+
+                  // Render UI
                   me.setState({
                      html: splHtmlOut,
                      loading: false
@@ -317,7 +318,7 @@ export class SplSensorDataTypesButton extends Component {
             splHtmlOut = splSensorDataParser.generateSensorDataHtml(sensorData, me.vehId, me.sdataTools);
          })
          .catch((reason) => {
-            splHtmlOut = reason;
+            splHtmlOut = me.renderSplSensorSearchErrorHtml(reason);
             setTimeout(() => {
                // on Error, close content UI after a short time for user to read the error
                me.onCloseContentHandler();
@@ -385,6 +386,18 @@ export class SplSensorDataTypesButton extends Component {
             {type === "temptrac" ? "TempTrac" : "TPMS"}
          </div>
       );
+   }
+
+   /**
+    * Renders Sensor Data Search Error HTML for UI
+    *
+    *  @returns HTML
+    */
+   renderSplSensorSearchErrorHtml(errorReason) {
+      const getToDateOverride = liveButtonModel.getToDateOverride();
+      const timeWarpClass = getToDateOverride ? "time-warp" : "";
+      const timeWarpLabelHtml = getToDateOverride ? "<span>" + splmap.tr("sensor_search_back_in_time") + "</span>" : "";
+      return `<p class="SPL-popupSensor veh-config error ${timeWarpClass}">${errorReason}${timeWarpLabelHtml} </p>`;
    }
 
    render() {
@@ -472,16 +485,16 @@ export const manageSensorDataContentUI = {
          return false;
       }
       else {
-         if (!me._settings.confirmed) {
-            return false;
-         }
-         else {
+         if (me._settings.confirmed) {
             const oldFunc = me._settings.closeHandler;
             me._settings.veh = vehId;
             me._settings.confirmed = false;
             me._settings.closeHandler = closeFuncHandler;
             oldFunc();
             return true;
+         }
+         else {
+            return false;
          }
       }
    },

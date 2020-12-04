@@ -428,11 +428,38 @@
 }
 
 #RTM-ViewContainer .SPL-popupSensor {
+   position: relative;
    color: gray;
    border: 0;
    margin: 0;
    font-size: 0.8em;
    border-top: 1px solid gray;
+}
+#RTM-ViewContainer .SPL-popupSensor.error {
+   text-align: center;
+   font-weight: bold;
+   padding: 6px 0px 6px 6px;
+}
+#RTM-ViewContainer .SPL-popupSensor.error.veh-config {
+   border-top: 0px;
+}
+#RTM-ViewContainer .SPL-popupSensor.time-warp {
+   background-color: #fad9d9;
+   padding-bottom: 15px;
+}
+#RTM-ViewContainer .SPL-popupSensor.time-warp span {
+   position: absolute;
+   bottom: 3px;
+   right: 5px;
+
+   font-size: 9px;
+   font-weight: bold;
+   line-height: normal;
+   text-align: center;
+
+   -webkit-animation: time-warp-strobe 1.2s ease-in-out infinite alternate;
+   -moz-animation: time-warp-strobe 1.2s ease-in-out infinite alternate;
+   animation: time-warp-strobe 1.2s ease-in-out infinite alternate;
 }
 
 #RTM-ViewContainer .leaflet-popup-content strong {

@@ -1,8 +1,10 @@
 // eslint-disable-next-line no-unused-vars
 import React, { Fragment } from "react";
 import splSrv from "../services";
+import moment from "moment-timezone";
 import storage from "../../dataStore";
 import { splSensorDataParser } from "../services/sensor-data-tools";
+import { liveButtonModel } from "../../components/controls/live-button-model/live-button-model";
 import { markerList } from "../../dataStore/map-data";
 
 /**
@@ -17,39 +19,61 @@ export const splSensorsOnMap = {
     */
    getVehSensorDataDiv: function (vehId, vehName) {
       return new Promise((resolve, reject) => {
-         splSrv.sdataTools.fetchCachedSensorData(vehId, vehName)
-            .then((sensorData) => {
+         let performSensorSearch = true;
+         if (typeof splSrv.sdataTools._cache[vehId] !== "undefined" && splSrv.sdataTools._cache[vehId].noSensorDataFound) {
+            if (typeof splSrv.sdataTools._cache[vehId].noSensorDataFoundExpiry === "undefined") {
+               splSrv.sdataTools._cache[vehId].noSensorDataFoundExpiry = moment().utc().add(splSrv.sensorDataLifetime, "seconds").unix();
+            }
+            if (moment().utc().unix() < splSrv.sdataTools._cache[vehId].noSensorDataFoundExpiry) {
+               performSensorSearch = false;
+            }
+         }
+         if (performSensorSearch) {
+            splSrv.sdataTools.fetchCachedSensorData(vehId, vehName)
+               .then((sensorData) => {
 
-               // The first time map sensor data popup opens, send content to popup by creating first-time flag
-               if (vehId && splSrv.sdataTools._cache !== null &&
-                  typeof splSrv.sdataTools._cache[vehId] !== "undefined" &&
-                  typeof splSrv.sdataTools._cache[vehId].popupOpenForFirstTime === "undefined") {
-                  splSrv.sdataTools._cache[vehId].popupOpenForFirstTime = true;
-               }
+                  // Delete NOSENSORDATAFOUND polling flag on successful receiving data
+                  if (typeof splSrv.sdataTools._cache[vehId].noSensorDataFoundExpiry !== "undefined") {
+                     delete splSrv.sdataTools._cache[vehId].noSensorDataFoundExpiry;
+                  }
 
-               // Fetch sensor data from cache,
-               // if
-               // 1. cached data available
-               // 2. recent search result empty
-               // 3. first time fetching data since vehicle map popup opened
-               //
-               if (typeof sensorData.vehId === "undefined" &&
-                  vehId && splSrv.sdataTools._cache !== null &&
-                  typeof splSrv.sdataTools._cache[vehId] !== "undefined" &&
-                  splSrv.sdataTools._cache[vehId].popupOpenForFirstTime &&
-                  splSrv.sdataTools._cache[vehId].data !== null) {
-                  splSrv.sdataTools._cache[vehId].firstTime = true;
-                  sensorData = splSrv.sdataTools._cache[vehId].data;
-               }
-               splSrv.sdataTools._cache[vehId].popupOpenForFirstTime = false;
+                  // The first time map sensor data popup opens, send content to popup by creating first-time flag
+                  if (vehId && splSrv.sdataTools._cache !== null &&
+                     typeof splSrv.sdataTools._cache[vehId] !== "undefined" &&
+                     typeof splSrv.sdataTools._cache[vehId].popupOpenForFirstTime === "undefined") {
+                     splSrv.sdataTools._cache[vehId].popupOpenForFirstTime = true;
+                  }
 
-               // Render sensor data
-               const splHtml = splSensorDataParser.generateSensorDataHtml(sensorData, vehId, splSrv.sdataTools);
-               resolve(splHtml ? `<p class="SPL-popupSensor"> ${splHtml} </p>` : "");
-            })
-            .catch((reason) => {
-               reject(reason === splSrv.sdataTools.getSensorSearchInProgressResponse ? "" : `<p class="SPL-popupSensor"> ${reason} </p>`);
-            });
+                  // Fetch sensor data from cache,
+                  // if
+                  // 1. cached data available
+                  // 2. recent search result empty
+                  // 3. first time fetching data since vehicle map popup opened
+                  //
+                  if (typeof sensorData.vehId === "undefined" &&
+                     vehId && splSrv.sdataTools._cache !== null &&
+                     typeof splSrv.sdataTools._cache[vehId] !== "undefined" &&
+                     splSrv.sdataTools._cache[vehId].popupOpenForFirstTime &&
+                     splSrv.sdataTools._cache[vehId].data !== null) {
+                     splSrv.sdataTools._cache[vehId].firstTime = true;
+                     sensorData = splSrv.sdataTools._cache[vehId].data;
+                  }
+                  splSrv.sdataTools._cache[vehId].popupOpenForFirstTime = false;
+
+                  // Render sensor data
+                  const splHtml = splSensorDataParser.generateSensorDataHtml(sensorData, vehId, splSrv.sdataTools);
+                  resolve(splHtml ? `<p class="SPL-popupSensor"> ${splHtml} </p>` : "");
+               })
+               .catch((reason) => {
+                  const getToDateOverride = liveButtonModel.getToDateOverride();
+                  const timeWarpClass = getToDateOverride ? "time-warp" : "";
+                  const timeWarpLabelHtml = getToDateOverride ? "<span>" + splmap.tr("sensor_search_back_in_time") + "</span>" : "";
+                  reject(reason === splSrv.sdataTools.getSensorSearchInProgressResponse ? "" : `<p class="SPL-popupSensor error ${timeWarpClass}"> ${reason}${timeWarpLabelHtml} </p>`);
+               });
+         }
+         else {
+            resolve("");
+         }
       });
    },
 

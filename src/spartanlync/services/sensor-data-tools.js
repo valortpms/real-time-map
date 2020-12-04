@@ -357,6 +357,9 @@ export const INITSplSensorDataTools = function (goLibCreatorFunc) {
    this._fetchData = function (vehId) {
       const me = this;
       return new Promise((resolve, reject) => {
+         const toDateOverride = liveButtonModel.getToDateOverride();
+         const firstTimeCallOverride = typeof me._cache[vehId].firstTime !== "undefined" ? me._cache[vehId].firstTime : null;
+
          me._goLibVeh[vehId].getData(vehId, "", function (sensorData) {
             if (sensorData === null) {
                reject(me._sensorDataNotFoundMsg);
@@ -409,7 +412,7 @@ export const INITSplSensorDataTools = function (goLibCreatorFunc) {
                      });
                }
             }
-         }, typeof me._cache[vehId].firstTime !== "undefined" ? me._cache[vehId].firstTime : null, liveButtonModel.getToDateOverride());
+         }, firstTimeCallOverride, toDateOverride);
       });
    };
 

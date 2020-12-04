@@ -1,11 +1,34 @@
 import React, { Component } from "react";
+import splSrv from "../../../spartanlync/services";
 import { diagnosticSearch } from "./status-search";
 
 export class StatusToggleButtons extends React.Component {
+
    constructor(props) {
       super(props);
       this.state = { visibility: true };
       this.toggleVisibility = this.toggleVisibility.bind(this);
+   }
+
+   componentDidMount() {
+      const me = this;
+
+      // On Map data Load, reset state of Show/HideAll button
+      splSrv.events.register("onLoadMapDataCompleted", () => me.setToggleVisibility(), false);
+
+      // On Device Search Save, set visibility of Show/HideAll button
+      splSrv.events.register("onDiagnosticSearchSave", () => me.setToggleVisibility(), false);
+   }
+
+   setToggleVisibility() {
+      const me = this;
+      const visibleDiags = Object.values(diagnosticSearch.displayList).filter(diagObj => { return diagObj.visible; });
+      if (Object.keys(diagnosticSearch.displayList).length && !visibleDiags.length) {
+         me.setState({ visibility: false });
+      }
+      else {
+         me.setState({ visibility: true });
+      }
    }
 
    toggleVisibility() {
@@ -19,8 +42,7 @@ export class StatusToggleButtons extends React.Component {
          <>
             <button
                id="toggleStatus"
-               className={`toggleButton ${
-                  this.state.visibility ? "shown" : "notShown"
+               className={`toggleButton ${this.state.visibility ? "shown" : "notShown"
                   }`}
                data-tip="Toggle All Statuses"
                data-for="splTooltip"

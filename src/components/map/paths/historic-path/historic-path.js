@@ -2,59 +2,69 @@ import L from "leaflet";
 import storage from "../../../../dataStore";
 import layersModel from "../../layers";
 import {
-  getLatLngsForTimeRange
+   getLatLngsForTimeRange
 } from "../../utils/device-data-helpers";
 import {
-  bindDeviceNamePopup
+   bindDeviceNamePopup
 } from "../../popups/path-popups";
+import { colorHexCodes } from "../../../../constants/color-hex-codes";
 
 //create new path, every path must belong to a marker.
 export function initHistoricPath(deviceMarker) {
-  const {
-    deviceID,
-    deviceData,
-  } = deviceMarker;
+   const {
+      deviceID,
+      deviceData,
+   } = deviceMarker;
 
-  const latLngList = getLatLngsForTimeRange(storage.timeRangeStart, storage.currentTime, deviceData);
-  const polyline = L.polyline(latLngList, {
-    smoothFactor: 1,
-    weight: 3,
-    color: "#00AEEF"
-    // className: deviceID + dateTimeStamp
-  });
+   const latLngList = getLatLngsForTimeRange(storage.timeRangeStart, storage.currentTime, deviceData);
+   const polyline = L.polyline(latLngList, {
+      smoothFactor: 1,
+      weight: 3,
+      color: colorHexCodes.spartanLyncRed
+   });
 
-  const historicPathConstructors = {
-    deviceID,
-    deviceData,
-    polyline
-  };
+   const historicPathConstructors = {
+      deviceID,
+      deviceData,
+      polyline
+   };
 
-  const newHistoricPath = {
-    ...historicPathModel,
-    ...historicPathConstructors
-  };
+   const newHistoricPath = {
+      ...historicPathModel,
+      ...historicPathConstructors
+   };
 
-  layersModel.addToAllLayer(polyline);
-  bindDeviceNamePopup(deviceID, polyline);
-  return newHistoricPath;
+   layersModel.addToAllLayer(polyline);
+   bindDeviceNamePopup(deviceID, polyline);
+   return newHistoricPath;
 }
 
 export const historicPathModel = {
-  deviceID: undefined,
-  deviceData: undefined,
-  polyline: undefined,
-  delayedInterval: undefined,
+   deviceID: undefined,
+   deviceData: undefined,
+   polyline: undefined,
+   delayedInterval: undefined,
 
-  timeChangedUpdate(currentSecond) {
-    clearTimeout(this.delayedInterval);
-    this.delayedInterval = null;
-    const latLngs = getLatLngsForTimeRange(storage.timeRangeStart, currentSecond, this.deviceData);
-    this.polyline.setLatLngs(latLngs);
-  },
+   timeChangedUpdate(currentSecond) {
+      clearTimeout(this.delayedInterval);
+      this.delayedInterval = null;
+      const latLngs = getLatLngsForTimeRange(storage.timeRangeStart, currentSecond, this.deviceData);
 
-  updateHistoricPath(currentSecond, realLatLng) {
-    this.delayedInterval = setTimeout(() => {
-      this.polyline.addLatLng(realLatLng);
-    }, storage.dateKeeper$.getPeriod() * 0.75);
-  },
+      if (typeof storage.selectedDevices[this.deviceID] !== "undefined") {
+         //console.log("==== historicPathModel.timeChangedUpdate(" + storage.selectedDevices[this.deviceID].name + ") currentSecond =", currentSecond, "latLngs = ", latLngs);//DEBUG
+      }
+
+      this.polyline.setLatLngs(latLngs);
+   },
+
+   updateHistoricPath(currentSecond, realLatLng) {
+      this.delayedInterval = setTimeout(() => {
+         this.polyline.addLatLng(realLatLng);
+
+         if (typeof storage.selectedDevices[this.deviceID] !== "undefined") {
+            //console.log("==== historicPathModel.updateHistoricPath(" + storage.selectedDevices[this.deviceID].name + ") currentSecond =", currentSecond, "realLatLng = ", realLatLng);//DEBUG
+         }
+
+      }, storage.dateKeeper$.getPeriod() * 0.75);
+   },
 };

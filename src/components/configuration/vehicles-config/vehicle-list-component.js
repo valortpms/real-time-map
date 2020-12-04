@@ -1,7 +1,6 @@
-import React, { Component } from "react";
+import React from "react";
 import { deviceSearch } from "./vehicle-search";
 import { SplSensorDataTypesButton } from "../../../spartanlync/components/ui-vehicles-config";
-import storage from "../../../dataStore";
 import splSrvTools from "../../../spartanlync/services/tools";
 
 export const VehicleListComponent = (props) => {
@@ -36,6 +35,7 @@ export const VehicleListComponent = (props) => {
                )}
                <span
                   id={"RTMnode-" + prop.id}
+                  data-veh-id={prop.id}
                   className={`RTM-ConfigListItem mdc-list-item__text ${prop.alertClass ? prop.alertClass : ""}`}
                   {...(prop.tooltip && {
                      "data-tip": "<div class='spl-vehicle-alert-tooltip'>" + prop.tooltip + "</div>",
@@ -79,7 +79,6 @@ const createDeviceListElement = (id, name, color, flyFunction) => {
             data-tip="Fly to Vehicle on Map"
             data-for="splTooltip"
             onClick={() => {
-               //storage.map.closePopup();
                flyFunction(id);
             }}
          ></span>

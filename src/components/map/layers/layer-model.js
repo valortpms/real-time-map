@@ -4,7 +4,6 @@ import storage from "../../../dataStore";
 const LayerModel = {
    layerList: {
       movingLayer: L.layerGroup(),
-      // pathLayer: L.layerGroup(),
       exceptionLayer: L.layerGroup()
    },
 
@@ -14,7 +13,6 @@ const LayerModel = {
    initLayers() {
       this.layerList.movingLayer.addTo(storage.map);
       this.layerList.stoppedLayer = this.layerList.movingLayer;
-      // this.createLayerControls();
       L.control.scale().addTo(storage.map);
    },
 

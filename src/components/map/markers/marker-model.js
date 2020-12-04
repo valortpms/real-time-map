@@ -29,6 +29,7 @@ import {
 import { calculateDateTimeIndex, createMapMarker } from "./marker-helper";
 
 export function createDeviceMarker(deviceID) {
+   //console.log("==== createDeviceMarker(" + deviceID + ")");//DEBUG
 
    const deviceData = logRecordsData[deviceID];
    const { orderedDateTimes } = deviceData;

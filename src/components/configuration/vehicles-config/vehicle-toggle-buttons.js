@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import splSrv from "../../../spartanlync/services";
 import { deviceSearch } from "./vehicle-search";
 
 export class VehicleToggleButtons extends React.Component {
@@ -6,6 +7,27 @@ export class VehicleToggleButtons extends React.Component {
       super(props);
       this.state = { visibility: true };
       this.toggleVisibility = this.toggleVisibility.bind(this);
+   }
+
+   componentDidMount() {
+      const me = this;
+
+      // On Map data Load, reset state of Show/HideAll button
+      splSrv.events.register("onLoadMapDataCompleted", () => me.setToggleVisibility(), false);
+
+      // On Device Search Save, set visibility of Show/HideAll button
+      splSrv.events.register("onDeviceSearchSave", () => me.setToggleVisibility(), false);
+   }
+
+   setToggleVisibility() {
+      const me = this;
+      const visibleVehs = Object.values(deviceSearch.selectedIDS).filter(vehObj => { return vehObj.visible; });
+      if (Object.keys(deviceSearch.selectedIDS).length && !visibleVehs.length) {
+         me.setState({ visibility: false });
+      }
+      else {
+         me.setState({ visibility: true });
+      }
    }
 
    toggleVisibility() {
@@ -19,8 +41,7 @@ export class VehicleToggleButtons extends React.Component {
          <>
             <button
                id="clearDevices"
-               className={`toggleButton ${
-                  this.state.visibility ? "shown" : "notShown"
+               className={`toggleButton ${this.state.visibility ? "shown" : "notShown"
                   }`}
                data-tip="Toggle All Vehicles/Groups"
                data-for="splTooltip"

@@ -24,6 +24,7 @@
 		"@babel/preset-env": "^7.9.6",
 		"@material/select": "^3.2.0",
 		"@material/slider": "^3.2.0",
+		"Leaflet.MultiOptionsPolyline": "github:hgoebl/Leaflet.MultiOptionsPolyline",
 		"babel-loader": "^8.1.0",
 		"babel-plugin-root-import": "^6.5.0",
 		"babel-preset-env": "^1.7.0",

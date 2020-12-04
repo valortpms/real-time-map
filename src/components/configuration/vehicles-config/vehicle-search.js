@@ -1,10 +1,11 @@
+import storage from "../../../dataStore";
+import layerModel from "../../map/layers";
+import splSrv from "../../../spartanlync/services";
 import { fromEvent } from "rxjs";
 import { map, debounceTime } from "rxjs/operators";
 import { markerList } from "../../../dataStore/map-data";
 import { getDevicesInGroups, createGroupsByNameCall, createDeviceByNameCall, makeAPIMultiCall, getBlobStorage, saveBlobStorage, setBlobStorage } from "../../../services/api/helpers";
 import { showSnackBar } from "../../../components/snackbar/snackbar";
-import storage from "../../../dataStore";
-import layerModel from "../../map/layers";
 
 export const deviceSearch = {
    shown: true,
@@ -66,6 +67,22 @@ export const deviceSearch = {
             deviceSearch.buildDeviceDisplayList(mapPropsToComponent);
          }
       });
+   },
+
+   zoomIntoDevice(id) {
+      const deviceMarker = markerList[id];
+      if (deviceMarker) {
+         const newZoomLevel = Math.max(Math.min(storage.map.getZoom() + 1, 18), 15);
+         if (typeof deviceMarker.currentlatLng === "undefined") {
+            showSnackBar(splmap.tr("error_vehicle_cannot_fly"));
+         }
+         else {
+            storage.map.flyTo(deviceMarker.currentlatLng, newZoomLevel);
+         }
+      }
+      else {
+         showSnackBar(splmap.tr("error_vehicle_no_gps"));
+      }
    },
 
    removeAlerts() {
@@ -149,6 +166,9 @@ export const deviceSearch = {
 
       deviceSearch.applyFilter();
       deviceSearch.buildDeviceDisplayList(mapPropsToComponent);
+
+      // Throw Event for post-Save operations
+      splSrv.events.exec("onDeviceSearchSave");
    },
 
    applyFilter() {
@@ -174,21 +194,6 @@ export const deviceSearch = {
       const selectedDevice = deviceSearch.selectedIDS[id];
       selectedDevice.visible = !selectedDevice.visible;
       deviceSearch.saveConfig(mapPropsToComponent);
-   },
-   zoomIntoDevice(id) {
-      const deviceMarker = markerList[id];
-      if (deviceMarker) {
-         const newZoomLevel = Math.max(Math.min(storage.map.getZoom() + 1, 18), 15);
-         if (typeof deviceMarker.currentlatLng === "undefined") {
-            showSnackBar(splmap.tr("error_vehicle_cannot_fly"));
-         }
-         else {
-            storage.map.flyTo(deviceMarker.currentlatLng, newZoomLevel);
-         }
-      }
-      else {
-         showSnackBar(splmap.tr("error_vehicle_no_gps"));
-      }
    }
 };
 
@@ -200,6 +205,7 @@ export function _getDeviceList(selectedIDs) {
          color,
          visible
       } = data;
+
       if (!visible) {
          return Promise.resolve("done");
       }
@@ -230,29 +236,29 @@ window.addDeviceToFilter = (id, name = "Go Device") => {
 };
 
 export function _applyDeviceFilter(deviceIDS) {
-   // console.log(deviceIDS);
    layerModel.hideAllLayers();
 
    if (deviceIDS.length === 0) {
       layerModel.showLayer("movingLayer");
       return;
    }
-
    const layerName = "Filter";
 
    if (!layerModel.layerList.hasOwnProperty(layerName)) {
       layerModel.createNewLayer(layerName);
    }
-
    layerModel.layerList[layerName].clearLayers();
    layerModel.showLayer(layerName);
 
    deviceIDS.forEach(deviceID => {
       const deviceMarker = markerList[deviceID];
+      //console.log("==== _applyDeviceFilter() layerName =", layerName, "deviceID =", deviceID);//DEBUG
       if (deviceMarker) {
          deviceMarker.setLayer(layerName);
       }
    });
+
+
 }
 
 function openPopup() {

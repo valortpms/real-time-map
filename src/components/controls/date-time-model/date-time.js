@@ -212,7 +212,6 @@ export const dateTimeModel = {
          }
          this.applyAndUpdate(newTime);
       }
-
       splSrv.events.exec("onDateTimeChangeTriggerEvents");
    },
 

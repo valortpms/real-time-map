@@ -40,8 +40,20 @@ export const liveButtonModel = {
             this.islive = false;
             this.setNotLiveBackground();
          }
-
          return false;
+      }
+   },
+
+   goToLive() {
+      if (!this.islive) {
+         const liveTime = new Date(getLiveTime());
+         this.islive = true;
+         this.setLiveBackground();
+         storage.dateKeeper$.period = 1000;
+         storage.dateKeeper$.setNewTime(liveTime);
+
+         // Note which map popups were open, and re-open after GoLIVE dateTime update
+         splSrv.events.exec("onMapDateChangeResetReOpenPopups", liveTime);
       }
    },
 
@@ -57,20 +69,6 @@ export const liveButtonModel = {
       playbackSpeedDropdown[0].removeAttribute("disabled");
       playbackSpeedDropdown[0].classList.remove("disabledDropdown");
       this.liveButton.classList.remove("set-live");
-   },
-
-   goToLive() {
-      if (!this.islive) {
-         const liveTime = new Date(getLiveTime());
-
-         // Note which map popups were open, and re-open after GoLIVE dateTime update
-         splSrv.events.exec("onMapDateChangeResetReOpenPopups", liveTime);
-
-         this.islive = true;
-         this.setLiveBackground();
-         storage.dateKeeper$.period = 1000;
-         storage.dateKeeper$.setNewTime(liveTime);
-      }
    },
 
    /**

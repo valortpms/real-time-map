@@ -79,39 +79,43 @@ if [ "${OLDVERSION}" != "${VERSION}" ]; then
 fi
 rm -rf "${ADDIN_CONFIG_JSON_FILE_PATH}.bak"
 
-# SplGeotabMap - Generate new DEV/LIVE DIST
-echo -ne "\n---- SplGeotabMap -   Copying from  [ ${SPLGEOTABMAP_SRC_ROOT_PATH} ]\n\t\t\t\tto  [ ${SPLGEOTABMAP_DIST_ROOT_PATH} ]\n\t\t\t\tand [ ${SPLGEOTABMAP_DIST_DEV_ROOT_PATH} ]\n"
-rm -rf ${SPLGEOTABMAP_DIST_ROOT_PATH}
-rm -rf ${SPLGEOTABMAP_DIST_DEV_ROOT_PATH}
-mkdir ${SPLGEOTABMAP_DIST_ROOT_PATH}
-mkdir ${SPLGEOTABMAP_DIST_DEV_ROOT_PATH}
-for path in $SPLGEOTABMAP_SRC_BUILD_PATHS; do cp -a $SPLGEOTABMAP_SRC_ROOT_PATH/$path ${SPLGEOTABMAP_DIST_ROOT_PATH}; done
-for path in $SPLGEOTABMAP_SRC_BUILD_PATHS; do cp -a $SPLGEOTABMAP_SRC_ROOT_PATH/$path ${SPLGEOTABMAP_DIST_DEV_ROOT_PATH}; done
+# Perform SplGeotabMap Operations only if files have changed
+if [ ! -z "${SPLGEOTABMAP_CHANGED_FILES}" ]
+then
+   # SplGeotabMap - Generate new DEV/LIVE DIST
+   echo -ne "\n---- SplGeotabMap -   Copying from  [ ${SPLGEOTABMAP_SRC_ROOT_PATH} ]\n\t\t\t\tto  [ ${SPLGEOTABMAP_DIST_ROOT_PATH} ]\n\t\t\t\tand [ ${SPLGEOTABMAP_DIST_DEV_ROOT_PATH} ]\n"
+   rm -rf ${SPLGEOTABMAP_DIST_ROOT_PATH}
+   rm -rf ${SPLGEOTABMAP_DIST_DEV_ROOT_PATH}
+   mkdir ${SPLGEOTABMAP_DIST_ROOT_PATH}
+   mkdir ${SPLGEOTABMAP_DIST_DEV_ROOT_PATH}
+   for path in $SPLGEOTABMAP_SRC_BUILD_PATHS; do cp -a $SPLGEOTABMAP_SRC_ROOT_PATH/$path ${SPLGEOTABMAP_DIST_ROOT_PATH}; done
+   for path in $SPLGEOTABMAP_SRC_BUILD_PATHS; do cp -a $SPLGEOTABMAP_SRC_ROOT_PATH/$path ${SPLGEOTABMAP_DIST_DEV_ROOT_PATH}; done
 
-# SplGeotabMap - Minify JS files in LIVE DIST + Update LIVE DIST INDEX file with minified file names
-echo -ne "\n---- SplGeotabMap - Minify files in [ ${SPLGEOTABMAP_DIST_ROOT_PATH} ]\n\tand\n     Updating INDEX file [ ${SPLGEOTABMAP_DIST_INDEX_PATH} ]\n"
-cd ${SPLGEOTABMAP_DIST_ROOT_PATH}
-for SCRIPT_FILE in $SPLGEOTABMAP_SRC_MIN_FILES;
-do
-   SCRIPT_PATH="${SPLGEOTABMAP_DIST_ROOT_PATH}/${SCRIPT_FILE}"
-   SCRIPT_MIN_PATH="${SCRIPT_PATH/\.js/\.min.js}"
-   SCRIPT_FILE_ESCAPED=${SCRIPT_FILE/\//\\/}
-   SCRIPT_MIN_FILE=${SCRIPT_FILE/\.js/\.min.js}
-   SCRIPT_MIN_FILE_ESCAPED=${SCRIPT_MIN_FILE/\//\\/}
+   # SplGeotabMap - Minify JS files in LIVE DIST + Update LIVE DIST INDEX file with minified file names
+   echo -ne "\n---- SplGeotabMap - Minify files in [ ${SPLGEOTABMAP_DIST_ROOT_PATH} ]\n\tand\n     Updating INDEX file [ ${SPLGEOTABMAP_DIST_INDEX_PATH} ]\n"
+   cd ${SPLGEOTABMAP_DIST_ROOT_PATH}
+   for SCRIPT_FILE in $SPLGEOTABMAP_SRC_MIN_FILES;
+   do
+      SCRIPT_PATH="${SPLGEOTABMAP_DIST_ROOT_PATH}/${SCRIPT_FILE}"
+      SCRIPT_MIN_PATH="${SCRIPT_PATH/\.js/\.min.js}"
+      SCRIPT_FILE_ESCAPED=${SCRIPT_FILE/\//\\/}
+      SCRIPT_MIN_FILE=${SCRIPT_FILE/\.js/\.min.js}
+      SCRIPT_MIN_FILE_ESCAPED=${SCRIPT_MIN_FILE/\//\\/}
 
-   if [ ! -f ${SCRIPT_FILE} ]; then echo -ne "\n**** ERROR!! DIST FILE NOT FOUND!! **** [ ${SCRIPT_PATH} ]\n\n"; exit 1; fi
-   printf "\t- %-25s=>\t%-25s\n" ${SCRIPT_FILE} ${SCRIPT_FILE/\.js/\.min.js}
+      if [ ! -f ${SCRIPT_FILE} ]; then echo -ne "\n**** ERROR!! DIST FILE NOT FOUND!! **** [ ${SCRIPT_PATH} ]\n\n"; exit 1; fi
+      printf "\t- %-25s=>\t%-25s\n" ${SCRIPT_FILE} ${SCRIPT_FILE/\.js/\.min.js}
 
-   # Minify JS
-   ERROR=$( { ${MINIFY_CMD} --compress --mangle --output ${SCRIPT_MIN_PATH} -- ${SCRIPT_FILE}; } 2>&1 )
-   EXIT_CODE=$?
-   if [[ $EXIT_CODE != 0 ]]; then echo -ne "\n**** CURL ERROR!! ****...Try Again!\n${ERROR}\n\n"; exit $EXIT_CODE; fi
-   rm -f $SCRIPT_FILE
+      # Minify JS
+      ERROR=$( { ${MINIFY_CMD} --compress --mangle --output ${SCRIPT_MIN_PATH} -- ${SCRIPT_FILE}; } 2>&1 )
+      EXIT_CODE=$?
+      if [[ $EXIT_CODE != 0 ]]; then echo -ne "\n**** CURL ERROR!! ****...Try Again!\n${ERROR}\n\n"; exit $EXIT_CODE; fi
+      rm -f $SCRIPT_FILE
 
-   # Update INDEX
-   sed -i "s/${SCRIPT_FILE_ESCAPED}/${SCRIPT_MIN_FILE_ESCAPED}/g" ${SPLGEOTABMAP_DIST_INDEX_PATH}
-done
-cd ${CURRENT_DIR}
+      # Update INDEX
+      sed -i "s/${SCRIPT_FILE_ESCAPED}/${SCRIPT_MIN_FILE_ESCAPED}/g" ${SPLGEOTABMAP_DIST_INDEX_PATH}
+   done
+   cd ${CURRENT_DIR}
+fi
 
 # Create SplMap Build Metadata File
 echo -ne "\n---- Creating SplMap Build Metadata File [ ${BUILD_UNIX_TIMESTAMP_PATH} ] ---\n"

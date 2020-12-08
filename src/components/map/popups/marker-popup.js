@@ -24,6 +24,7 @@ export function initMarkerPopup(deviceMarker) {
       minWidth: 190,
       autoClose: false,
       closeOnClick: false,
+      autoPan: false,
       className: "markerPopups",
       offset: [0, 0]
    });

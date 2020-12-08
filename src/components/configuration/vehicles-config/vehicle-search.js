@@ -23,6 +23,11 @@ export const deviceSearch = {
       debouncedInput.subscribe((searchInput) => {
          deviceSearch.buildSearchList(searchInput, mapPropsToComponent);
       });
+
+      //DEBUG - TEST - PLEASE DELETE ON PROD
+      document.getElementById("speedLabel").addEventListener("click", function () {
+
+      });
    },
 
    buildSearchList(searchInput, mapPropsToComponent) {

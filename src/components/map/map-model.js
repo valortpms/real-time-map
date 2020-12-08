@@ -5,6 +5,7 @@ import { userAPI } from "../../services/api/user-api";
 import { userInfo } from "../../dataStore/api-config";
 import { resetTransitionAnimation } from "../../utils/helper";
 import { showSnackBar } from "../snackbar/snackbar";
+import { pausePlayModel } from "../controls/play-pause/play-pause-model";
 
 let MAPBOX;
 ACCESS_TOKEN: false;
@@ -30,6 +31,11 @@ export const mapModel = {
          splSrv.events.exec("onFlyingComplete");
       });
       storage.map.on("zoom", resetTransitionAnimation);
+
+      // On SPACE keyboard key, Toggle Pause/Play control panel operation
+      storage.map.on("load", () => {
+         document.addEventListener("keyup", pausePlayModel.togglePausePlayKeyboardHandler.bind(pausePlayModel));
+      });
 
       // set to default location if user does not allow locating.
       const defautLocation = [43.515391, -79.684085];

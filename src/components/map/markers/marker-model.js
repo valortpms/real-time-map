@@ -29,7 +29,6 @@ import {
 import { calculateDateTimeIndex, createMapMarker } from "./marker-helper";
 
 export function createDeviceMarker(deviceID) {
-   //console.log("==== createDeviceMarker(" + deviceID + ")");//DEBUG
 
    const deviceData = logRecordsData[deviceID];
    const { orderedDateTimes } = deviceData;
@@ -52,33 +51,33 @@ export function createDeviceMarker(deviceID) {
       mapMarker
    };
 
-   const newDeviceMaker = {
+   const newDeviceMarker = {
       ...deviceMarkerModel,
       ...constructors
    };
 
-   initDeviceMarkerProperties(newDeviceMaker);
-   newDeviceMaker.setHeading(currentLatLng, nextLatLng);
+   initDeviceMarkerProperties(newDeviceMarker);
+   newDeviceMarker.setHeading(currentLatLng, nextLatLng);
 
-   markerList[deviceID] = newDeviceMaker;
-   return newDeviceMaker;
+   markerList[deviceID] = newDeviceMarker;
+   return newDeviceMarker;
 };
 
-export function initDeviceMarkerProperties(newDeviceMaker) {
+export function initDeviceMarkerProperties(newDeviceMarker) {
 
-   initDeviceExceptions(newDeviceMaker);
-   initPaths(newDeviceMaker);
-   initMarkerPopup(newDeviceMaker);
-   initFilterLayer(newDeviceMaker);
+   initDeviceExceptions(newDeviceMarker);
+   initPaths(newDeviceMarker);
+   initMarkerPopup(newDeviceMarker);
+   initFilterLayer(newDeviceMarker);
 
-   newDeviceMaker.setToMoving();
-   newDeviceMaker.setTransitionAnimation();
-   newDeviceMaker.subscribeToDateUpdater();
+   newDeviceMarker.setToMoving();
+   newDeviceMarker.setTransitionAnimation();
+   newDeviceMarker.subscribeToDateUpdater();
 }
 
-export function initDeviceExceptions(newDeviceMaker) {
+export function initDeviceExceptions(newDeviceMarker) {
 
-   const { deviceID } = newDeviceMaker;
+   const { deviceID } = newDeviceMarker;
    if (storage.exceptionsEnabled) {
 
       if (!exceptionEventsData.hasOwnProperty(deviceID)) {
@@ -88,18 +87,18 @@ export function initDeviceExceptions(newDeviceMaker) {
       }
 
       const exceptionData = exceptionEventsData[deviceID];
-      newDeviceMaker.exceptionData = exceptionData;
-      newDeviceMaker.initExceptions();
+      newDeviceMarker.exceptionData = exceptionData;
+      newDeviceMarker.initExceptions();
    }
 }
 
 export const filterLayerName = "Filter";
-export function initFilterLayer(newDeviceMaker) {
+export function initFilterLayer(newDeviceMarker) {
 
-   const { deviceID } = newDeviceMaker;
+   const { deviceID } = newDeviceMarker;
    if (storage.selectedDevices.hasOwnProperty(deviceID)) {
-      newDeviceMaker.setLayer(filterLayerName);
-      newDeviceMaker.currentLayers.push(filterLayerName);
+      newDeviceMarker.setLayer(filterLayerName);
+      newDeviceMarker.currentLayers.push(filterLayerName);
    }
 }
 
@@ -158,7 +157,6 @@ export const deviceMarkerModel = {
       }
 
       const [realLatLng, interpolatedLatLng] = this.updateLatLng(currentSecond);
-
       const currentLatLng = realLatLng ? realLatLng : interpolatedLatLng;
 
       if (storage.exceptionsEnabled) {
@@ -181,17 +179,14 @@ export const deviceMarkerModel = {
          this.speed = this.deviceData[currentSecond].speed;
          this.setCurrentDateTime(currentSecond);
 
-         // LMIT.2020.11.16 - Allow user to freely navigate map while popups are open
-         //this.moveToLatLng(realLatLng);
+         this.moveToLatLng(realLatLng);
 
          const nextLatLng = getInterpolatedLatLng(currentSecond + 1000, this.deviceData, this.dateTimeIndex);
          this.setHeading(realLatLng, nextLatLng);
       }
       else {
          interpolatedLatLng = getInterpolatedLatLng(currentSecond, this.deviceData, this.dateTimeIndex);
-
-         // LMIT.2020.11.16 - Allow user to freely navigate map while popups are open
-         //this.moveToLatLng(interpolatedLatLng);
+         this.moveToLatLng(interpolatedLatLng);
       }
 
       return [realLatLng, interpolatedLatLng];

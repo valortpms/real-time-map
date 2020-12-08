@@ -21,6 +21,13 @@ export const pausePlayModel = {
       }
    },
 
+   togglePausePlayKeyboardHandler(evt) {
+      evt.preventDefault();
+      if (evt.keyCode === 32) {
+         this.togglePausePlay(); // On SPACE key, Toggle Pause/Play
+      }
+   },
+
    togglePausePlay() {
       if (this.playing) {
          this.setToPause();

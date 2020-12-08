@@ -31,6 +31,7 @@ export function createMapMarker(latLng) {
          iconSize: [18, 18],
          iconAnchor: [9, 9]
       }),
+      autoPan: false,
       riseOnHover: true,
       rotationOrigin: "center center"
    });

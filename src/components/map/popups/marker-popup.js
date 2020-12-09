@@ -1,14 +1,13 @@
 import L from "leaflet";
 import storage from "../../../dataStore";
-import splSrv from "../../../spartanlync/services";
 import { devicesPropertyData } from "../../../dataStore/map-data";
 import { splSensorsOnMap } from "../../../spartanlync/components/ui-maps";
-
 import {
    retrieveStatusInfo,
    filterMarkerButton,
    getStrongText,
-   getGroupsForDeviceID
+   getGroupsForDeviceID,
+   closeAllTooltips
 } from "./popup-helpers";
 
 const secondsBetweenUpdate = 3;
@@ -77,6 +76,7 @@ export function initMarkerPopup(deviceMarker) {
 
    mapMarker.on("mouseover", () => {
       mapMarker.unbindTooltip();
+      closeAllTooltips();
       if (!mapMarker.isPopupOpen()) {
          if (typeof storage.selectedDevices[deviceID] !== "undefined") {
             const devObj = storage.selectedDevices[deviceID];

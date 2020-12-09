@@ -1,16 +1,13 @@
 import L from "leaflet";
 import storage from "../../../../dataStore";
 import layersModel from "../../layers";
-import {
-   getLatLngsForTimeRange
-} from "../../utils/device-data-helpers";
-import {
-   bindDeviceNamePopup
-} from "../../popups/path-popups";
+import { getLatLngsForTimeRange } from "../../utils/device-data-helpers";
+import { bindDeviceNamePopup } from "../../popups/path-popups";
 import { colorHexCodes } from "../../../../constants/color-hex-codes";
 
 //create new path, every path must belong to a marker.
 export function initHistoricPath(deviceMarker) {
+
    const {
       deviceID,
       deviceData,
@@ -20,7 +17,7 @@ export function initHistoricPath(deviceMarker) {
    const polyline = L.polyline(latLngList, {
       smoothFactor: 1,
       weight: 3,
-      color: colorHexCodes.spartanLyncRed
+      color: colorHexCodes.geotabBlue //DEBUG spartanLyncRed
    });
 
    const historicPathConstructors = {

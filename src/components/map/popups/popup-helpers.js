@@ -232,3 +232,11 @@ export function getGroupsForDeviceID(deviceID) {
 
    return groupsDataPromise;
 }
+
+export function closeAllTooltips() {
+   storage.map.eachLayer(function (layer) {
+      if (layer.options.pane === "tooltipPane") {
+         layer.removeFrom(storage.map);
+      }
+   });
+}

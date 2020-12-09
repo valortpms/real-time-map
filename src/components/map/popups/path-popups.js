@@ -1,29 +1,46 @@
-
 import storage from "../../../dataStore";
-
+import { getExceptionColor } from "../../../utils/helper";
 import {
    retrieveDeviceInfo,
    filterMarkerButton,
    getStrongText,
    escapeQuotes,
-   getDefaultPopupText
+   getDefaultPopupText,
+   closeAllTooltips
 } from "./popup-helpers";
-
-import { getExceptionColor } from "../../../utils/helper";
 
 export function bindDeviceNamePopup(deviceID, polyline) {
 
-   polyline.bindPopup(getDefaultPopupText(deviceID));
+   polyline.bindPopup(getDefaultPopupText(deviceID), {
+      autoClose: false,
+   }).on("popupopen", (evt) => {
+      evt.popup.bringToFront();
+      evt.popup._container.addEventListener("click", function () {
+         evt.popup.bringToFront();
+      });
+   });
 
    polyline.on("popupopen", () => {
       retrieveDeviceInfo(deviceID).then(deviceData => {
          const { name } = deviceData;
          const cleanedName = escapeQuotes(name);
          const popupText = filterMarkerButton(deviceID, cleanedName) + getStrongText(cleanedName);
-
          polyline.setPopupContent(popupText);
       });
    });
+
+   polyline.on("mouseover", (evt) => {
+      polyline.unbindTooltip();
+      closeAllTooltips();
+      retrieveDeviceInfo(deviceID).then(deviceData => {
+         const { name } = deviceData;
+         const cleanedName = escapeQuotes(name);
+         polyline.bindTooltip(cleanedName, {
+            "className": "spl-map-vehicle-tooltip",
+         }).openTooltip(evt.latlng);
+      });
+   });
+
 }
 
 export function bindExceptionPopUp(exceptionPolyLine) {

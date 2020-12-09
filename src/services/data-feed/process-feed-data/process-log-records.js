@@ -27,6 +27,7 @@ export function processDeviceData(device) {
       speed,
    } = device;
 
+   // If vehicle is not selected in vehicle config panel, do not save device data to memory
    if (!isVehSelected(deviceID)) {
       return deviceID;
    }

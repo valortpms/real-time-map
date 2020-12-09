@@ -68,7 +68,8 @@ window.splmap.lang.fr = {
 
   "error_spltools_notfound":                       "Le SpartanLync Tools Add-In n&apos;a pas &eacute;t&eacute; trouv&eacute;. Veuillez installer et ex&eacute;cuter pour activer les fonctionnalit&eacute;s SpartanLync Temptrac / TPMS",
   "error_vehicle_cannot_fly":                      "D&eacute;sol&eacute;, impossible de voler vers ce v&eacute;hicule ... veuillez r&eacute;essayer dans quelques minutes",
-  "error_vehicle_no_gps":                          "D&eacute;sol&eacute;, pas de donn&eacute;es GPS actuelles pour ce v&eacute;hicule.",
+  "error_vehicle_no_gps":                          "D&eacute;sol&eacute;, pas de donn&eacute;es GPS actuelles pour ce v&eacute;hicule",
+  "error_vehicle_no_gps_click_show_btn_to_view":   "Désolé, pas de données GPS actuelles pour ce véhicule. Cliquez sur le bouton Masquer / Afficher pour afficher le véhicule sur la carte",
   "error_server_unavailable":                      "Le serveur n&apos;est pas disponible, veuillez r&eacute;essayer plus tard.",
   "error_not_enough_privs_to_switch":              "Erreur SplMap: votre compte MyGeotab ne dispose pas des autorisations suffisantes pour permettre le passage &agrave; SpartanLync Tools... Veuillez ex&eacute;cuter SpartanLync Tools manuellement.",
   "error_invalid_addin_array":                     "Tableau AddIn / customerPages non valide",

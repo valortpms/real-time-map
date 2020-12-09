@@ -68,7 +68,8 @@ window.splmap.lang.es = {
 
   "error_spltools_notfound":                       "No se encontr&oacute; SpartanLync Tools Add-In. Instale y ejecute para habilitar las funciones de SpartanLync Temptrac / TPMS",
   "error_vehicle_cannot_fly":                      "Lo sentimos, no puedo volar hasta este veh&iacute;culo ... Vuelve a intentarlo en unos minutos.",
-  "error_vehicle_no_gps":                          "Lo sentimos, no hay datos de GPS del d&iacute;a actual para este veh&iacute;culo.",
+  "error_vehicle_no_gps":                          "Lo sentimos, no hay datos de GPS del d&iacute;a actual para este veh&iacute;culo",
+  "error_vehicle_no_gps_click_show_btn_to_view":   "Lo sentimos, no hay datos de GPS del día actual para este vehículo. Haga clic en el botón Ocultar / Mostrar para ver el vehículo en el mapa",
   "error_server_unavailable":                      "El servidor no est&aacute; disponible, int&eacute;ntelo de nuevo m&aacute;s tarde.",
   "error_not_enough_privs_to_switch":              "Error de SplMap: su cuenta MyGeotab no tiene permisos suficientes para permitir el cambio a SpartanLync Tools... Ejecute SpartanLync Tools manualmente.",
   "error_invalid_addin_array":                     "AddIn / customerPages Array no v&aacute;lido",

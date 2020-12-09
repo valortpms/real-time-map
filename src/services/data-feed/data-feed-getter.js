@@ -27,7 +27,7 @@ export const feedDataGetter = {
 
    removeFeedType(typeName) {
       this.feedTypes = this.feedTypes.filter(value =>
-         value != typeName
+         value !== typeName
       );
    },
 
@@ -41,7 +41,6 @@ export const feedDataGetter = {
       return new Promise((resolve, reject) => {
          makeAPIMultiCall(multiCallList).then(result => {
             this.updateFeedVersions(result);
-            // console.warn('42', result);
             resolve(result);
          });
 
@@ -68,7 +67,6 @@ export const feedDataGetter = {
             "search": this.search
          }
       ]);
-
       return APICalls;
    },
 };
@@ -110,8 +108,8 @@ export function initHistoricalFeedRunner() {
 
       const historicalFeedDataCache = getFeedDataCache(indexedDBVal);
 
-      storage.HistoricalFeedDataGetter = { ...feedDataGetter };
-      storage.HistoricalFeedDataGetter.init(
+      storage.historicalFeedDataGetter = { ...feedDataGetter };
+      storage.historicalFeedDataGetter.init(
          new Date(historicalFeedDataCache.timeStamp),
          apiConfig.feedTypesToGet,
          apiConfig.resultsLimit
@@ -133,19 +131,19 @@ export function getFeedDataCache(indexedDBVal = null) {
 
    }
    else {
-
-      const historicalFeedDataCache = apiConfig.feedTypesToGet.map(type => {
-         return {
-            data: [],
-            // toVersion: 0,
-            type
-         };
-      });
-
-      historicalFeedDataCache.timeStamp = storage.dayStart.getTime();
-
-      return historicalFeedDataCache;
+      return createEmptyHistoricalFeedDataCache();
    }
+}
+
+export function createEmptyHistoricalFeedDataCache(timestamp) {
+   const historicalFeedDataCache = apiConfig.feedTypesToGet.map(type => {
+      return {
+         data: [],
+         type
+      };
+   });
+   historicalFeedDataCache.timeStamp = typeof timestamp !== "undefined" ? timestamp : storage.dayStart.getTime();
+   return historicalFeedDataCache;
 }
 
 export function timeWithinToday(time) {
@@ -153,7 +151,7 @@ export function timeWithinToday(time) {
 }
 
 export function historicalFeedRunner(historicalFeedDataList) {
-   storage.HistoricalFeedDataGetter.getFeedData()
+   storage.historicalFeedDataGetter.getFeedData()
       .then(feedData => {
          feedData.forEach((element, index) => historicalFeedDataList[index].data = [
             ...historicalFeedDataList[index].data,
@@ -174,7 +172,6 @@ export function historicalFeedRunner(historicalFeedDataList) {
             }
 
             historicalFeedRunner(historicalFeedDataList);
-
          }
          else {
 
@@ -184,14 +181,20 @@ export function historicalFeedRunner(historicalFeedDataList) {
             historicalFeedDataComplete(historicalFeedDataList);
          }
       })
-      .catch(reason => console.warn("HistoricalFeedDataGetter Canceled.", reason));
+      .catch(reason => {
+         console.warn("historicalFeedDataGetter Canceled.", reason);
+
+         // Execute post-historicalFeedData operations
+         splSrv.events.exec("onLoadMapDataCompleted");
+      });
 }
 
 export function historicalFeedDataComplete(historicalFeedDataList) {
+
    processFeedData(historicalFeedDataList);
    resetTransitionAnimation();
 
-   delete storage.HistoricalFeedDataGetter;
+   delete storage.historicalFeedDataGetter;
    storage.historicalComplete = true;
 
    Object.values(markerList)
@@ -201,7 +204,8 @@ export function historicalFeedDataComplete(historicalFeedDataList) {
          initPaths(marker);
       });
 
-   if (storage.isLiveDay) {
+   if (storage.isLiveDay && !storage.doNotSaveLiveHistoricalData) {
+      storage.historicalDataArchive = null;
       configStorage.setItem("historicalFeedDataList", historicalFeedDataList).then(() => {
          console.log("Updated historical data saved!");
 
@@ -219,6 +223,16 @@ export function historicalFeedDataComplete(historicalFeedDataList) {
          splSrv.events.exec("onLoadMapDataCompleted");
       });
    }
+   // Archive non-live historical data
+   else {
+      if (!storage.isLiveDay && !storage.historicalDataArchive) {
+         console.log("Historical data from the past now Archived!");
+         storage.historicalDataArchive = historicalFeedDataList;
+      }
+
+      // Execute post-historicalFeedData operations
+      splSrv.events.exec("onLoadMapDataCompleted");
+   }
 
    progressBar.update(1);
    showSnackBar(splmap.tr("map_fetching_historical_data_completed"));
@@ -226,3 +240,99 @@ export function historicalFeedDataComplete(historicalFeedDataList) {
    storage.dateKeeper$.update();
    resetTransitionAnimation();
 }
+
+export const fetchDataForVeh = {
+
+   _historicalVehRetrievalQueue: [],
+   _historicalFeedDataCache: null,
+
+   getHistorical(vehId) {
+      const me = this;
+
+      if (!vehId) { return; }
+
+      // If busy fetching, add Veh to fetch queue
+      if (!me._historicalVehRetrievalQueue.includes(vehId)) {
+         me._historicalVehRetrievalQueue.push(vehId);
+      }
+      // Queue up VehId requests and process them all at once
+      setTimeout(function () {
+         if (!storage.historicalFeedDataGetter && !me._historicalFeedDataCache && me._historicalVehRetrievalQueue.length) {
+            me._processVehHistoricalQueue();
+         }
+      }, 100);
+   },
+
+   _processVehHistoricalQueue() {
+      const me = this;
+      const vehIdsToActivate = JSON.parse(JSON.stringify(me._historicalVehRetrievalQueue));
+
+      me._historicalVehRetrievalQueue = [];
+      storage.historicalFeedDataGetter = true;
+
+      configStorage.getItem("historicalFeedDataList").then(indexedDBVal => {
+         const { timeStamp } = indexedDBVal;
+
+         console.log("Retrieved historical data up to:", new Date(timeStamp), "for Vehicle(s) [", me._getVehNames(vehIdsToActivate), "]");
+         showSnackBar(splmap.tr("map_fetching_historical_data_inprogress"));
+
+         // Init
+         storage.historicalFeedDataGetter = { ...feedDataGetter };
+         storage.historicalFeedDataGetter.init(
+            new Date(indexedDBVal.timeStamp),
+            apiConfig.feedTypesToGet,
+            apiConfig.resultsLimit
+         );
+
+         // Remove from historical data all vehicles except Vehicle(s) to create on Map, then process historical data
+         if (indexedDBVal && timeWithinToday(indexedDBVal.timeStamp)) {
+            me._historicalFeedDataCache = indexedDBVal;
+            storage.doNotSaveLiveHistoricalData = true;
+            historicalFeedRunner(me._pruneHistoricalFeedDataCache(vehIdsToActivate));
+            splSrv.events.register("onLoadMapDataCompleted", () => {
+               delete storage.doNotSaveLiveHistoricalData;
+            });
+         }
+         // On non-live date, defer processing until historical data is fetched
+         else if (storage.historicalDataArchive) {
+            me._historicalFeedDataCache = storage.historicalDataArchive;
+            historicalFeedRunner(me._pruneHistoricalFeedDataCache(vehIdsToActivate));
+         }
+      });
+
+      if (me._historicalVehRetrievalQueue.length) {
+         me._processVehHistoricalQueue();
+      }
+      else {
+         splSrv.events.register("onLoadMapDataCompleted", () => {
+            me._historicalFeedDataCache = null;
+         });
+      }
+   },
+
+   _pruneHistoricalFeedDataCache(vehIdsToActivate) {
+      const me = this;
+
+      if (!me._historicalFeedDataCache || !vehIdsToActivate.length) {
+         return;
+      }
+      const newHistoricalFeedDataCache = createEmptyHistoricalFeedDataCache(me._historicalFeedDataCache.timeStamp);
+      for (const feedTypeIdx in me._historicalFeedDataCache) {
+         if (isNaN(feedTypeIdx)) { continue; }
+         newHistoricalFeedDataCache[feedTypeIdx].data = me._historicalFeedDataCache[feedTypeIdx].data.filter(rec => {
+            return typeof rec.device.id !== "undefined" && vehIdsToActivate.includes(rec.device.id) ? true : false;
+         });
+      }
+      return newHistoricalFeedDataCache;
+   },
+
+   _getVehNames(vehIdsToActivate) {
+      let vehNamesArr = [];
+      if (Array.isArray(vehIdsToActivate)) {
+         vehNamesArr = vehIdsToActivate.map(vehId => {
+            return typeof storage.selectedDevices[vehId] !== "undefined" ? storage.selectedDevices[vehId].name : "";
+         });
+      }
+      return '"' + vehNamesArr.join('", "') + '"';
+   }
+};

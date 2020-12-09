@@ -6,6 +6,7 @@ import { map, debounceTime } from "rxjs/operators";
 import { markerList } from "../../../dataStore/map-data";
 import { getDevicesInGroups, createGroupsByNameCall, createDeviceByNameCall, makeAPIMultiCall, getBlobStorage, saveBlobStorage, setBlobStorage } from "../../../services/api/helpers";
 import { showSnackBar } from "../../../components/snackbar/snackbar";
+import { fetchDataForVeh } from "../../../services/data-feed/data-feed-getter";
 
 export const deviceSearch = {
    shown: true,
@@ -82,11 +83,25 @@ export const deviceSearch = {
             showSnackBar(splmap.tr("error_vehicle_cannot_fly"));
          }
          else {
-            storage.map.flyTo(deviceMarker.currentlatLng, newZoomLevel);
+            // If vehicles NOT visible
+            // Report additional instruction on resolving why cannot fly to vehicle
+            if (typeof deviceSearch.selectedIDS[id] !== "undefined" && deviceSearch.selectedIDS[id].visible === false) {
+               showSnackBar(splmap.tr("error_vehicle_no_gps_click_show_btn_to_view"));
+            }
+            else {
+               storage.map.flyTo(deviceMarker.currentlatLng, newZoomLevel);
+            }
          }
       }
       else {
-         showSnackBar(splmap.tr("error_vehicle_no_gps"));
+         // If All selected vehicles are NOT visible
+         // Report additional instruction on resolving why cannot fly to vehicle
+         let msg = splmap.tr("error_vehicle_no_gps");
+         if ((Object.keys(deviceSearch.selectedIDS).length && !Object.keys(storage.selectedDevices).length) ||
+            (typeof deviceSearch.selectedIDS[id] !== "undefined" && deviceSearch.selectedIDS[id].visible === false)) {
+            msg = splmap.tr("error_vehicle_no_gps_click_show_btn_to_view");
+         }
+         showSnackBar(msg);
       }
    },
 
@@ -244,7 +259,7 @@ export function _applyDeviceFilter(deviceIDS) {
    layerModel.hideAllLayers();
 
    if (deviceIDS.length === 0) {
-      layerModel.showLayer("movingLayer");
+      //layerModel.showLayer("movingLayer");
       return;
    }
    const layerName = "Filter";
@@ -257,13 +272,14 @@ export function _applyDeviceFilter(deviceIDS) {
 
    deviceIDS.forEach(deviceID => {
       const deviceMarker = markerList[deviceID];
-      //console.log("==== _applyDeviceFilter() layerName =", layerName, "deviceID =", deviceID);//DEBUG
       if (deviceMarker) {
          deviceMarker.setLayer(layerName);
       }
+      // Fetch historical data for newly activated vehicle(s)
+      else if (storage.realTimeFeedDataGetter) {
+         fetchDataForVeh.getHistorical(deviceID);
+      }
    });
-
-
 }
 
 function openPopup() {

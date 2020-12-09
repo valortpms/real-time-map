@@ -42,6 +42,7 @@ export function differentDateSet(selectedTime) {
    const rangeDiff = storage.currentTime - storage.timeRangeStart;
    setupTimeObjects(new Date(selectedTime), rangeDiff);
    storage.historicalComplete = false;
+   storage.historicalDataArchive = null;
 
    if (storage.realTimeFeedDataGetter) {
       storage.realTimeFeedDataGetter.cancelRunner();
@@ -49,9 +50,9 @@ export function differentDateSet(selectedTime) {
    }
    initRealTimeFeedRunner();
 
-   if (storage.HistoricalFeedDataGetter) {
-      storage.HistoricalFeedDataGetter.cancelRunner();
-      delete storage.HistoricalFeedDataGetter;
+   if (storage.historicalFeedDataGetter) {
+      storage.historicalFeedDataGetter.cancelRunner();
+      delete storage.historicalFeedDataGetter;
    }
    initHistoricalFeedRunner();
 }

@@ -1,53 +1,55 @@
 const storage = {
 
-  isStandAlone: false,
+   isStandAlone: false,
 
-  startDate: undefined,
-  delay: 300 * 1000,
+   startDate: undefined,
+   delay: 300 * 1000,
 
-  exceptionsEnabled: true,
+   exceptionsEnabled: true,
 
-  maxZoom: 18,
-  minZoom: 3,
+   maxZoom: 18,
+   minZoom: 3,
 
-  selectedStatuses: {},
-  selectedExceptions: {},
-  selectedDevices: {},
+   selectedStatuses: {},
+   selectedExceptions: {},
+   selectedDevices: {},
 
-  realTimeFeedDataGetter: undefined,
-  historicalComplete: false,
+   realTimeFeedDataGetter: undefined,
 
-  _timeRangeStart: undefined,
-  get timeRangeStart() {
-    return this._timeRangeStart;
-  },
-  set timeRangeStart(timeRangeStart) {
-    this._timeRangeStart = timeRangeStart;
-  },
+   historicalComplete: false,
+   historicalDataArchive: null,
 
-  _currentTime: undefined,
-  get currentTime() {
-    return this._currentTime;
-  },
-  set currentTime(currentTime) {
-    this._currentTime = currentTime;
-  },
+   _timeRangeStart: undefined,
+   get timeRangeStart() {
+      return this._timeRangeStart;
+   },
+   set timeRangeStart(timeRangeStart) {
+      this._timeRangeStart = timeRangeStart;
+   },
 
-  _map: undefined,
-  get map() {
-    return this._map;
-  },
-  set map(map) {
-    this._map = map;
-  },
+   _currentTime: undefined,
+   get currentTime() {
+      return this._currentTime;
+   },
+   set currentTime(currentTime) {
+      this._currentTime = currentTime;
+   },
 
-  _dateKeeper$: undefined,
-  get dateKeeper$() {
-    return this._dateKeeper;
-  },
-  set dateKeeper$(dateKeeper) {
-    this._dateKeeper = dateKeeper;
-  },
+   _map: undefined,
+   get map() {
+      return this._map;
+   },
+   set map(map) {
+      this._map = map;
+   },
+
+   _dateKeeper$: undefined,
+   get dateKeeper$() {
+      return this._dateKeeper;
+   },
+   set dateKeeper$(dateKeeper) {
+      this._dateKeeper = dateKeeper;
+   },
 };
 
 export default storage;

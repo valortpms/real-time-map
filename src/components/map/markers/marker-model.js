@@ -9,22 +9,19 @@ import {
    logRecordsData,
    markerList,
    exceptionEventsData
-}
-   from "../../../dataStore/map-data";
+} from "../../../dataStore/map-data";
 
 import {
    insertIntoOrderedArray,
    createObjectKeyIfNotExist,
    calculateHeadingAngle,
    calculateAnimatedAngleDelta
-}
-   from "../../../utils/helper";
+} from "../../../utils/helper";
 
 import {
    getRealLatLng,
    getInterpolatedLatLng
-}
-   from "../utils/device-data-helpers";
+} from "../utils/device-data-helpers";
 
 import { calculateDateTimeIndex, createMapMarker } from "./marker-helper";
 

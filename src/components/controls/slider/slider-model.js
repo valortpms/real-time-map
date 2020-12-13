@@ -74,9 +74,11 @@ export const sliderModel = {
       const lower = document.getElementsByClassName("noUi-handle-lower");
       lower[0].setAttribute("data-tip", "Start Time");
       lower[0].setAttribute("data-for", "splTooltip");
+      lower[0].setAttribute("data-place", "bottom");
       const upper = document.getElementsByClassName("noUi-handle-upper");
       upper[0].setAttribute("data-tip", "Current Time");
       upper[0].setAttribute("data-for", "splTooltip");
+      upper[0].setAttribute("data-place", "bottom");
    },
 
    updateSlider(currentSecond) {

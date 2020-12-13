@@ -40,7 +40,7 @@ export const INITSplSensorDataTools = function (goLibCreatorFunc) {
             searching: false,
             firstTime: true,
             noSensorDataFound: false,
-            expiry: moment().utc().add(me._sensorDataLifetime, "seconds").unix(),
+            expiry: moment().add(me._sensorDataLifetime, "seconds").unix(),
             data: null
          };
          me._goLibVeh[vehId] = me._goLibCreatorFunc(); // Create TEMPTRAC-TPMS library object vehicle instance
@@ -50,7 +50,7 @@ export const INITSplSensorDataTools = function (goLibCreatorFunc) {
          if (me._cache[vehId].searching) {
             reject(me._sensorSearchInProgressResponse);
          }
-         else if (me._cache[vehId].data === null || me._cache[vehId].expiry < moment().utc().unix()) {
+         else if (me._cache[vehId].data === null || me._cache[vehId].expiry < moment().unix()) {
             me._cache[vehId].searching = true;
             me._cache[vehId].noSensorDataFound = true;
 
@@ -188,7 +188,7 @@ export const INITSplSensorDataTools = function (goLibCreatorFunc) {
                   }
 
                   // Set next cache expiry
-                  me._cache[vehId].expiry = moment().utc().add(me._sensorDataLifetime, "seconds").unix();
+                  me._cache[vehId].expiry = moment().add(me._sensorDataLifetime, "seconds").unix();
 
                   // Fresh data, update cache and then send it
                   resolve(me._cache[vehId].data);
@@ -212,7 +212,7 @@ export const INITSplSensorDataTools = function (goLibCreatorFunc) {
                   }
 
                   // Resetting when we will search again for new data
-                  me._cache[vehId].expiry = moment().utc().add(me._sensorDataLifetime, "seconds").unix();
+                  me._cache[vehId].expiry = moment().add(me._sensorDataLifetime, "seconds").unix();
 
                   // Release cached stale sensor data, if explicitly requested by UI
                   if (typeof me._cache[vehId].data !== "undefined" &&

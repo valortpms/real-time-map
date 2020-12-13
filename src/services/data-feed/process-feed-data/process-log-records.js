@@ -1,4 +1,5 @@
 import storage from "../../../dataStore";
+import moment from "moment-timezone";
 import { logRecordsData } from "../../../dataStore/map-data";
 import { createObjectKeyIfNotExist, insertIntoOrderedArray } from "../../../utils/helper";
 import { createDeviceMarker } from "../../../components/map/markers/marker-model";
@@ -31,10 +32,7 @@ export function processDeviceData(device) {
    if (!isVehSelected(deviceID)) {
       return deviceID;
    }
-   const roundedDateTime = new Date(dateTime);
-   roundedDateTime.setMilliseconds(0);
-   const dateTimeInt = roundedDateTime.getTime();
-
+   const dateTimeInt = moment(dateTime).unix();
    const latLng = [lat, lng];
    const data = { latLng, speed };
    const firstDeviceMarker = saveDeviceDataToMemory(deviceID, dateTimeInt, data);

@@ -32,7 +32,7 @@ export function createDeviceMarker(deviceID) {
    const [dateTimeIndex, prevRealDateTime] = calculateDateTimeIndex(storage.currentTime, orderedDateTimes);
 
    const currentLatLng = getInterpolatedLatLng(storage.currentTime, deviceData, dateTimeIndex);
-   const nextLatLng = getInterpolatedLatLng(storage.currentTime + 1000, deviceData, dateTimeIndex);
+   const nextLatLng = getInterpolatedLatLng(storage.currentTime + 1, deviceData, dateTimeIndex);
 
    const currentLayers = ["movingLayer"];
    const mapMarker = createMapMarker(currentLatLng);
@@ -91,7 +91,6 @@ export function initDeviceExceptions(newDeviceMarker) {
 
 export const filterLayerName = "Filter";
 export function initFilterLayer(newDeviceMarker) {
-
    const { deviceID } = newDeviceMarker;
    if (storage.selectedDevices.hasOwnProperty(deviceID)) {
       newDeviceMarker.setLayer(filterLayerName);
@@ -133,7 +132,7 @@ export const deviceMarkerModel = {
       };
 
       this.currentlatLng = getInterpolatedLatLng(currentSecond, this.deviceData, this.dateTimeIndex);
-      const nextLatLng = getInterpolatedLatLng(currentSecond + 1000, this.deviceData, this.dateTimeIndex);
+      const nextLatLng = getInterpolatedLatLng(currentSecond + 1, this.deviceData, this.dateTimeIndex);
       this.setHeading(this.currentlatLng, nextLatLng);
 
       if (this.exceptionPath) {
@@ -178,7 +177,7 @@ export const deviceMarkerModel = {
 
          this.moveToLatLng(realLatLng);
 
-         const nextLatLng = getInterpolatedLatLng(currentSecond + 1000, this.deviceData, this.dateTimeIndex);
+         const nextLatLng = getInterpolatedLatLng(currentSecond + 1, this.deviceData, this.dateTimeIndex);
          this.setHeading(realLatLng, nextLatLng);
       }
       else {

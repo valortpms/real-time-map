@@ -1,5 +1,6 @@
 import noUiSlider from "propellerkit-range-slider/node_modules/nouislider/distribute/nouislider";
 import storage from "../../../dataStore";
+import moment from "moment-timezone";
 import splSrv from "../../../spartanlync/services";
 
 import {
@@ -11,7 +12,7 @@ import {
    getPixelsPerMinute,
    minutesInDay,
    getMinuteOfDay,
-   calulateCurrentTime,
+   calcCurrentTime,
    getTimeInlocalFormat,
    minuteOfDayToHour,
    calculateLeftOffset
@@ -33,39 +34,40 @@ export const sliderModel = {
 
    initSlider() {
 
-      const endHandleValue = getMinuteOfDay(storage.currentTime);
+      // Init Slider once Timezone defaults applied
+      splSrv.events.register("onLoadSplServices", () => {
 
-      const toolTipFormatter = {
-         //Display time in us format.
-         from: getTimeInlocalFormat,
-         to: getTimeInlocalFormat
-      };
+         const toolTipFormatter = {
+            from: getTimeInlocalFormat,
+            to: getTimeInlocalFormat
+         };
 
-      noUiSlider.create(this.RTMSlider, {
-         step: 1, //Each step is one minute. There are 1440 minutes a day.
-         start: [getMinuteOfDay(storage.timeRangeStart), endHandleValue],
-         range: this.range,
-         pips: {
-            mode: "values",
-            values: [...Array(8).keys()].slice(1).map(val => Math.round(val * 180)),
-            density: 180,
-            format: {
-               // 'to' the formatted value. Receives a number.
-               to: minuteOfDayToHour,
+         noUiSlider.create(this.RTMSlider, {
+            step: 1, //Each step is one minute. There are 1440 minutes in a day.
+            start: [getMinuteOfDay(storage.timeRangeStart), getMinuteOfDay(storage.currentTime)],
+            range: this.range,
+
+            pips: {
+               mode: "values",
+               values: [...Array(8).keys()].slice(1).map(val => Math.round(val * 180)),
+               density: 180,
+               format: {
+                  to: minuteOfDayToHour, // 'to' the formatted value. Receives a number.
+               },
+               stepped: true
             },
-            stepped: true
-         },
-         behaviour: "drag-tap",
-         connect: true,
-         tooltips: [toolTipFormatter, toolTipFormatter]
+            behaviour: "drag-tap",
+            connect: true,
+            tooltips: [toolTipFormatter, toolTipFormatter]
+         });
+
+         this.RTMSlider.noUiSlider.on("start.one", this.startSliding.bind(this));
+         this.RTMSlider.noUiSlider.on("slide.one", this.userSliding.bind(this));
+         this.RTMSlider.noUiSlider.on("set.one", this.sliderValueSet.bind(this));
+
+         storage.dateKeeper$.subscribe(this.updateSlider.bind(this));
+         this.createSliderTitles();
       });
-
-      this.RTMSlider.noUiSlider.on("start.one", this.startSliding.bind(this));
-      this.RTMSlider.noUiSlider.on("slide.one", this.userSliding.bind(this));
-      this.RTMSlider.noUiSlider.on("set.one", this.sliderValueSet.bind(this));
-
-      storage.dateKeeper$.subscribe(this.updateSlider.bind(this));
-      this.createSliderTitles();
    },
 
    createSliderTitles() {
@@ -115,23 +117,22 @@ export const sliderModel = {
       this.userCurrentlySliding = false;
       this.handleOverFlowFix(values, handle);
 
-      storage.timeRangeStart = calulateCurrentTime(values[0]);
+      storage.timeRangeStart = calcCurrentTime(values[0]);
       if (checkIfLive(storage.timeRangeStart) > 600) {
          storage.timeRangeStart = getLiveTime();
       }
 
-      let newTime = calulateCurrentTime(values[1]);
+      let newTime = calcCurrentTime(values[1]);
       if (this.currentHandle === 0) {
          storage.dateKeeper$.update();
-
-      } else {
+      }
+      else {
          if (checkIfLive(newTime) > 600) {
             newTime = getLiveTime();
          }
          storage.dateKeeper$.setNewTime(newTime);
          splSrv.events.exec("onDateTimeChangeTriggerEvents");
       }
-
       this.currentHandle = 2;
    },
 
@@ -154,7 +155,6 @@ export const sliderModel = {
          const leftOffset = calculateLeftOffset(offsetPixelWidth, upperValue, pixelsPerMinute);
          upperToolTip.style.setProperty("left", `${leftOffset}px`, "important");
       }
-
    },
 
    handleOverFlowFix(values) {
@@ -175,6 +175,5 @@ export const sliderModel = {
       } else {
          upperHandle.style.setProperty("left", "0px", "important");
       }
-   },
-
+   }
 };

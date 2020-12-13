@@ -855,12 +855,12 @@
    opacity: 1;
    box-shadow: none;
    transition: opacity 0.6s ease;
-   overflow: hidden !important;
+   overflow: unset !important;
 }
 #RTM-ControlBarContainer.disable {
    opacity: 0.4;
 }
-#RTM-ControlBarContainer .disableScreen {
+#RTM-ControlBarContainer .RTM-Controls-DisableScreen {
    position: absolute;
    top: 6px;
    left: 0px;
@@ -873,9 +873,13 @@
    transition: opacity 0.6s ease;
    background-color: #000000;
 }
-#RTM-ControlBarContainer.disable .disableScreen {
+#RTM-ControlBarContainer.disable .RTM-Controls-DisableScreen {
    opacity: 0.5;
    display: block;
+}
+
+#RTM-ControlsContainer {
+   margin-top: 5px;
 }
 
 #RTM-ControlsContainer .inputControls.speed {
@@ -917,6 +921,7 @@
    user-select: none;
    vertical-align: middle;
    border-radius: 4px;
+   overflow: hidden;
 }
 #RTM-ControlsContainer #RTM-LiveButton:active {
    background-color: #d6d6d6;
@@ -971,6 +976,14 @@
 }
 #RTM-ControlsContainer > .inputControls > .apply-changes-btn.active {
    display: block;
+}
+#RTM-ControlsContainer .inputControls .timezoneAbr {
+   position: absolute;
+   top: -7px;
+   right: 18px;
+   z-index: 99;
+   text-transform: uppercase;
+   font-size: 10px;
 }
 
 
@@ -1165,22 +1178,26 @@
 
    #RTM-ControlsContainer > div:nth-child(2) {
       position: absolute;
-      top: 27px;
+      top: 32px;
       left: 200px;
    }
 
    #RTM-ControlsContainer > div:nth-child(3),
    #RTM-ControlsContainer > div:nth-child(4) {
       position: absolute;
-      top: 16px;
+      top: 25px;
       right: 115px;
    }
    #RTM-ControlsContainer > div:nth-child(4) {
-      top: 37px;
+      top: 48px;
+   }
+
+   #RTM-ControlsContainer #RTM-LiveButton {
+      margin-bottom: -9px;
    }
 
    #RTM-ControlsContainer #RTM-LiveButton .go-live-help {
-      top: -4px;
+      top: -1px;
       right: -10px;
       width: 100px;
       white-space: break-spaces;
@@ -1199,11 +1216,11 @@
    }
 
    #RTM-ViewContainer #RTM-config-container {
-      height: calc(100% - 155px);
+      height: calc(100% - 160px);
    }
 
    #RTM-Map-Container {
-      height: calc(100% - 155px);
+      height: calc(100% - 160px);
    }
 
    #RTM-ControlBarContainer {
@@ -1227,7 +1244,7 @@
       top: auto;
       left: auto;
       right: 0px;
-      margin: 0px;
+      margin: 0px 0px 3px 0px;
    }
 
    #RTM-ControlsContainer #RTM-LiveButton {
@@ -1235,6 +1252,7 @@
       height: 20px;
       margin: 5px 0px 0px 0px;
       padding: 0px !important;
+      overflow: unset !important;
    }
 
    #RTM-ControlsContainer #RTM-LiveButton .go-live-help {

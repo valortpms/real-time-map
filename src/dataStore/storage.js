@@ -3,7 +3,7 @@ const storage = {
    isStandAlone: false,
 
    startDate: undefined,
-   delay: 300 * 1000,
+   delay: 300,
 
    exceptionsEnabled: true,
 
@@ -19,6 +19,37 @@ const storage = {
    historicalComplete: false,
    historicalDataArchive: null,
 
+   timezone: "",
+   humanDateTimeFormat: "dd MMM DD, YYYY LT z",
+
+   /**
+    *  Getters/Setters for _dayStart
+    */
+
+   _dayStart: undefined,
+   get dayStart() {
+      return this._dayStart;
+   },
+   set dayStart(dayStart) {
+      this._dayStart = dayStart;
+   },
+
+   /**
+    *  Getters/Setters for _dayStart
+    */
+
+   _dayEnd: undefined,
+   get dayEnd() {
+      return this._dayEnd;
+   },
+   set dayEnd(dayEnd) {
+      this._dayEnd = dayEnd;
+   },
+
+   /**
+    *  Getters/Setters for _timeRangeStart
+    */
+
    _timeRangeStart: undefined,
    get timeRangeStart() {
       return this._timeRangeStart;
@@ -26,6 +57,10 @@ const storage = {
    set timeRangeStart(timeRangeStart) {
       this._timeRangeStart = timeRangeStart;
    },
+
+   /**
+    *  Getters/Setters for _currentTime
+    */
 
    _currentTime: undefined,
    get currentTime() {
@@ -35,6 +70,10 @@ const storage = {
       this._currentTime = currentTime;
    },
 
+   /**
+    *  Getters/Setters for _map
+    */
+
    _map: undefined,
    get map() {
       return this._map;
@@ -42,6 +81,10 @@ const storage = {
    set map(map) {
       this._map = map;
    },
+
+   /**
+    *  Getters/Setters for _dateKeeper$
+    */
 
    _dateKeeper$: undefined,
    get dateKeeper$() {

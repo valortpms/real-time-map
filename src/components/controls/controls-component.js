@@ -64,6 +64,7 @@ export class ControlsView extends React.Component {
                         data-tip="Click to Apply Changes"
                         data-for="splTooltip"
                      >Apply</button>
+                     <span className="timezoneAbr"></span>
                   </div>
 
                   <div className="inputControls">
@@ -82,11 +83,12 @@ export class ControlsView extends React.Component {
                         data-tip="Click to Apply Changes"
                         data-for="splTooltip"
                      >Apply</button>
+                     <span className="timezoneAbr"></span>
                   </div>
                   {/* //Jump to live time. */}
                   <LiveButtonComponent />
                </div>
-               <div className="disableScreen"></div>
+               <div className="RTM-Controls-DisableScreen"></div>
             </div>
          </React.Fragment>
       );

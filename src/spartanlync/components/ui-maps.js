@@ -22,9 +22,9 @@ export const splSensorsOnMap = {
          let performSensorSearch = true;
          if (typeof splSrv.sdataTools._cache[vehId] !== "undefined" && splSrv.sdataTools._cache[vehId].noSensorDataFound) {
             if (typeof splSrv.sdataTools._cache[vehId].noSensorDataFoundExpiry === "undefined") {
-               splSrv.sdataTools._cache[vehId].noSensorDataFoundExpiry = moment().utc().add(splSrv.sensorDataLifetime, "seconds").unix();
+               splSrv.sdataTools._cache[vehId].noSensorDataFoundExpiry = moment().add(splSrv.sensorDataLifetime, "seconds").unix();
             }
-            if (moment().utc().unix() < splSrv.sdataTools._cache[vehId].noSensorDataFoundExpiry) {
+            if (moment().unix() < splSrv.sdataTools._cache[vehId].noSensorDataFoundExpiry) {
                performSensorSearch = false;
             }
          }
@@ -144,8 +144,8 @@ export const splMapUtil = {
    },
 
    hasDateChanged(timeStamp) {
-      const newTime = Math.round(timeStamp / 1000) * 1000;
-      if (newTime < storage.dayStart.getTime() || newTime > storage.dayEnd.getTime()) {
+      const newTime = Math.round(timeStamp);
+      if (newTime < storage.dayStart || newTime > storage.dayEnd) {
          return true;
       }
       return false;

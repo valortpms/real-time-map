@@ -1,3 +1,7 @@
+import storage from "../../dataStore";
+import moment from "moment-timezone";
+import splSrv from "../../spartanlync/services";
+
 import {
    Subject,
    interval,
@@ -19,8 +23,6 @@ import {
    resetTransitionAnimation
 } from "../../utils/helper";
 
-import storage from "../../dataStore";
-
 import {
    setupTimeObjects,
    updatePeriodChangeFunctions,
@@ -28,12 +30,19 @@ import {
    differentDateSet
 } from "./date-keeper-helpers";
 
-import splSrv from "../../spartanlync/services";
-
 export function initDateKeeper() {
 
-   const startTime = new Date(Date.now() - storage.delay);
-   setupTimeObjects(startTime);
+   // Re-initialize day boundaries, relative to UTC and User Timezone
+   // Use UTC Timezone offset to
+   // 1. allow slider to be timezone sensititve.
+   // 2. Make timezone-aware From/To Date API calls in UTC format using user timezone boundaries
+   splSrv.events.register("onSetTimeZoneDefault", () => {
+      storage.timezone = splSrv._timeZone;
+      setupTimeObjects(moment());
+   });
+
+   const startTimeUTC = moment.unix(moment().unix() - storage.delay);
+   setupTimeObjects(startTimeUTC);
 
    storage.dateKeeper$ = dateKeeper;
    storage.dateKeeper$.init(storage.currentTime, 1000);
@@ -77,6 +86,13 @@ export const dateKeeper = {
       return this.period;
    },
 
+   setPeriod(period) {
+      this.period = period;
+      this.paused = false;
+      updatePeriodChangeFunctions(period);
+      this.emitNext();
+   },
+
    createDateKeeper() {
       const res = this.emitterSubject.pipe(
 
@@ -98,7 +114,7 @@ export const dateKeeper = {
          }),
 
          scan((currentTime, newTimeSet) =>
-            newTimeSet ? newTimeSet : currentTime + 1000,
+            newTimeSet ? newTimeSet : currentTime + 1,
             0
          ),
 
@@ -140,17 +156,9 @@ export const dateKeeper = {
       this.emitNext();
    },
 
-   setPeriod(period) {
-      this.period = period;
-      this.paused = false;
-      updatePeriodChangeFunctions(period);
-      this.emitNext();
-   },
-
    setNewTime(newTimeInput) {
-      this.newTime = Math.round(newTimeInput / 1000) * 1000;
-
-      if (this.newTime < storage.dayStart.getTime() || this.newTime > storage.dayEnd.getTime()) {
+      this.newTime = Math.round(newTimeInput);
+      if (this.newTime < storage.dayStart || this.newTime > storage.dayEnd) {
          this.pause();
          differentDateSet(this.newTime);
       }
@@ -161,14 +169,16 @@ export const dateKeeper = {
 
       storage.currentTime = this.newTime;
       updateTimeChangeFunctions(this.newTime);
-
-      this.paused = false;
-      this.emitNext();
       resetTransitionAnimation();
+
+      // After date changes applied, Resume if clock paused
+      setTimeout(function () {
+         storage.dateKeeper$.resume();
+      }, 500);
    },
 
    update() {
-      storage.currentTime += 1000;
+      storage.currentTime += 1;
 
       if (checkIfLive(storage.currentTime) > 600) {
          storage.currentTime = getLiveTime();
@@ -178,5 +188,4 @@ export const dateKeeper = {
       // SpartanLync tasks invoked on ControlBar UI Date Update
       splSrv.events.exec("onDateUpdate");
    }
-
 };

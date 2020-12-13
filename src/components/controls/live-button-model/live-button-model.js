@@ -46,9 +46,11 @@ export const liveButtonModel = {
 
    goToLive() {
       if (!this.islive) {
-         const liveTime = new Date(getLiveTime());
+         const liveTime = getLiveTime();
          this.islive = true;
          this.setLiveBackground();
+         storage.currentTime = liveTime;
+         storage.timeRangeStart = liveTime;
          storage.dateKeeper$.period = 1000;
          storage.dateKeeper$.setNewTime(liveTime);
 
@@ -77,9 +79,8 @@ export const liveButtonModel = {
    *  @returns {int} Override with UNIX Timestamp or NULL if not override
    */
    getToDateOverride() {
-      const currentTimeUnix = storage.currentTime / 1000;
       if (!this.islive) {
-         return currentTimeUnix;
+         return storage.currentTime;
       }
       return null;
    }

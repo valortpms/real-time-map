@@ -1,4 +1,5 @@
 import layers from "../../components/map/layers";
+import moment from "moment-timezone";
 import { checkSameDay, } from "../../utils/helper";
 import { playBackSpeedModel } from "../../components/controls/speed-control/playback-speed";
 import storage from "../../dataStore";
@@ -20,17 +21,15 @@ export function updatePeriodChangeFunctions(newPeriod) {
    playBackSpeedModel.updateSpeed(newPeriod);
 }
 
-export function setupTimeObjects(startTime, rangeDiff = 0) {
-   storage.startDate = startTime;
+export function setupTimeObjects(startTimeObj, rangeDiff = 0) {
+   storage.startDate = startTimeObj;
 
-   storage.startDate.setMilliseconds(0);
-   storage.isLiveDay = checkSameDay(storage.startDate, new Date());
+   storage.isLiveDay = checkSameDay(storage.startDate, moment());
 
-   storage.dayStart = new Date(storage.startDate);
-   storage.dayStart.setHours(0, 0, 0, 0);
-   storage.dayEnd = new Date(storage.dayStart.getTime() + 86399999);
+   storage.dayStart = storage.startDate.clone().startOf("day").unix();
+   storage.dayEnd = storage.startDate.clone().endOf("day").unix();
 
-   storage.currentTime = storage.startDate.getTime();
+   storage.currentTime = storage.startDate.unix();
    storage.timeRangeStart = storage.currentTime - rangeDiff;
 }
 
@@ -40,7 +39,7 @@ export function differentDateSet(selectedTime) {
    resetMapData();
 
    const rangeDiff = storage.currentTime - storage.timeRangeStart;
-   setupTimeObjects(new Date(selectedTime), rangeDiff);
+   setupTimeObjects(moment.unix(selectedTime), rangeDiff);
    storage.historicalComplete = false;
    storage.historicalDataArchive = null;
 

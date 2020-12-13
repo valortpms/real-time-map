@@ -228,7 +228,7 @@ const SpartanLyncServices = {
       me._splStore = store;
 
       // Set timestamp of local Storage object to NOW
-      me._splStore.timestamp = moment().utc().format();
+      me._splStore.timestamp = moment().format();
 
       // Save Remotely
       me.sessionMgr.syncSettings(me._splStore, me._dbDeviceIds,
@@ -271,7 +271,7 @@ const SpartanLyncServices = {
       register: function (event, callback, execOnceOnly) {
          const me = this;
          const execOneTime = typeof execOnceOnly !== "undefined" && execOnceOnly === false ? false : true;
-         const evtId = moment().utc().unix();
+         const evtId = moment().unix();
 
          if (event !== null && typeof event !== "undefined" && typeof callback === "function") {
             if (typeof me._events[event] === "undefined") {

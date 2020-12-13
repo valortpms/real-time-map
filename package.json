@@ -43,6 +43,8 @@
 		"idb": "^4.0.5",
 		"leaflet": "^1.6.0",
 		"leaflet-defaulticon-compatibility": "^0.1.1",
+		"leaflet-geometryutil": "^0.9.3",
+		"leaflet-polycolor": "^0.9.1",
 		"leaflet-rotatedmarker": "^0.2.0",
 		"localforage": "^1.7.3",
 		"material-components-web": "^3.2.0",

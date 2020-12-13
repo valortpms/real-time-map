@@ -105,7 +105,6 @@ export const markerPopupModel = {
       }
 
       this.setTransitionAnimation();
-      //this.keepPopupCentered();  // LMIT.2020.11.16 - Allow user to freely navigate map while popups are open
 
       this.nextUpdateTick++;
       const ticksBetweenUpdate = 1000 / storage.dateKeeper$.getPeriod() * secondsBetweenUpdate;
@@ -136,7 +135,6 @@ export const markerPopupModel = {
             .then((html) => {
                this.popup.setContent(html);
                this.setTransitionAnimation();
-               //this.keepPopupCentered(); // LMIT.2020.11.16 - Allow user to freely navigate map while popups are open
             });
       });
 

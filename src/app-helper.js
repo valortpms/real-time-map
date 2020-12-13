@@ -47,11 +47,10 @@ export function initAfterLogin() {
    resetAnimationOnFocus();
 
    // Defer DataFeed Initialization till SpartanLync Services Loaded
-   splSrv.events.register("onLoadSplServices",
-      function () {
-         initRealTimeFeedRunner();
-         initHistoricalFeedRunner();
-      });
+   splSrv.events.register("onLoadSplServices", () => {
+      initRealTimeFeedRunner();
+      initHistoricalFeedRunner();
+   });
 }
 
 export function handleBlur() {

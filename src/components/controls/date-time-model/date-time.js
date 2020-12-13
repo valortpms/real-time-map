@@ -1,7 +1,9 @@
 import storage from "../../../dataStore";
+import moment from "moment-timezone";
 import splSrv from "../../../spartanlync/services";
 import { getLiveTime } from "../../../utils/helper";
 import { showSnackBar } from "../../snackbar/snackbar";
+import { ENTER_KEY } from "../../../constants/key-codes";
 
 export const dateTimeModel = {
 
@@ -21,15 +23,19 @@ export const dateTimeModel = {
       return document.querySelectorAll("#RTM-ControlsContainer > .inputControls > .apply-changes-btn");
    },
 
+   get timezoneAbrs() {
+      return document.querySelectorAll("#RTM-ControlsContainer > .inputControls > .timezoneAbr");
+   },
+
    get controlBarObj() {
       return document.getElementById("RTM-ControlBarContainer");
    },
 
    initDateTimeInput() {
 
-      this.setDefaultDateValue();
-      this.setDefaultStartTimeValue();
-      this.setDefaultCurrentTimeValue();
+      this.setDateValue();
+      this.setStartTimeValue();
+      this.setCurrentTimeValue();
 
       this.dateInput.addEventListener("change", this.onChangeSaveDateTimeInput.bind(this));
       this.startTimeInput.addEventListener("change", this.onChangeSaveDateTimeInput.bind(this));
@@ -40,20 +46,33 @@ export const dateTimeModel = {
       }
       storage.dateKeeper$.subscribe(this.updateCurrentSecond.bind(this));
       splSrv.events.register("onUpdateCurrentSecond", (timestamp) => this.updateCurrentSecond(timestamp));
+
+      // Set Timezone Abbreviation
+      splSrv.events.register("onLoadSplServices", () => this.setTimezoneAbrValue());
+
+      // On ENTER keyboard key, Click any the active APPLY button
+      splSrv.events.register("onLoadSplServices", () => document.addEventListener("keyup", this.keyENTEROnApplyBtn.bind(this)));
    },
 
-   setDefaultDateValue() {
-      this.dateInput.value = new Date(storage.currentTime).toLocaleDateString("en-CA");
+   setTimezoneAbrValue() {
+      const timeZoneAbr = moment().format("z");
+      for (const timezoneElem of this.timezoneAbrs) {
+         timezoneElem.innerHTML = timeZoneAbr;
+      }
+   },
+
+   setDateValue() {
+      this.dateInput.value = moment.unix(storage.currentTime).format("YYYY-MM-DD");
       this.clearApplyBtn(this.dateInput);
    },
 
-   setDefaultStartTimeValue() {
-      this.startTimeInput.value = new Date(storage.timeRangeStart).toLocaleTimeString("en-GB");
+   setStartTimeValue() {
+      this.startTimeInput.value = isNaN(storage.timeRangeStart) ? this.startTimeInput.value : moment.unix(storage.timeRangeStart).format("HH:mm:ss");
       this.clearApplyBtn(this.startTimeInput);
    },
 
-   setDefaultCurrentTimeValue() {
-      this.currentTimeInput.value = new Date(storage.currentTime).toLocaleTimeString("en-GB");
+   setCurrentTimeValue() {
+      this.currentTimeInput.value = isNaN(storage.currentTime) ? this.currentTimeInput.value : moment.unix(storage.currentTime).format("HH:mm:ss");
    },
 
    clearApplyBtn(inputElem) {
@@ -67,18 +86,31 @@ export const dateTimeModel = {
       }
    },
 
+   keyENTEROnApplyBtn(evt) {
+      evt.preventDefault();
+      if (evt.keyCode === ENTER_KEY) {
+         for (const applyBtn of this.applyBtns) {
+            if (typeof applyBtn !== "undefined" && applyBtn.classList.contains("active")) {
+               applyBtn.click();
+               setTimeout(() => this.clearApplyBtn(applyBtn.previousElementSibling), 100);
+            }
+         }
+      }
+   },
+
+   // eslint-disable-next-line no-unused-vars
    updateCurrentSecond(currentSecond) {
 
       if (this.dateInput && document.activeElement !== this.dateInput) {
-         this.setDefaultDateValue();
+         this.setDateValue();
       }
 
       if (this.startTimeInput && document.activeElement !== this.startTimeInput) {
-         this.setDefaultStartTimeValue();
+         this.setStartTimeValue();
       }
 
       if (this.currentTimeInput && document.activeElement !== this.currentTimeInput) {
-         this.currentTimeInput.value = new Date(currentSecond).toLocaleTimeString("en-GB");
+         this.setCurrentTimeValue();
          this.clearApplyBtn(this.currentTimeInput);
       }
    },
@@ -93,7 +125,6 @@ export const dateTimeModel = {
          this.disableTimeControls();
          splSrv.events.register("onDateUpdate", () => this.enableTimeControls());
       }
-      this.updateCurrentSecond(newTime);
       storage.dateKeeper$.setNewTime(newTime);
    },
 
@@ -166,14 +197,13 @@ export const dateTimeModel = {
       if (!inputVal) {
          return;
       }
-      const selectedTime = new Date(inputVal + " " + this.currentTimeInput.value);
-
-      if (this.checkDateInFuture(selectedTime)) {
-         this.setDefaultDateValue();
+      const selectedTimeObj = moment(inputVal + " " + this.currentTimeInput.value);
+      if (this.checkDateInFuture(selectedTimeObj)) {
+         this.setDateValue();
       }
       else {
-         this.dateInput.value = selectedTime.toLocaleDateString("en-CA");
-         this.applyAndUpdate(selectedTime.getTime(), true);
+         this.dateInput.value = selectedTimeObj.format("YYYY-MM-DD");
+         this.applyAndUpdate(selectedTimeObj.unix(), true);
       }
    },
 
@@ -181,13 +211,12 @@ export const dateTimeModel = {
       if (!inputVal) {
          return;
       }
-      const selectedTime = new Date(this.dateInput.value + " " + inputVal);
-
-      if (this.checkDateInFuture(selectedTime)) {
-         this.setDefaultStartTimeValue();
+      const selectedTimeObj = moment(this.dateInput.value + " " + inputVal);
+      if (this.checkDateInFuture(selectedTimeObj)) {
+         this.setStartTimeValue();
       }
       else {
-         const newTime = selectedTime.getTime();
+         const newTime = selectedTimeObj.unix();
          storage.timeRangeStart = newTime;
          if (newTime > storage.currentTime) {
             storage.currentTime = newTime;
@@ -200,13 +229,12 @@ export const dateTimeModel = {
       if (!inputVal) {
          return;
       }
-      const selectedTime = new Date(this.dateInput.value + " " + inputVal);
-
-      if (this.checkDateInFuture(selectedTime)) {
-         this.setDefaultCurrentTimeValue();
+      const selectedTimeObj = moment(this.dateInput.value + " " + inputVal);
+      if (this.checkDateInFuture(selectedTimeObj)) {
+         this.setCurrentTimeValue();
       }
       else {
-         const newTime = selectedTime.getTime();
+         const newTime = selectedTimeObj.unix();
          if (newTime < storage.timeRangeStart) {
             storage.timeRangeStart = newTime;
          }
@@ -215,9 +243,9 @@ export const dateTimeModel = {
       splSrv.events.exec("onDateTimeChangeTriggerEvents");
    },
 
-   checkDateInFuture(selectedTime) {
-      const liveDate = new Date(getLiveTime());
-      if (selectedTime > liveDate) {
+   checkDateInFuture(selectedTimeObj) {
+      const liveDate = getLiveTime();
+      if (selectedTimeObj.unix() > liveDate) {
          showSnackBar(splmap.tr("datepicker_date_in_future"));
          return true;
       }

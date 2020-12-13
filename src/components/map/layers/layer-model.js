@@ -2,17 +2,17 @@ import L from "leaflet";
 import storage from "../../../dataStore";
 
 const LayerModel = {
+
    layerList: {
       movingLayer: L.layerGroup(),
+      splFaultsLayer: L.layerGroup(),
       exceptionLayer: L.layerGroup()
    },
-
-   // Built in leaflet layer controls
-   // layerControl: undefined,
 
    initLayers() {
       this.layerList.movingLayer.addTo(storage.map);
       this.layerList.stoppedLayer = this.layerList.movingLayer;
+      this.layerList.splFaultsLayer.addTo(storage.map);
       L.control.scale().addTo(storage.map);
    },
 

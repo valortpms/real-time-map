@@ -18,29 +18,10 @@ export const typeNameHandlers = {
 
    LogRecord(fromDate, toDate, deviceSearch) {
 
-      // const msDiff = new Date() - new Date(fromDate);
-      // const secondsDiff = Math.round(msDiff / 1000);
-
       const results = Object.values(generatedDevices).flatMap(device =>
          device.getLogRecordForTimeRange(fromDate, toDate)
       );
 
-      // const totalRecords = Math.min(1000, secondsDiff / 10);
-      // const newID = createNewDevice();
-
-      // console.warn('fromDate', createFakeLogRecords(fromDate, 1, 100), secondsDiff);
-      // const { length } = route1;
-      // // console.warn('25', length);
-
-      // let currentID = 1;
-      // let currentIndex = 0;
-
-      // const results = [generateLogRecord(fromDate, currentIndex, currentID)];
-
-      // while (isGetFeed && currentIndex < 12) {
-      // 	results.push(generateLogRecord(fromDate, currentIndex, currentID));
-      // 	currentIndex++;
-      // }
       return results;
    },
 
@@ -50,8 +31,7 @@ export const typeNameHandlers = {
 };
 
 function getCurrentTime() {
-
-   return new Date().getTime();
+   return moment().utc().unix();
 }
 
 export const callNameHandlers = {
@@ -95,7 +75,7 @@ export const callNameHandlers = {
 
       if (newDataNeeded) {
 
-         const newVersion = getCurrentTime() + feedBufferSeconds * 1000;
+         const newVersion = getCurrentTime() + feedBufferSeconds;
          const startingTime = fromVersion ? fromVersion : dateToTime(fromDate);
 
          const typeHandleFunction = typeNameHandlers[typeName];
@@ -103,35 +83,7 @@ export const callNameHandlers = {
 
          result.toVersion = newVersion;
       }
-
       return result;
-      // if (toVersion === undefined) {
-
-      // 	const result = {
-      // 		data,
-      // 		toVersion
-      // 	};
-
-      // 	return result;
-      // }
-
-      // fromVersion += 60000;
-
-      // const typeHandleFunction = typeNameHandlers[typeName];
-      // const data = typeHandleFunction(search, true);
-
-      // const result = {
-      // 	data,
-      // 	fromVersion
-      // };
-
-      // console.warn(105, fromVersion < new Date().getTime());
-
-      // if (fromVersion < new Date().getTime()) {
-      // 	// console.warn('82', result);
-      // 	return result;
-      // }
-
    }
 };
 
@@ -184,5 +136,5 @@ export const geotab = {
 };
 
 export function dateToTime(date) {
-   return new Date(date).getTime();
+   return moment(date).utc().unix();
 }

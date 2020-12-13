@@ -1,5 +1,6 @@
-import { apiConfig, userInfo } from "../../dataStore/api-config";
 import storage from "../../dataStore";
+import moment from "moment-timezone";
+import { apiConfig, userInfo } from "../../dataStore/api-config";
 import { getLiveTime } from "../../utils/helper";
 
 export function makeAPICall(call, parameters) {
@@ -29,7 +30,7 @@ export function makeAPIMultiCall(calls) {
    });
 };
 
-export function getAllActiveDevices(fromDate = new Date()) {
+export function getAllActiveDevices(fromDate = moment().utc().format()) {
    const parameters = {
       "typeName": "Device",
       "search": {
@@ -117,7 +118,7 @@ export function createGroupsByNameCall(groupName, resultsLimit = 36) {
    }];
 }
 
-export function getDevicesInGroups(groups = [{ id: "GroupCompanyId" }], fromDate = new Date()) {
+export function getDevicesInGroups(groups = [{ id: "GroupCompanyId" }], fromDate = moment().utc().format()) {
    return makeAPICall("Get", {
       typeName: "Device",
       search: {
@@ -162,7 +163,9 @@ export function createGroupByIDCall(id, resultsLimit = 6) {
    }];
 }
 
-export function createStatusDataCall(deviceID, diagnosticID, resultsLimit = 6, fromDate = new Date(storage.currentTime), toDate = new Date(storage.currentTime)) {
+export function createStatusDataCall(deviceID, diagnosticID, resultsLimit = 6, fromDateUnix, toDateUnix) {
+   const fromDate = fromDateUnix ? moment.unix(fromDateUnix).utc().format() : moment.unix(storage.currentTime).utc().format();
+   const toDate = toDateUnix ? moment.unix(toDateUnix).utc().format() : moment.unix(storage.currentTime).utc().format();
    return ["Get", {
       "typeName": "StatusData",
       resultsLimit,

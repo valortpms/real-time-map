@@ -1,4 +1,5 @@
 import storage from "../../dataStore";
+import moment from "moment-timezone";
 import splSrv from "../../spartanlync/services";
 import { makeAPIMultiCall } from "../api/helpers";
 import { initPaths } from "../../components/map/paths";
@@ -75,7 +76,7 @@ export function initRealTimeFeedRunner() {
 
    storage.realTimeFeedDataGetter = { ...feedDataGetter };
    storage.realTimeFeedDataGetter.init(
-      new Date(storage.startDate.getTime() - 600000), //Get data 10 min before actual start time for accurate display
+      moment.unix(storage.startDate.unix() - 600).utc(),  //Get data 10 min before actual start time for accurate display
       apiConfig.feedTypesToGet,
       3600
    );
@@ -110,7 +111,7 @@ export function initHistoricalFeedRunner() {
 
       storage.historicalFeedDataGetter = { ...feedDataGetter };
       storage.historicalFeedDataGetter.init(
-         new Date(historicalFeedDataCache.timeStamp),
+         moment.unix(historicalFeedDataCache.timeStamp).utc(),
          apiConfig.feedTypesToGet,
          apiConfig.resultsLimit
       );
@@ -125,10 +126,9 @@ export function getFeedDataCache(indexedDBVal = null) {
    if (indexedDBVal && timeWithinToday(indexedDBVal.timeStamp)) {
 
       const { timeStamp } = indexedDBVal;
-      console.log("Retrieved historical data up to: " + new Date(timeStamp));
+      console.log("Retrieved historical data up to: " + moment.unix(timeStamp).format(storage.humanDateTimeFormat));
       progressBar.update(getDayPerentage(timeStamp));
       return indexedDBVal;
-
    }
    else {
       return createEmptyHistoricalFeedDataCache();
@@ -142,12 +142,12 @@ export function createEmptyHistoricalFeedDataCache(timestamp) {
          type
       };
    });
-   historicalFeedDataCache.timeStamp = typeof timestamp !== "undefined" ? timestamp : storage.dayStart.getTime();
+   historicalFeedDataCache.timeStamp = typeof timestamp !== "undefined" ? timestamp : storage.dayStart;
    return historicalFeedDataCache;
 }
 
 export function timeWithinToday(time) {
-   return storage.dayStart.getTime() < time && time < storage.dayEnd.getTime();
+   return storage.dayStart < time && time < storage.dayEnd;
 }
 
 export function historicalFeedRunner(historicalFeedDataList) {
@@ -160,7 +160,7 @@ export function historicalFeedRunner(historicalFeedDataList) {
 
          const latestData = feedData[0].data;
 
-         if (latestData.length > 0 && latestData[0].dateTime <= storage.dayEnd.toISOString()) { //keep getting historical data until up to date.
+         if (latestData.length > 0 && latestData[0].dateTime <= storage.dayEnd) { //keep getting historical data until up to date.
 
             const { length } = latestData;
             const { dateTime } = latestData[length - 1];
@@ -176,8 +176,8 @@ export function historicalFeedRunner(historicalFeedDataList) {
          else {
 
             historicalFeedDataList.timeStamp = latestData.length ?
-               Math.min(new Date(latestData[0].dateTime).getTime(), storage.dayEnd.getTime()) :
-               storage.startDate.getTime();
+               Math.min(moment(latestData[0].dateTime).unix(), storage.dayEnd) :
+               storage.startDate.unix();
             historicalFeedDataComplete(historicalFeedDataList);
          }
       })
@@ -273,13 +273,13 @@ export const fetchDataForVeh = {
       configStorage.getItem("historicalFeedDataList").then(indexedDBVal => {
          const { timeStamp } = indexedDBVal;
 
-         console.log("Retrieved historical data up to:", new Date(timeStamp), "for Vehicle(s) [", me._getVehNames(vehIdsToActivate), "]");
+         console.log("Retrieved historical data up to:", moment.unix(timeStamp).format(storage.humanDateTimeFormat), "for Vehicle(s) [", me._getVehNames(vehIdsToActivate), "]");
          showSnackBar(splmap.tr("map_fetching_historical_data_inprogress"));
 
          // Init
          storage.historicalFeedDataGetter = { ...feedDataGetter };
          storage.historicalFeedDataGetter.init(
-            new Date(indexedDBVal.timeStamp),
+            moment.unix(indexedDBVal.timeStamp).utc(),
             apiConfig.feedTypesToGet,
             apiConfig.resultsLimit
          );

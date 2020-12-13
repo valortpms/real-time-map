@@ -1,3 +1,6 @@
+import storage from "../../../dataStore";
+import moment from "moment-timezone";
+
 /* eslint-disable one-var */
 
 // Make asyncronous AJAX call using JSON to PHP backend
@@ -109,7 +112,7 @@ export const INITSplAPI = function (serverUrl, csrfToken) {
     */
    this.debugLog = function () {
       if (me._debug) {
-         const logs = [new Date()];
+         const logs = [moment().format(storage.humanDateTimeFormat)];
          logs.push.apply(logs, arguments);
          console.log.apply(console, logs);
       }

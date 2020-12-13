@@ -1,4 +1,5 @@
 import storage from "../dataStore";
+import moment from "moment-timezone";
 import splSrv from "../spartanlync/services";
 import { markerList } from "../dataStore/map-data";
 
@@ -59,22 +60,22 @@ export function insertIntoOrderedArray(array, element) {
 }
 
 export function checkIfLive(dateTime) {
-   const date = new Date(dateTime);
-   if (!checkSameDay(date, new Date())) {
+   const date = moment.unix(dateTime);
+   if (!checkSameDay(date, moment())) {
       return false;
    }
    const liveTime = getLiveTime();
-   const difference = date.getTime() - liveTime;
+   const difference = date.unix() - liveTime;
 
    if (difference < 0) {
       // Correct for variances of a 30 seconds or less, by reseting the CurrentTime clock
       // Note: Variance happens when Javascript processing halts causing the datekeeper timer clock to fall behind
-      if (difference < -30000) {
+      if (difference < -30) {
          return false;
       }
       else {
-         splSrv.events.exec("onUpdateCurrentSecond", liveTime);
          storage.dateKeeper$.setNewTime(liveTime);
+         splSrv.events.exec("onUpdateCurrentSecond", liveTime);
          return true;
       }
    }
@@ -85,17 +86,11 @@ export function checkIfLive(dateTime) {
 }
 
 export function getLiveTime() {
-   const liveDate = new Date(Date.now() - storage.delay);
-   liveDate.setMilliseconds(0);
-   return liveDate.getTime();
+   return moment.unix(moment().unix() - storage.delay).unix();
 }
 
 export function checkSameDay(date1, date2) {
-   date1 = new Date(date1);
-   date2 = new Date(date2);
-   return date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate();
+   return moment(date1).isSame(moment(date2), "day");
 }
 
 export function resetAnimationOnFocus() {
@@ -215,11 +210,10 @@ export function calculateAnimatedAngleDelta(currentAngle, nextAngle) {
 }
 
 export function getDayPerentage(dateTime) {
-   const secondOfDay = new Date(dateTime).getTime() - storage.dayStart.getTime();
+   const secondOfDay = moment.unix(dateTime).unix() - storage.dayStart;
    if (secondOfDay < 0) {
       return false;
    }
-
-   const totalSecondsForDay = storage.isLiveDay ? getLiveTime() - storage.dayStart.getTime() : 86400000;
+   const totalSecondsForDay = storage.isLiveDay ? getLiveTime() - storage.dayStart : 86400;
    return secondOfDay / totalSecondsForDay;
 }

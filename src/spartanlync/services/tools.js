@@ -82,7 +82,7 @@ const SpartanLyncServiceTools = {
    *
    * Initialize in DOM, root-element media-width Classes
    *
-   * <root>.width-large    = rootElem MaxWidth: 1080px
+   * <root>.width-large    = rootElem MaxWidth: 1040px
    * <root>.width-medium   = rootElem MaxWidth: 980px
    * <root>.width-small    = rootElem MaxWidth: 770px
    *
@@ -171,6 +171,7 @@ const SpartanLyncServiceTools = {
          // Update moment() with User-defined Timezone
          splSrv._timeZone = remoteStore.timezone;
          moment.tz.setDefault(splSrv._timeZone);
+         splSrv.events.exec("onSetTimeZoneDefault");
 
          // Update shared Store object with SplMaps Add-In PageName and Sync with SplTools Add-In
          const oldMapsPageName = remoteStore.splMap.mapsPageName;

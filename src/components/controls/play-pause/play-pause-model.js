@@ -1,4 +1,5 @@
 import storage from "../../../dataStore/index";
+import { SPACE_KEY } from "../../../constants/key-codes";
 
 export const pausePlayModel = {
    playing: true,
@@ -23,7 +24,7 @@ export const pausePlayModel = {
 
    togglePausePlayKeyboardHandler(evt) {
       evt.preventDefault();
-      if (evt.keyCode === 32) {
+      if (evt.keyCode === SPACE_KEY) {
          this.togglePausePlay(); // On SPACE key, Toggle Pause/Play
       }
    },

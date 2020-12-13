@@ -112,7 +112,7 @@ export function interpolateCurrentLatLng(currDateTime, prevDateTime, nextDateTim
 export function getInterpolatedLatLng(dateTime, deviceData, dateTimeIndex = null) {
    const { orderedDateTimes } = deviceData;
    //Only 1 date or if date time is earlier than any data.
-   if (orderedDateTimes.length == 1 || dateTime < orderedDateTimes[0]) {
+   if (orderedDateTimes.length === 1 || dateTime < orderedDateTimes[0]) {
       return getFirstLatLng(deviceData);
    }
 

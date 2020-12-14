@@ -15,8 +15,10 @@ const storage = {
    selectedDevices: {},
 
    realTimeFeedDataGetter: undefined,
+   realTimeDataForVehsFetched: {},
 
    historicalComplete: false,
+   historicalVehsFetched: {},
    historicalDataArchive: null,
 
    timezone: "",

@@ -1,4 +1,5 @@
-import React from "react";
+import React, { Component } from "react";
+import splSrv from "../../../spartanlync/services";
 import { deviceSearch } from "./vehicle-search";
 import { SplSensorDataTypesButton } from "../../../spartanlync/components/ui-vehicles-config";
 import splSrvTools from "../../../spartanlync/services/tools";
@@ -27,12 +28,12 @@ export const VehicleListComponent = (props) => {
                      )
                   }
                ></span>
-               {createDeviceListElement(
-                  prop.id,
-                  prop.name,
-                  prop.color,
-                  deviceSearch.zoomIntoDevice
-               )}
+               <CreateDeviceListElement
+                  id={prop.id}
+                  name={prop.name}
+                  color={prop.color}
+                  flyFunction={deviceSearch.zoomIntoDevice}
+               />
                <span
                   id={"RTMnode-" + prop.id}
                   data-veh-id={prop.id}
@@ -62,26 +63,87 @@ export const VehicleListComponent = (props) => {
    return vehicleList;
 };
 
-const createDeviceListElement = (id, name, color, flyFunction) => {
-   if (name.includes("Group")) {
-      const { r, g, b, a } = color;
-      const rgba = `rgba(${r},${g},${b},${a})`;
-      return (
-         <span
-            className="mdc-list-item__graphic material-icons group"
-            style={{ backgroundColor: rgba }}
-         ></span>
-      );
-   } else {
-      return (
-         <span
-            className="mdc-list-item__graphic material-icons vehicle"
-            data-tip="Fly to Vehicle on Map"
-            data-for="splTooltip"
-            onClick={() => {
-               flyFunction(id);
-            }}
-         ></span>
-      );
+/**
+ *  Vehicle List Item Element in Vehicle configuation Panel
+ *
+ *  @returns JSX object
+ */
+export class CreateDeviceListElement extends Component {
+
+   constructor(props) {
+      super(props);
+
+      this.vehId = this.props.id;
+      this.vehName = this.props.name.trim();
+      this.color = typeof this.props.color !== "undefined" ? this.props.color : null;
+      this.flyFunction = typeof this.props.flyFunction === "function" ? this.props.flyFunction : null;
+
+      this.MINIMUM_GPS_POINTS_FOR_VEH_FLYING = 2;
+
+      this.latLngCounter = 0;
+      this.latLngEventHandlerId = null;
+      this.dateChangeEventHandlerId = null;
+
+      this.state = {
+         isGroup: this.props.name.includes("Group") ? true : false,
+         isVehActive: false,
+      };
    }
+
+   /**
+    * On Component Load
+    *
+    *  @returns void
+    */
+   componentDidMount() {
+      const me = this;
+      // eslint-disable-next-line no-unused-vars
+      me.latLngEventHandlerId = splSrv.events.register("onNewVehLatLng", (vehId, latLng) => { // "latLng" provided but not used at this time
+         if (vehId === me.vehId) {
+            me.latLngCounter++;
+            if (me.latLngCounter >= me.MINIMUM_GPS_POINTS_FOR_VEH_FLYING && !this.state.isVehActive) {
+               me.setState({ isVehActive: true });
+            }
+         }
+      }, false);
+
+      // On Date Change, reset vehicle status
+      me.dateChangeEventHandlerId = splSrv.events.register("onMapDateChangeResetReOpenPopups", () => {
+         me.latLngCounter = 0;
+         me.setState({ isVehActive: false });
+      }, false);
+   }
+   componentWillUnmount() {
+      const me = this;
+      splSrv.events.delete("onNewVehLatLng", me.latLngEventHandlerId);
+      splSrv.events.delete("onMapDateChangeResetReOpenPopups", me.dateChangeEventHandlerId);
+      me.latLngEventHandlerId = null;
+      me.dateChangeEventHandlerId = null;
+   }
+
+   render() {
+      const me = this;
+      const vehActiveClass = me.state.isVehActive ? "active" : "";
+
+      if (me.state.isGroup) {
+         const { r, g, b, a } = me.color;
+         const backgroundColorStyleValue = me.color ? `rgba(${r},${g},${b},${a})` : "";
+         return (
+            <span
+               className="mdc-list-item__graphic material-icons group"
+               style={{ backgroundColor: backgroundColorStyleValue ? backgroundColorStyleValue : null }}
+            ></span>
+         );
+      }
+      else {
+         return (
+            <span
+               className={`mdc-list-item__graphic material-icons vehicle ${vehActiveClass}`}
+               data-tip="Fly to Vehicle on Map"
+               data-for="splTooltip"
+               onClick={() => me.flyFunction(me.vehId)}
+            ></span>
+         );
+      }
+   };
 };

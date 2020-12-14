@@ -1,5 +1,6 @@
 import L from "leaflet";
 import storage from "../../../dataStore";
+import splSrv from "../../../spartanlync/services";
 import layerModel from "../layers";
 import { initPaths } from "../paths";
 import { initMarkerPopup } from "../popups/marker-popup";
@@ -36,6 +37,9 @@ export function createDeviceMarker(deviceID) {
 
    const currentLayers = ["movingLayer"];
    const mapMarker = createMapMarker(currentLatLng);
+
+   // Throw Event on discovering a Vehicle's LatLng
+   splSrv.events.exec("onNewVehLatLng", deviceID, currentLatLng);
 
    const constructors = {
       deviceID,
@@ -105,12 +109,12 @@ export const deviceMarkerModel = {
    orderedDateTimes: undefined,
    dateTimeIndex: 0,
    prevRealDateTime: undefined,
-   currentlatLng: undefined,
    speed: undefined,
    mapMarker: undefined,
    historicPath: undefined,
    isMoving: false,
    exceptionData: undefined,
+   currentlatLng: undefined,
    currentExceptions: undefined,
    currentLayers: undefined,
    timeChanged: false,
@@ -286,12 +290,14 @@ export const deviceMarkerModel = {
       const oldLatlng = this.mapMarker.getLatLng();
       if (!oldLatlng.equals(newLatlng)) {
 
+         // Throw Event on discovering a Vehicle's LatLng
+         splSrv.events.exec("onNewVehLatLng", this.deviceID, newLatlng);
+
          this.setTransitionAnimation();
          this.popupModel.setTransitionAnimation();
 
          this.mapMarker.setLatLng(newLatlng);
          this.currentlatLng = newLatlng;
-
          return true;
       }
       return false;
@@ -373,7 +379,6 @@ export const deviceMarkerModel = {
    setHeading(currentLatLng, nextLatLng) {
 
       if (currentLatLng[0] === nextLatLng[0] && currentLatLng[1] === nextLatLng[1]) {
-         // console.warn('139 same heading');
          return;
       }
 
@@ -385,5 +390,4 @@ export const deviceMarkerModel = {
          this.mapMarker.setRotationAngle(currentAngle + rotationAngle);
       }
    },
-
 };

@@ -271,7 +271,7 @@ const SpartanLyncServices = {
       register: function (event, callback, execOnceOnly) {
          const me = this;
          const execOneTime = typeof execOnceOnly !== "undefined" && execOnceOnly === false ? false : true;
-         const evtId = moment().unix();
+         const evtId = moment().unix() + "_" + Math.random().toString(36).substring(7);
 
          if (event !== null && typeof event !== "undefined" && typeof callback === "function") {
             if (typeof me._events[event] === "undefined") {

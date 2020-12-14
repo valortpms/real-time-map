@@ -1,5 +1,6 @@
 import storage from "../../../dataStore";
 import moment from "moment-timezone";
+import splSrv from "../../../spartanlync/services";
 import { logRecordsData } from "../../../dataStore/map-data";
 import { createObjectKeyIfNotExist, insertIntoOrderedArray } from "../../../utils/helper";
 import { createDeviceMarker } from "../../../components/map/markers/marker-model";
@@ -36,6 +37,17 @@ export function processDeviceData(device) {
    const latLng = [lat, lng];
    const data = { latLng, speed };
    const firstDeviceMarker = saveDeviceDataToMemory(deviceID, dateTimeInt, data);
+
+   // Note the name of vehicle that is being processed
+   if (typeof storage.selectedDevices[deviceID] !== "undefined" && storage.selectedDevices[deviceID].visible) {
+      storage.historicalVehsFetched[deviceID] = storage.selectedDevices[deviceID].name;
+      storage.realTimeDataForVehsFetched[deviceID] = storage.selectedDevices[deviceID].name;
+
+      // Throw Event on discovering a Vehicle's LatLng
+      if (deviceID && lat && lng) {
+         splSrv.events.exec("onNewVehLatLng", deviceID, latLng);
+      }
+   }
 
    if (firstDeviceMarker) {
       return deviceID;

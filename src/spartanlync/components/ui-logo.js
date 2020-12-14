@@ -32,7 +32,7 @@ export class SplLogo extends Component {
       const me = this;
 
       // Register a callback, invoked when SplTools is successfully initialized
-      splSrv.events.register("onLoadSplServices", me.fetchSettings, false);
+      splSrv.events.register("onLoadSplServices", me.fetchSettings);
 
       // Get build data from deployment folder on Backend Server
       me.fetchBuildMetaData((metadataTxt) => {

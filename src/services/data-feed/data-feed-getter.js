@@ -95,15 +95,25 @@ export function initRealTimeFeedRunner() {
 }
 
 export function realTimefeedRunner() {
+   storage.realTimeDataForVehsFetched = {};
    storage.realTimeFeedDataGetter.getFeedData()
       .then(processFeedData)
-      .catch(reason => console.warn("realTimefeedRunner Canceled.", reason));
+      .catch(reason => console.warn("realTimefeedRunner Canceled.", reason))
+      .finally(() => {
+         // Report on vehicles processed
+         if (Object.keys(storage.realTimeDataForVehsFetched).length) {
+            const vehsProcessed = '"' + Object.values(storage.realTimeDataForVehsFetched).map(vehName => { return vehName; }).join('", "') + '"';
+            console.log("---- Retrieved RealTime GPS data for Vehicle(s) [", vehsProcessed, "]");
+            storage.historicalVehsFetched = {};
+         }
+      });
 }
 
 export function initHistoricalFeedRunner() {
 
    showSnackBar(splmap.tr("map_fetching_historical_data_inprogress"));
    progressBar.update(0.1);
+   storage.historicalVehsFetched = {};
 
    configStorage.getItem("historicalFeedDataList").then(indexedDBVal => {
 
@@ -203,6 +213,13 @@ export function historicalFeedDataComplete(historicalFeedDataList) {
          marker.initExceptions();
          initPaths(marker);
       });
+
+   // Report on vehicles processed with Historical data
+   if (Object.keys(storage.historicalVehsFetched).length) {
+      const vehsProcessed = '"' + Object.values(storage.historicalVehsFetched).map(vehName => { return vehName; }).join('", "') + '"';
+      console.log("---- Retrieved historical GPS data for Vehicle(s) [", vehsProcessed, "]");
+      storage.historicalVehsFetched = {};
+   }
 
    if (storage.isLiveDay && !storage.doNotSaveLiveHistoricalData) {
       storage.historicalDataArchive = null;

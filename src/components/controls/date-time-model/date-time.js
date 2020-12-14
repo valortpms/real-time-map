@@ -45,7 +45,7 @@ export const dateTimeModel = {
          applyBtn.addEventListener("click", this.onApplyBtnClicked.bind(this));
       }
       storage.dateKeeper$.subscribe(this.updateCurrentSecond.bind(this));
-      splSrv.events.register("onUpdateCurrentSecond", (timestamp) => this.updateCurrentSecond(timestamp));
+      splSrv.events.register("onUpdateCurrentSecond", (timestamp) => this.updateCurrentSecond(timestamp), false);
 
       // Set Timezone Abbreviation
       splSrv.events.register("onLoadSplServices", () => this.setTimezoneAbrValue());

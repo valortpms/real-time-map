@@ -76,7 +76,8 @@ export function initRealTimeFeedRunner() {
 
    storage.realTimeFeedDataGetter = { ...feedDataGetter };
    storage.realTimeFeedDataGetter.init(
-      moment.unix(storage.startDate.unix() - 600).utc(),  //Get data 10 min before actual start time for accurate display
+      //Get data 10 min before actual start time for accurate display
+      moment.unix(storage.dayStart - 600).utc().format(),
       apiConfig.feedTypesToGet,
       3600
    );
@@ -118,14 +119,12 @@ export function initHistoricalFeedRunner() {
    configStorage.getItem("historicalFeedDataList").then(indexedDBVal => {
 
       const historicalFeedDataCache = getFeedDataCache(indexedDBVal);
-
       storage.historicalFeedDataGetter = { ...feedDataGetter };
       storage.historicalFeedDataGetter.init(
-         moment.unix(historicalFeedDataCache.timeStamp).utc(),
+         moment.unix(historicalFeedDataCache.timeStamp).utc().format(),
          apiConfig.feedTypesToGet,
          apiConfig.resultsLimit
       );
-
       historicalFeedRunner(historicalFeedDataCache);
    });
 
@@ -169,7 +168,6 @@ export function historicalFeedRunner(historicalFeedDataList) {
          ]);
 
          const latestData = feedData[0].data;
-
          if (latestData.length > 0 && latestData[0].dateTime <= storage.dayEnd) { //keep getting historical data until up to date.
 
             const { length } = latestData;
@@ -288,32 +286,35 @@ export const fetchDataForVeh = {
       storage.historicalFeedDataGetter = true;
 
       configStorage.getItem("historicalFeedDataList").then(indexedDBVal => {
-         const { timeStamp } = indexedDBVal;
 
-         console.log("Retrieved historical data up to:", moment.unix(timeStamp).format(storage.humanDateTimeFormat), "for Vehicle(s) [", me._getVehNames(vehIdsToActivate), "]");
-         showSnackBar(splmap.tr("map_fetching_historical_data_inprogress"));
+         if (indexedDBVal && typeof indexedDBVal.timeStamp !== "undefined") {
+            const { timeStamp } = indexedDBVal;
 
-         // Init
-         storage.historicalFeedDataGetter = { ...feedDataGetter };
-         storage.historicalFeedDataGetter.init(
-            moment.unix(indexedDBVal.timeStamp).utc(),
-            apiConfig.feedTypesToGet,
-            apiConfig.resultsLimit
-         );
+            console.log("Retrieved historical data up to:", moment.unix(timeStamp).format(storage.humanDateTimeFormat), "for Vehicle(s) [", me._getVehNames(vehIdsToActivate), "]");
+            showSnackBar(splmap.tr("map_fetching_historical_data_inprogress"));
 
-         // Remove from historical data all vehicles except Vehicle(s) to create on Map, then process historical data
-         if (indexedDBVal && timeWithinToday(indexedDBVal.timeStamp)) {
-            me._historicalFeedDataCache = indexedDBVal;
-            storage.doNotSaveLiveHistoricalData = true;
-            historicalFeedRunner(me._pruneHistoricalFeedDataCache(vehIdsToActivate));
-            splSrv.events.register("onLoadMapDataCompleted", () => {
-               delete storage.doNotSaveLiveHistoricalData;
-            });
-         }
-         // On non-live date, defer processing until historical data is fetched
-         else if (storage.historicalDataArchive) {
-            me._historicalFeedDataCache = storage.historicalDataArchive;
-            historicalFeedRunner(me._pruneHistoricalFeedDataCache(vehIdsToActivate));
+            // Init
+            storage.historicalFeedDataGetter = { ...feedDataGetter };
+            storage.historicalFeedDataGetter.init(
+               moment.unix(indexedDBVal.timeStamp).utc().format(),
+               apiConfig.feedTypesToGet,
+               apiConfig.resultsLimit
+            );
+
+            // Remove from historical data all vehicles except Vehicle(s) to create on Map, then process historical data
+            if (indexedDBVal && timeWithinToday(indexedDBVal.timeStamp)) {
+               me._historicalFeedDataCache = indexedDBVal;
+               storage.doNotSaveLiveHistoricalData = true;
+               historicalFeedRunner(me._pruneHistoricalFeedDataCache(vehIdsToActivate));
+               splSrv.events.register("onLoadMapDataCompleted", () => {
+                  delete storage.doNotSaveLiveHistoricalData;
+               });
+            }
+            // On non-live date, defer processing until historical data is fetched
+            else if (storage.historicalDataArchive) {
+               me._historicalFeedDataCache = storage.historicalDataArchive;
+               historicalFeedRunner(me._pruneHistoricalFeedDataCache(vehIdsToActivate));
+            }
          }
       });
 

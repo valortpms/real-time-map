@@ -185,7 +185,7 @@ export function saveBlobStorage(type, data) {
          "addInId": "acg-6AmDE50Wvr-AHHlrMAQ",
          "data": JSON.stringify({
             "userName": userInfo.userName,
-            "date": getLiveTime(),
+            "date": moment.unix(getLiveTime()).utc().format(),
             "configData": {
                [type]: data
             },

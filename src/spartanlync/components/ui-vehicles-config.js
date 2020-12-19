@@ -66,7 +66,6 @@ export class SplSensorDataTypesButton extends Component {
    componentWillUnmount() {
       const me = this;
       me.onCloseContentHandler();
-      me.stopFaultMonitoringTask();
    }
 
    /**
@@ -296,12 +295,17 @@ export class SplSensorDataTypesButton extends Component {
       const me = this;
       manageSensorDataContentUI.cleanup(me.vehId);
       me.stopContentRefresh();
+      me.stopFaultMonitoringTask();
       me.setState({ html: "" });
 
-      splSrv.events.delete("onFaultAlert", me.faultAlertEventHandlerId);
+      if (me.faultAlertEventHandlerId) {
+         splSrv.events.delete("onFaultAlert", me.faultAlertEventHandlerId);
+      }
       me.faultAlertEventHandlerId = null;
 
-      splSrv.events.delete("onDateTimeChanged", me.dateTimeChangedEventHandlerId);
+      if (me.dateTimeChangedEventHandlerId) {
+         splSrv.events.delete("onDateTimeChanged", me.dateTimeChangedEventHandlerId);
+      }
       me.dateTimeChangedEventHandlerId = null;
    }
 
@@ -349,9 +353,10 @@ export class SplSensorDataTypesButton extends Component {
    }
    stopContentRefresh() {
       const me = this;
-      if (me.contentRefreshTimerHandle !== null) {
+      if (me.contentRefreshTimerHandlel) {
          clearInterval(me.contentRefreshTimerHandle);
       }
+      me.contentRefreshTimerHandle = null;
    }
 
    /**
@@ -370,9 +375,10 @@ export class SplSensorDataTypesButton extends Component {
    }
    stopFaultMonitoringTask() {
       const me = this;
-      if (me.faultMonitoringTimerHandle !== null) {
+      if (me.faultMonitoringTimerHandle) {
          clearInterval(me.faultMonitoringTimerHandle);
       }
+      me.faultMonitoringTimerHandle = null;
    }
 
    /**

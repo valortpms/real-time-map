@@ -4,8 +4,9 @@ import splSrv from "../services";
 import { INITSplAPI, INITSplSessionMgr } from "./api";
 import { INITGeotabTpmsTemptracLib } from "./api/temptrac-tpms";
 import { INITSplSensorDataTools } from "./sensor-data-tools";
-import { userInfo, apiConfig } from "../../dataStore/api-config";
 import { showMsg, splToolsHelper } from "../components/ui-components";
+import { userInfo, apiConfig } from "../../dataStore/api-config";
+import { initSplMapFaults } from "../components/ui-map-faults";
 import { makeAPICall } from "../../services/api/helpers";
 import { splMapUtil } from "../components/ui-maps";
 
@@ -72,6 +73,9 @@ const SpartanLyncServiceTools = {
 
       // Initialize root-element media-width Classes
       me.initRootElemWidthClasses.init();
+
+      // Init SpartanLync Faults Map UI
+      initSplMapFaults();
 
       // Register Handler(s) for dateTime update events
       splSrv.events.register("onMapDateChangeResetReOpenPopups", (newTimeStamp) => splMapUtil.reOpenPopupsAfterMapDateChangeReset(newTimeStamp), false);

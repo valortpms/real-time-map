@@ -4,9 +4,17 @@ import splSrv from "../../../spartanlync/services";
 import { fromEvent } from "rxjs";
 import { map, debounceTime } from "rxjs/operators";
 import { markerList } from "../../../dataStore/map-data";
-import { getDevicesInGroups, createGroupsByNameCall, createDeviceByNameCall, makeAPIMultiCall, getBlobStorage, saveBlobStorage, setBlobStorage } from "../../../services/api/helpers";
 import { showSnackBar } from "../../../components/snackbar/snackbar";
 import { fetchDataForVeh } from "../../../services/data-feed/data-feed-getter";
+import {
+   getDevicesInGroups,
+   createGroupsByNameCall,
+   createDeviceByNameCall,
+   makeAPIMultiCall,
+   getBlobStorage,
+   saveBlobStorage,
+   setBlobStorage
+} from "../../../services/api/helpers";
 
 export const deviceSearch = {
    shown: true,
@@ -23,11 +31,6 @@ export const deviceSearch = {
       const debouncedInput = searchInputObservable.pipe(debounceTime(250));
       debouncedInput.subscribe((searchInput) => {
          deviceSearch.buildSearchList(searchInput, mapPropsToComponent);
-      });
-
-      //DEBUG - TEST - PLEASE DELETE ON PROD
-      document.getElementById("speedLabel").addEventListener("click", function () {
-
       });
    },
 
@@ -108,6 +111,7 @@ export const deviceSearch = {
    removeAlerts() {
       for (const deviceID in deviceSearch.selectedIDS) {
          const deviceObj = deviceSearch.selectedIDS[deviceID];
+         delete deviceObj.alert;
          delete deviceObj.alertClass;
          delete deviceObj.tooltip;
       }
@@ -182,8 +186,8 @@ export const deviceSearch = {
    },
 
    saveConfig(mapPropsToComponent) {
+      deviceSearch.removeAlerts();
       storage.setBlobStorageObj ? setBlobStorage("Vehicle", deviceSearch.selectedIDS) : saveBlobStorage("Vehicle", deviceSearch.selectedIDS);
-
       deviceSearch.applyFilter();
       deviceSearch.buildDeviceDisplayList(mapPropsToComponent);
 
@@ -259,7 +263,6 @@ export function _applyDeviceFilter(deviceIDS) {
    layerModel.hideAllLayers();
 
    if (deviceIDS.length === 0) {
-      //layerModel.showLayer("movingLayer");
       return;
    }
    const layerName = "Filter";

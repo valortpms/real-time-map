@@ -1,3 +1,4 @@
+import ReactTooltip from "react-tooltip";
 import React, { Component } from "react";
 import { ExceptionsTab } from "./exception-config/exceptions-tab";
 import { StatusTab } from "./status-config/status-tab";
@@ -14,6 +15,7 @@ import splSrv from "../../spartanlync/services";
 export class ConfigView extends React.Component {
    constructor(props) {
       super(props);
+
       this.state = {
          exceptionsSearchList: [],
          statuses: [],
@@ -22,6 +24,10 @@ export class ConfigView extends React.Component {
          statusDisplayList: [],
          vehicleDisplayList: []
       };
+
+      this.clearTooltipsHandlerId = null;
+      this.clearTooltips = this.clearTooltips.bind(this);
+
       this.setExceptions = this.setExceptions.bind(this);
       this.setExceptionsList = this.setExceptionsList.bind(this);
       this.setStatusList = this.setStatusList.bind(this);
@@ -79,12 +85,14 @@ export class ConfigView extends React.Component {
                      faultObj.alert.color.toString().trim() !== ""
                   ) {
                      // Remove Alerts with locations that do not exist
-                     let skipFault = false;
-                     if (typeof faultObj.loc !== "undefined" && Array.isArray(faultObj.loc) && faultObj.loc.length) {
-                        faultObj.loc = faultObj.loc.filter((locObj) => {
+                     let faultObjLoc = typeof faultObj.loc !== "undefined" && Array.isArray(faultObj.loc) ? JSON.parse(JSON.stringify(faultObj.loc)) : null;
+                     let skipFault = faultObjLoc ? false : true;
+
+                     if (faultObjLoc && faultObjLoc.length) {
+                        faultObjLoc = faultObjLoc.filter((locObj) => {
                            return vehObj.locExistsInSensorData(faultObj.alert.type, locObj);
                         });
-                        if (!faultObj.loc.length) {
+                        if (!faultObjLoc.length) {
                            skipFault = true;
                         }
                      }
@@ -95,7 +103,7 @@ export class ConfigView extends React.Component {
                         (alertlevel.color && alertlevel.color.toUpperCase() === "AMBER" && faultObj.alert.color.toUpperCase() === "RED") ||
                         (alertlevel.color.toUpperCase() === faultObj.alert.color.toUpperCase() && faultObj.time > alertlevel.time)) {
 
-                        const sensorLocHtml = splSensorDataParser._convertLocArrObjToLocHtml(faultObj.loc);
+                        const sensorLocHtml = splSensorDataParser._convertLocArrObjToLocHtml(faultObjLoc);
 
                         alertlevel.time = faultObj.time;
                         alertlevel.color = faultObj.alert.color;
@@ -186,6 +194,16 @@ export class ConfigView extends React.Component {
       this.setState({ devices: props });
    }
 
+   clearTooltips() {
+      const me = this;
+      if (!me.clearTooltipsHandlerId) {
+         me.clearTooltipsHandlerId = setTimeout(function () {
+            me.clearTooltipsHandlerId = null;
+            ReactTooltip.hide();
+         }, 200);
+      }
+   }
+
    componentDidMount() {
       deviceSearch.init(this.setDevices);
       diagnosticSearch.init(this.setStatuses);
@@ -195,8 +213,16 @@ export class ConfigView extends React.Component {
       exceptionSearch.loadSavedExceptionConfig(this.setExceptionsList);
       initCollapse();
    }
+   componentWillUnmount() {
+      const me = this;
+      if (me.clearTooltipsHandlerId) {
+         clearTimeout(me.clearTooltipsHandlerId);
+      }
+   }
 
    render() {
+
+      this.clearTooltips();
 
       // Purge from VehiclesTab Array, any vehicles in the vehicleDisplayList Array
       const vehicleDisplayListIds = Object.values(this.state.vehicleDisplayList).map(listObj => { return listObj.id; });

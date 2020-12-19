@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import splSrv from "../../../spartanlync/services";
 import { deviceSearch } from "./vehicle-search";
 import { SplSensorDataTypesButton } from "../../../spartanlync/components/ui-vehicles-config";
+import { markerList } from "../../../dataStore/map-data";
 import splSrvTools from "../../../spartanlync/services/tools";
 
 export const VehicleListComponent = (props) => {
@@ -88,6 +89,8 @@ export class CreateDeviceListElement extends Component {
          isGroup: this.props.name.includes("Group") ? true : false,
          isVehActive: false,
       };
+
+      this.searchForVehMapGPS = this.searchForVehMapGPS.bind(this);
    }
 
    /**
@@ -97,6 +100,7 @@ export class CreateDeviceListElement extends Component {
     */
    componentDidMount() {
       const me = this;
+
       // eslint-disable-next-line no-unused-vars
       me.latLngEventHandlerId = splSrv.events.register("onNewVehLatLng", (vehId, latLng) => { // "latLng" provided but not used at this time
          if (vehId === me.vehId) {
@@ -112,6 +116,8 @@ export class CreateDeviceListElement extends Component {
          me.latLngCounter = 0;
          me.setState({ isVehActive: false });
       }, false);
+
+      me.searchForVehMapGPS();
    }
    componentWillUnmount() {
       const me = this;
@@ -119,6 +125,20 @@ export class CreateDeviceListElement extends Component {
       splSrv.events.delete("onMapDateChangeResetReOpenPopups", me.dateChangeEventHandlerId);
       me.latLngEventHandlerId = null;
       me.dateChangeEventHandlerId = null;
+   }
+
+   /**
+    * Does vehicle already exists on Map with valid GPS
+    *
+    *  @returns void
+    */
+   searchForVehMapGPS() {
+      const me = this;
+      const deviceMarker = markerList[me.vehId];
+      if (deviceMarker && typeof deviceMarker.currentlatLng !== "undefined") {
+         me.latLngCounter = me.MINIMUM_GPS_POINTS_FOR_VEH_FLYING;
+         me.setState({ isVehActive: true });
+      }
    }
 
    render() {

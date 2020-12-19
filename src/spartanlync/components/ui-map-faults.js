@@ -1,10 +1,7 @@
 import L from "leaflet";
-import leafletPolycolor from "leaflet-polycolor";
 import "../../../node_modules/leaflet-geometryutil";
 import storage from "../../dataStore";
 import splSrv from "../services";
-
-leafletPolycolor(L);
 
 export function initSplMapFaults() {
    splSrv.events.register("onLoadSplServices", () => {

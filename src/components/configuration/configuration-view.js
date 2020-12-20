@@ -54,6 +54,7 @@ export class ConfigView extends React.Component {
       // Register Handler for showing changes to Vehicle Alert Status
       this.setState((state) => {
 
+         // Process FaultAlerts thrown by receiving new Fault Data
          let vehicleFaultAlertEventHandlerId = typeof state.vehicleFaultAlertEventHandlerId === "undefined" ? null : state.vehicleFaultAlertEventHandlerId;
          if (!vehicleFaultAlertEventHandlerId &&
             typeof state.vehicleDisplayList !== "undefined" && state.vehicleDisplayList !== null &&
@@ -182,6 +183,19 @@ export class ConfigView extends React.Component {
                vehicleFaultAlertEventHandlerId = null;
             }
          }
+
+         // Throw onFaultAlert for each idle vehicle, when list of vehicles changes
+         setTimeout(function () {
+            state.vehicleDisplayList.map((vehObj) => {
+               return splSrv.vehRegistry.isLoading(vehObj.id) ? false : vehObj.id;
+            }).filter(Boolean).map((vehId) => {
+               const vehObj = splSrv.vehRegistry.getVeh(vehId);
+               if (vehObj) {
+                  splSrv.events.exec("onFaultAlert", vehId, vehObj);
+               }
+            });
+         }, 200);
+
          return { vehicleFaultAlertEventHandlerId: vehicleFaultAlertEventHandlerId };
       });
    }

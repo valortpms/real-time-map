@@ -1,5 +1,6 @@
 /* eslint-disable one-var */
 import moment from "moment-timezone";
+import { endWith } from "rxjs/operators";
 
 const SpartanLyncServices = {
 
@@ -93,6 +94,8 @@ const SpartanLyncServices = {
    cache: {
 
       _faultCache: {},
+      _historicalFaultCache: {},
+
       _ignitionCache: {},
 
       getFaultData: function (vehId) {
@@ -213,7 +216,49 @@ const SpartanLyncServices = {
                   ) ? true : false;
             }
          }
+      }
+   },
+
+   /**
+    * Methods that track when a Vehicle loading operation in configuration panel is occuring
+    * and retrieve its instance as requested
+    */
+
+   vehRegistry: {
+
+      _objList: {},
+
+      loadingBegin: function (vehId, vehObj) {
+         const me = this;
+         if (vehId && vehObj && typeof me._objList[vehId] === "undefined") {
+            me._objList[vehId] = vehObj;
+            me._objList[vehId].loading = moment().unix();
+         }
       },
+      loadingEnd: function (vehId) {
+         const me = this;
+         if (vehId && typeof me._objList[vehId] !== "undefined" && typeof me._objList[vehId].loading !== "undefined") {
+            delete me._objList[vehId].loading;
+         }
+      },
+      isLoading: function (vehId) {
+         const me = this;
+         const isLoading = vehId && typeof me._objList[vehId] !== "undefined" && typeof me._objList[vehId].loading !== "undefined" ? true : false;
+         return isLoading;
+      },
+      close: function (vehId) {
+         const me = this;
+         if (vehId && typeof me._objList[vehId] !== "undefined") {
+            delete me._objList[vehId];
+         }
+      },
+      getVeh: function (vehId) {
+         const me = this;
+         if (vehId && typeof me._objList[vehId] !== "undefined") {
+            return me._objList[vehId];
+         }
+         return null;
+      }
    },
 
    /**

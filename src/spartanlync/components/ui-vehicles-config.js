@@ -49,6 +49,9 @@ export class SplSensorDataTypesButton extends Component {
    componentDidMount() {
       const me = this;
 
+      // Register this is a new instance in Veh configuration panel
+      splSrv.vehRegistry.loadingBegin(me.vehId, me);
+
       // Prevent duplicate Initial Invocation(s)
       splCfg.shouldSplSensorDataButtonUpdate = false;
       setTimeout(() => {
@@ -125,13 +128,13 @@ export class SplSensorDataTypesButton extends Component {
             }
 
             // Invoke New Fault event handlers by throwing a New-Fault Event
+            splSrv.vehRegistry.loadingEnd(me.vehId);
             if (splSrv.cache.isFaultFound(faults) || faultsFoundPriorToUpdate !== splSrv.cache.isFaultFound(faults)) {
                splSrv.events.exec("onFaultAlert", me.vehId, me);
             }
          })
-         .catch((reason) => {
-            console.log("---- Error while searching for FAULTS on VehicleID [ " + me.vehId + " ] named [ " + me.vehName + " ]: ", reason);
-         });
+         .catch((reason) =>
+            console.log("---- Error while searching for FAULTS on VehicleID [ " + me.vehId + " ] named [ " + me.vehName + " ]: ", reason));
    }
 
    /**
@@ -160,6 +163,7 @@ export class SplSensorDataTypesButton extends Component {
          })
          .finally(() => {
             if (!me.noSensorsFoundOnThisVehicle) {
+
                // Start fault update timer
                me.startFaultAndTypesBtnMonitorTask();
 
@@ -319,6 +323,7 @@ export class SplSensorDataTypesButton extends Component {
       me.stopContentRefresh();
       me.stopFaultAndTypesBtnMonitorTask();
       me.setState({ html: "" });
+      splSrv.vehRegistry.close(me.vehId);
 
       if (me.faultAlertEventHandlerId) {
          splSrv.events.delete("onFaultAlert", me.faultAlertEventHandlerId);

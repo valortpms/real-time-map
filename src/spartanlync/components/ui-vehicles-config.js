@@ -23,6 +23,7 @@ export class SplSensorDataTypesButton extends Component {
       this.renderSplButton = this.renderSplButton.bind(this);
       this.onCloseContentHandler = this.onCloseContentHandler.bind(this);
       this.locExistsInSensorData = this.locExistsInSensorData.bind(this);
+      this.configureSensorDataTypesBtn = this.configureSensorDataTypesBtn.bind(this);
 
       this.state = {
          components: [],
@@ -145,40 +146,11 @@ export class SplSensorDataTypesButton extends Component {
       //Splunk for presence of sensor data types & vehicle components
       fetchVehSensorDataAsync(me.vehId)
          .then((sdata) => {
-            const btn = [];
 
-            me.sdataCache = sdata; // Save this Sensor data for later filtering of alerts
+            // Save Sensor data for SensorDataTypesButton configuration and later filtering of alerts
+            me.sdataCache = sdata;
 
-            if (typeof sdata.vehCfg.ids !== "undefined" && Array.isArray(sdata.vehCfg.ids)) {
-               const stypes = [];
-               sdata.vehCfg.ids.forEach(function (comp) {
-                  const compSdata = sdata.vehCfg.compsdata[comp];
-                  if (Object.keys(compSdata.temptrac).length) {
-                     stypes.push("temptrac");
-                  }
-                  if (Object.keys(compSdata.tpmspress).length || Object.keys(compSdata.tpmstemp).length) {
-                     stypes.push("tpms");
-                  }
-               });
-               if (stypes.includes("temptrac")) {
-                  btn.push("temptrac");
-               }
-               if (stypes.includes("tpms")) {
-                  btn.push("tpms");
-               }
-            }
-            else {
-               if (Object.keys(sdata.temptrac).length) {
-                  btn.push("temptrac");
-               }
-               if (Object.keys(sdata.tpmspress).length || Object.keys(sdata.tpmstemp).length) {
-                  btn.push("tpms");
-               }
-            }
-            me.setState({
-               components: sdata.vehCfg.ids.length > 1 ? sdata.vehCfg.ids : [],
-               buttons: btn
-            });
+            me.configureSensorDataTypesBtn();
          })
          .catch((reason) => {
             if (reason === splSrv.sensorDataNotFoundMsg) {
@@ -189,13 +161,63 @@ export class SplSensorDataTypesButton extends Component {
          .finally(() => {
             if (!me.noSensorsFoundOnThisVehicle) {
                // Start fault update timer
-               me.startFaultMonitoringTask();
+               me.startFaultAndTypesBtnMonitorTask();
 
                // Fetch vehicle faults and ignition data for Alert cache(s)
                me.fetchFaultsAndIgnitionData();
             }
          });
    }
+
+   /**
+    * Update SensorDataTypesButton state based on current Sensor Data
+    *
+    *  @returns void
+    */
+   configureSensorDataTypesBtn() {
+      const me = this;
+      const btn = [];
+
+      if (me.sdataCache) {
+         if (typeof me.sdataCache.vehCfg.ids !== "undefined" && Array.isArray(me.sdataCache.vehCfg.ids)) {
+            const stypes = [];
+            me.sdataCache.vehCfg.ids.forEach(function (comp) {
+               const compSdata = me.sdataCache.vehCfg.compsdata[comp];
+               if (Object.keys(compSdata.temptrac).length) {
+                  stypes.push("temptrac");
+               }
+               if (Object.keys(compSdata.tpmspress).length || Object.keys(compSdata.tpmstemp).length) {
+                  stypes.push("tpms");
+               }
+            });
+            if (stypes.includes("temptrac")) {
+               btn.push("temptrac");
+            }
+            if (stypes.includes("tpms")) {
+               btn.push("tpms");
+            }
+         }
+         else {
+            if (Object.keys(me.sdataCache.temptrac).length) {
+               btn.push("temptrac");
+            }
+            if (Object.keys(me.sdataCache.tpmspress).length || Object.keys(me.sdataCache.tpmstemp).length) {
+               btn.push("tpms");
+            }
+         }
+         const vehCompNames = me.sdataCache.vehCfg.ids.map(compId => { return splSrv.vehCompDb.names[compId]; }).join(", ");
+         const btnNames = btn.join(", ");
+
+         console.log("Sensor data for VehicleID [", me.vehId, "] reports Sensor Types [", btnNames, "] on", me.sdataCache.vehCfg.ids.length, "component" + (me.sdataCache.vehCfg.ids.length > 1 ? "s" : ""), "[", vehCompNames, "]");
+         if (btn.length !== me.state.buttons.length || me.sdataCache.vehCfg.ids.length !== me.state.components.length) {
+            me.setState({
+               components: me.sdataCache.vehCfg.ids.length > 1 ? me.sdataCache.vehCfg.ids : [],
+               buttons: btn
+            });
+         }
+      }
+   }
+
 
    /**
     * Check for existence of sensor location object in cahced sensor data
@@ -295,7 +317,7 @@ export class SplSensorDataTypesButton extends Component {
       const me = this;
       manageSensorDataContentUI.cleanup(me.vehId);
       me.stopContentRefresh();
-      me.stopFaultMonitoringTask();
+      me.stopFaultAndTypesBtnMonitorTask();
       me.setState({ html: "" });
 
       if (me.faultAlertEventHandlerId) {
@@ -364,16 +386,29 @@ export class SplSensorDataTypesButton extends Component {
     *
     *  @returns void
     */
-   startFaultMonitoringTask() {
+   startFaultAndTypesBtnMonitorTask() {
       const me = this;
       if (me.faultMonitoringTimerHandle === null) {
          me.faultMonitoringTimerHandle = setInterval(
-            () => me.fetchFaultsAndIgnitionData(),
-            (splSrv.sensorDataLifetime * 1000)
-         );
+            () => {
+               // Poll for vehicle fault changes
+               me.fetchFaultsAndIgnitionData();
+
+               // Poll for SensorDataTypesButton changes
+               fetchVehSensorDataAsync(me.vehId, "", false)
+                  .then((sdata) => {
+                     me.sdataCache = sdata;
+                     me.configureSensorDataTypesBtn();
+                  })
+                  .catch((reason) => {
+                     if (reason === splSrv.sensorDataNotFoundMsg) {
+                        console.log("Sensor Data for VehicleID [ " + me.vehId + " ] named [ " + me.vehName + " ] reports NO SENSORS for this time range");
+                     }
+                  });
+            }, (splSrv.sensorDataLifetime * 1000));
       }
    }
-   stopFaultMonitoringTask() {
+   stopFaultAndTypesBtnMonitorTask() {
       const me = this;
       if (me.faultMonitoringTimerHandle) {
          clearInterval(me.faultMonitoringTimerHandle);

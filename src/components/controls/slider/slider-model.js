@@ -93,10 +93,13 @@ export const sliderModel = {
             start
          };
 
-         this.RTMSlider.noUiSlider.updateOptions(options, false);
-
-         this.handleOverFlowFix(start, 1);
-         this.toolTipOverFlowFix(start, 1);
+         if (this.RTMSlider) {
+            if (this.RTMSlider.noUiSlider) {
+               this.RTMSlider.noUiSlider.updateOptions(options, false);
+            }
+            this.handleOverFlowFix(start, 1);
+            this.toolTipOverFlowFix(start, 1);
+         }
       };
    },
 

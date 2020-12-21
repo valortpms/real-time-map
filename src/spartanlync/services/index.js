@@ -32,6 +32,8 @@ const SpartanLyncServices = {
    addInJSONName: "SpartanLync Map",                        // Name of this Add-In within SystemSettings in MyGeotab Database
    buildMetadataFilename: "build.meta",                     // Filename residing in deployment directory containg build metadata, shown when hovering over SpartanLync Map Watermark
 
+   mapFaultLayerName: "splFaultsLayer",                     // Name of leaflet Layer Group containing all SpartanLync Fault polyline objects
+
    defaultLanguage: "en",                                   // This property will be overridden by user.language in MyGeotab, then by in lang setting in SplTools
    supportedLanguages: {                                    // Languages supported by SpartanLync Map
       "en": "English",

@@ -33,7 +33,7 @@ export class ControlsView extends React.Component {
                   </div>
 
                   <div className="inputControls">
-                     <label htmlFor="dateInputBox"> Date: </label>
+                     <label id="dateInputLabel" htmlFor="dateInputBox"> Date: </label>
                      <input
                         className="timeInputBox mdc-button"
                         type="date"
@@ -49,7 +49,7 @@ export class ControlsView extends React.Component {
                   </div>
 
                   <div className="inputControls">
-                     <label htmlFor="timeRangeStart"> Start Time: </label>
+                     <label id="timeRangeStartLabel" htmlFor="timeRangeStart"> Start Time: </label>
                      <input
                         className="timeInputBox mdc-button"
                         type="time"
@@ -68,7 +68,7 @@ export class ControlsView extends React.Component {
                   </div>
 
                   <div className="inputControls">
-                     <label htmlFor="currentTimeInput"> Current Time: </label>
+                     <label id="currentTimeLabel" htmlFor="currentTimeInput"> Current Time: </label>
                      <input
                         className="timeInputBox mdc-button"
                         type="time"

@@ -12,7 +12,7 @@ export function getLastLatLng(deviceData) {
 }
 
 export function getRealLatLng(dateTime, deviceData) {
-   if (deviceData.hasOwnProperty(dateTime) && deviceData[dateTime].hasOwnProperty('latLng')) {
+   if (deviceData.hasOwnProperty(dateTime) && deviceData[dateTime].hasOwnProperty("latLng")) {
       return deviceData[dateTime].latLng;
    }
    return false;
@@ -39,6 +39,10 @@ export function getLatLngsForTimeRange(start, end, deviceData) {
    const { orderedDateTimes } = deviceData;
    const firstDateTime = orderedDateTimes[0];
    const lastDateTime = orderedDateTimes[orderedDateTimes.length - 1];
+   //console.log("==== getLatLngsForTimeRange() orderedDateTimes =", orderedDateTimes);//DEBUG
+   //console.log("==== getLatLngsForTimeRange() deviceData =", deviceData);//DEBUG
+   //console.log("==== getLatLngsForTimeRange() Object.keys =", deviceData);//DEBUG
+
 
    if (start === lastDateTime) {
       return [deviceData[lastDateTime].latLng];

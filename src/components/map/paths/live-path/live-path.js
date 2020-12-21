@@ -49,7 +49,7 @@ export const livePathModel = {
 
    init(deviceID, ruleID) {
       bindDeviceNamePopup(deviceID, this.polyline);
-      layersModel.addToAllLayer(this.polyline);
+      layersModel.addToMovingLayer(this.polyline);
       this.setPolyLineColor(ruleID);
    },
 

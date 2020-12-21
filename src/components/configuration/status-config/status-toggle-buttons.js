@@ -8,16 +8,30 @@ export class StatusToggleButtons extends React.Component {
       super(props);
       this.state = { visibility: true };
       this.toggleVisibility = this.toggleVisibility.bind(this);
+
+      this.onLoadMapDataCompletedHandlerId = null;
+      this.onDiagnosticSearchSaveHandlerId = null;
    }
 
    componentDidMount() {
       const me = this;
 
       // On Map data Load, reset state of Show/HideAll button
-      splSrv.events.register("onLoadMapDataCompleted", () => me.setToggleVisibility(), false);
+      this.onLoadMapDataCompletedHandlerId = splSrv.events.register("onLoadMapDataCompleted", () => me.setToggleVisibility(), false);
 
       // On Device Search Save, set visibility of Show/HideAll button
-      splSrv.events.register("onDiagnosticSearchSave", () => me.setToggleVisibility(), false);
+      this.onDiagnosticSearchSaveHandlerId = splSrv.events.register("onDiagnosticSearchSave", () => me.setToggleVisibility(), false);
+   }
+   componentWillUnmount() {
+      if (this.onLoadMapDataCompletedHandlerId) {
+         splSrv.events.delete("onLoadMapDataCompleted", this.onLoadMapDataCompletedHandlerId);
+      }
+      this.onLoadMapDataCompletedHandlerId = null;
+
+      if (this.onDiagnosticSearchSaveHandlerId) {
+         splSrv.events.delete("onDiagnosticSearchSave", this.onDiagnosticSearchSaveHandlerId);
+      }
+      this.onDiagnosticSearchSaveHandlerId = null;
    }
 
    setToggleVisibility() {

@@ -17,7 +17,7 @@ export function initHistoricPath(deviceMarker) {
    const polyline = L.polyline(latLngList, {
       smoothFactor: 1,
       weight: 3,
-      color: colorHexCodes.geotabBlue //DEBUG spartanLyncRed
+      color: colorHexCodes.testLimeGreen //DEBUG  geotabBlue
    });
 
    const historicPathConstructors = {
@@ -31,7 +31,7 @@ export function initHistoricPath(deviceMarker) {
       ...historicPathConstructors
    };
 
-   layersModel.addToAllLayer(polyline);
+   layersModel.addToMovingLayer(polyline);
    bindDeviceNamePopup(deviceID, polyline);
    return newHistoricPath;
 }
@@ -46,11 +46,6 @@ export const historicPathModel = {
       clearTimeout(this.delayedInterval);
       this.delayedInterval = null;
       const latLngs = getLatLngsForTimeRange(storage.timeRangeStart, currentSecond, this.deviceData);
-
-      if (typeof storage.selectedDevices[this.deviceID] !== "undefined") {
-         //console.log("==== historicPathModel.timeChangedUpdate(" + storage.selectedDevices[this.deviceID].name + ") currentSecond =", currentSecond, "latLngs = ", latLngs);//DEBUG
-      }
-
       this.polyline.setLatLngs(latLngs);
    },
 

@@ -13,6 +13,7 @@ import storage from "../../dataStore";
 import splSrv from "../../spartanlync/services";
 
 export class ConfigView extends React.Component {
+
    constructor(props) {
       super(props);
 
@@ -231,6 +232,9 @@ export class ConfigView extends React.Component {
       const me = this;
       if (me.clearTooltipsHandlerId) {
          clearTimeout(me.clearTooltipsHandlerId);
+      }
+      if (me.state.vehicleFaultAlertEventHandlerId) {
+         splSrv.events.delete("onFaultAlert", me.state.vehicleFaultAlertEventHandlerId);
       }
    }
 

@@ -260,7 +260,7 @@ window.addDeviceToFilter = (id, name = "Go Device") => {
 };
 
 export function _applyDeviceFilter(deviceIDS) {
-   layerModel.hideAllLayers();
+   layerModel.clearAllLayers();
 
    if (deviceIDS.length === 0) {
       return;

@@ -5,14 +5,12 @@ const LayerModel = {
 
    layerList: {
       movingLayer: L.layerGroup(),
-      splFaultsLayer: L.layerGroup(),
       exceptionLayer: L.layerGroup()
    },
 
    initLayers() {
       this.layerList.movingLayer.addTo(storage.map);
       this.layerList.stoppedLayer = this.layerList.movingLayer;
-      this.layerList.splFaultsLayer.addTo(storage.map);
       L.control.scale().addTo(storage.map);
    },
 
@@ -39,20 +37,12 @@ const LayerModel = {
    },
 
    removeFromAllLayers(obj) {
-      Object.values(this.layerList).forEach(layer => {
-         layer.removeLayer(obj);
+      Object.values(this.layerList).forEach(layerGroup => {
+         layerGroup.removeLayer(obj);
       });
    },
 
-   addToAllLayer(obj) {
-      try {
-         this.layerList.movingLayer.addLayer(obj);
-      } catch (error) {
-         console.warn("67", obj);
-      }
-   },
-
-   addToStopppedLayer(obj) {
+   addToMovingLayer(obj) {
       this.layerList.movingLayer.addLayer(obj);
    },
 
@@ -60,15 +50,15 @@ const LayerModel = {
       this.layerList[name].addTo(storage.map);
    },
 
-   hideAllLayers() {
-      Object.values(this.layerList).forEach(layer => {
-         layer.remove();
-      });
+   clearLayersInGroup(name) {
+      if (this.layerList.hasOwnProperty(name)) {
+         this.layerList[name].clearLayers();
+      }
    },
 
-   reset() {
-      Object.values(this.layerList).forEach(layer => {
-         layer.clearLayers();
+   clearAllLayers() {
+      Object.values(this.layerList).forEach(layerGroup => {
+         layerGroup.clearLayers();
       });
    }
 };

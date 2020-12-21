@@ -40,7 +40,7 @@ export function createMapMarker(latLng) {
    if (element) {
       element.style[L.DomUtil.TRANSITION] = "";
    }
-   layerModel.addToStopppedLayer(newMapMarker);
+   layerModel.addToMovingLayer(newMapMarker);
 
    return newMapMarker;
 };

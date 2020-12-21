@@ -45,7 +45,7 @@ export function createNewExceptionPolyLine(polylineLatLngs, deviceID, ruleID, is
 
    Object.assign(exceptionPolyLine, { ruleID, deviceID, isActive: false });
 
-   layersModel.addToAllLayer(exceptionPolyLine);
+   layersModel.addToMovingLayer(exceptionPolyLine);
    layersModel.addToLayer("exceptionLayer", exceptionPolyLine);
    if (storage.selectedDevices.hasOwnProperty(deviceID)) {
       layersModel.addToLayer("Filter", exceptionPolyLine);

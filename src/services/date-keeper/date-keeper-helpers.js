@@ -1,4 +1,4 @@
-import layers from "../../components/map/layers";
+import layersModel from "../../components/map/layers/layer-model";
 import moment from "moment-timezone";
 import { checkSameDay, } from "../../utils/helper";
 import { playBackSpeedModel } from "../../components/controls/speed-control/playback-speed";
@@ -35,7 +35,7 @@ export function setupTimeObjects(startTimeObj, rangeDiff = 0) {
 
 export function differentDateSet(selectedTime) {
 
-   layers.reset();
+   layersModel.clearAllLayers();
    resetMapData();
 
    const rangeDiff = storage.currentTime - storage.timeRangeStart;

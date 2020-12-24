@@ -1,31 +1,36 @@
 import L from "leaflet";
 import "../../../node_modules/leaflet-geometryutil";
+import moment from "moment-timezone";
 import splSrv from "../services";
 import storage from "../../dataStore";
 import layerModel from "../../components/map/layers/layer-model";
 import { colorHexCodes } from "../../constants/color-hex-codes";
+import { deviceSearch } from "../../components/configuration/vehicles-config/vehicle-search";
+import { markerList } from "../../dataStore/map-data";
 
 export function initSplMapFaults() {
    splSrv.events.register("onLoadSplServices", () => {
-      demoVeh.init();
 
-      // DEBUG - TEST - PLEASE DELETE ON PROD
-      //    speedLabel dateInputLabel timeRangeStartLabel currentTimeLabel
+      // Init
+      //splMapFaultMgr.initEventHandlers();
+
+      // DEMO INIT - PLEASE DELETE ON PROD - DEBUG
+      // DomButtonIds: speedLabel dateInputLabel timeRangeStartLabel currentTimeLabel
       //
       document.getElementById("speedLabel").addEventListener("click", demoVeh.step.bind(demoVeh));
-      document.getElementById("dateInputLabel").addEventListener("click", demoVeh.clear.bind(demoVeh));
-      document.getElementById("timeRangeStartLabel").addEventListener("click", demoVeh.utils.enableGetMapLatLng.bind(demoVeh));
+      document.getElementById("currentTimeLabel").addEventListener("click", demoVeh.clear.bind(demoVeh));
+      document.getElementById("dateInputLabel").addEventListener("click", demoVeh.utils.enableGetMapLatLng.bind(demoVeh));
    });
 }
 
 const demoVeh = {
 
-   _onInitDrawXXLatLngs: 8,         // How many latLng points to draw on initialization (default: 1)
+   _onInitDrawXXLatLngs: 1,        // How many latLng points to draw on initialization (NULL = Random # between 1-10)
 
    _mapGroupLayer: "splDemoLayer",  // Demo polyline layers are drawn on this layerGroup
 
    _polyLine: null,
-   _step: 0,
+   _step: null,
 
    init: function () {
       const me = this;
@@ -36,35 +41,54 @@ const demoVeh = {
    initDemo: function () {
       const me = this;
 
-      if (!me.data.latLngArr || me.data.latLngArr && !me.data.latLngArr.length) { return; }
+      // If NULL, Generate random number between 1 - 10
+      me._onInitDrawXXLatLngs = me._onInitDrawXXLatLngs === null ? Math.floor((Math.random() * 10) + 1) : me._onInitDrawXXLatLngs;
 
-      const latlngArr = me.data.latLngArr.slice(0, me._onInitDrawXXLatLngs);
+      if (!me.data.latLngArr || me.data.latLngArr && !me.data.latLngArr.length) { return; }
+      me._onInitDrawXXLatLngs = me._onInitDrawXXLatLngs > me.data.latLngArr.length ? me.data.latLngArr.length : me._onInitDrawXXLatLngs;
+
+      const vehLatlngArr = me.data.latLngArr.slice(0, me._onInitDrawXXLatLngs);
       me._step = me._onInitDrawXXLatLngs - 1;
 
-      me._polyLine = L.polyline(latlngArr, {
+      me._polyLine = L.polyline(vehLatlngArr, {
          smoothFactor: 1,
          weight: 3,
-         color: colorHexCodes.testPurple // testYellow testLimeGreen
+         color: colorHexCodes.geotabBlue
       });
 
       layerModel.addToLayer(me._mapGroupLayer, me._polyLine);
       me._polyLine.bringToFront();
 
-      if (me._onInitDrawXXLatLngs > 1) {
-         splMapFaultMgr.setLatLngs(me._polyLine.getLatLngs(), demoVeh.data, demoVeh.data.latLngIdx);
+      // Show what we have
+      if (me._polyLine) {
+         storage.map.fitBounds(me._polyLine.getBounds());
       }
+
+      //           LIVE DATASOURCES:( vehMarker.deviceID  , Event.latLngs            , vehMarker   , vehMarker.deviceData        , splApi().splFaultTimelineEvents  )
+      splMapFaultMgr.setLatLngFaults(demoVeh.data.deviceID, me._polyLine.getLatLngs(), demoVeh.data, demoVeh.data.latLngByTimeIdx, demoVeh.data._demoSplFaultTimelineEvents);
    },
 
    step: function () {
       const me = this;
 
+      if (me._step === null) {
+         me._step = 0;
+         me.init();
+         return;
+      }
+
+      // Show what we have
+      if (me._polyLine) {
+         storage.map.fitBounds(me._polyLine.getBounds());
+      }
+
+      // Show next segment, if there is more
       me._step++;
       if (me._step >= me.data.latLngArr.length) { return; }
 
       me._polyLine.addLatLng(me.data.latLngArr[me._step]);
-      splMapFaultMgr.addLatLng(me._polyLine.getLatLngs(), demoVeh.data, demoVeh.data.latLngIdx);
-
-      storage.map.fitBounds(me._polyLine.getBounds());
+      //           LIVE DATASOURCES:( vehMarker.deviceID  , Event.latLngs            , vehMarker   , vehMarker.deviceData        , splApi().splFaultTimelineEvents  )
+      splMapFaultMgr.setLatLngFaults(demoVeh.data.deviceID, me._polyLine.getLatLngs(), demoVeh.data, demoVeh.data.latLngByTimeIdx, demoVeh.data._demoSplFaultTimelineEvents);
    },
 
    clear: function () {
@@ -83,7 +107,7 @@ const demoVeh = {
          const me = this;
          if (!me._getMapLatLngEnabled) {
             console.log("==== demoVeh.utils.enableGetMapLatLng() ENABLED ====");//DEBUG
-            storage.map.on("click", (evt) => { console.log(JSON.stringify(evt.latlng) + ","); });
+            storage.map.on("click", (evt) => { console.log(JSON.stringify(evt.latlng)); });
             me._getMapLatLngEnabled = true;
          }
       }
@@ -94,38 +118,43 @@ const demoVeh = {
       deviceID: "b9999",      // Fake Geotab Vehicle DeviceID
 
       latLngArr: [],          // FROM: evt.target.getLatLngs()
-      latLngIdx: {},          // FROM: deviceData
-      orderedDateTimes: [],   // FROM: deviceData.orderedDateTimes
+      latLngByTimeIdx: {},    // FROM: vehMarker.deviceData
+      orderedDateTimes: [],   // FROM: vehMarker.deviceData.orderedDateTimes
 
       // FROM: Auto-Generated by SpartanLync / Geotab API call
       // ( SpartanLync created Obj after querying Fault / Ignition events for entire day for all selected vehicles )
       _demoSplFaultTimelineEvents: [
-         { time: "1606900000", evtType: "IGOn" },
-         { time: "1606997742", evtType: "fault", evtState: "RED", evtColor: "#BD2727", tooltipDesc: "Extreme Over Pressure ( Axle 3 Tire 4 - Tractor )" },
-         { time: "1607007742", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Over Pressure ( Axle 3 Tire 2 - Tractor )" },
-         { time: "1607024958", evtType: "fault", evtState: "RED", evtColor: "#BD2727", tooltipDesc: "Extreme Under Pressure ( Axle 1 Tire 2 - Trailer 1 )" },
-         { time: "1607026007", evtType: "fault", evtState: "RED", evtColor: "#BD2727", tooltipDesc: "Under Pressure ( Axle 1 Tire 1 - Tractor )" },
-         { time: "1607028007", evtType: "IGOff" },
+         { latLngTime: "1606900000", realTime: "1606900000", evtType: "IGOn" },
+         { latLngTime: "1606972480", realTime: "1606972480", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Over Pressure ( Axle 1 Tire 1 - Tractor )" },
+         { latLngTime: "1606994975", realTime: "1606994975", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Over Pressure ( Axle 1 Tire 2 - Trailer 1 )" },
 
-         { time: "1607500000", evtType: "IGOn" },
-         { time: "1607513796", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Under Pressure ( Axle 1 Tire 2 - Tractor )" },
-         { time: "1607515801", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Over Pressure ( Axle 2 Tire 1 - Tractor )" },
-         { time: "1607521493", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Under Pressure ( Axle 1 Tire 2 - Tractor )" },
-         { time: "1607531493", evtType: "IGOff" },
+         { latLngTime: "1606997742", realTime: "1606997742", evtType: "fault", evtState: "RED", evtColor: "#BD2727", tooltipDesc: "Extreme Over Pressure ( Axle 2 Tire 1 - Tractor )" },
+         { latLngTime: "1607024958", realTime: "1607024958", evtType: "fault", evtState: "RED", evtColor: "#BD2727", tooltipDesc: "Extreme Under Pressure ( Axle 2 Tire 2 - Trailer 1 )" },
+         { latLngTime: "1607026007", realTime: "1607026007", evtType: "fault", evtState: "RED", evtColor: "#BD2727", tooltipDesc: "Under Pressure ( Axle 2 Tire 3 - Dolly )" },
+         { latLngTime: "1607028007", realTime: "1607028007", evtType: "IGOff" },
 
-         { time: "1607532000", evtType: "IGOn" },
-         { time: "1607532712", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Under Pressure ( Axle 1 Tire 1 - Tractor )" },
-         { time: "1607570184", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Over Pressure ( Axle 1 Tire 2 - Tractor )" },
-         { time: "1607588184", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Under Pressure ( Axle 2 Tire 1 - Trailer 1 )" },
-         { time: "1607608184", evtType: "IGOff" },
+         { latLngTime: "1607500000", realTime: "1607500000", evtType: "IGOn" },
+         { latLngTime: "1607513796", realTime: "1607513796", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Under Pressure ( Axle 3 Tire 1 - Tractor )" },
+         { latLngTime: "1607515801", realTime: "1607515801", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Over Pressure ( Axle 3 Tire 2 - Dolly )" },
+         { latLngTime: "1607521493", realTime: "1607521493", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Under Pressure ( Axle 3 Tire 3 - Tractor )" },
+         { latLngTime: "1607528900", realTime: "1607531493", evtType: "IGOff" },
+         //             1607528918
+         //             1607530881
+         //{ latLngTime: "1607531497", realTime: "1607531493", evtType: "IGOff" },
+
+         { latLngTime: "1607532000", realTime: "1607532000", evtType: "IGOn" },
+         { latLngTime: "1607532712", realTime: "1607532712", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Under Pressure ( Axle 4 Tire 1 - Tractor )" },
+         { latLngTime: "1607570184", realTime: "1607570184", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Over Pressure ( Axle 4 Tire 2 - Trailer 1 )" },
+         { latLngTime: "1607588184", realTime: "1607588184", evtType: "fault", evtState: "AMBER", evtColor: "#FBBD04", tooltipDesc: "Under Pressure ( Axle 4 Tire 3 - Dolly )" },
+         { latLngTime: "1607608184", realTime: "1607608184", evtType: "IGOff" },
       ],
 
       // Demo data manually created to represent Vehicle route, automatically polled by Geotab API
       _demoVehDataWithTime: [
-         { time: "1606972480", loc: { "lat": 43.72236612700568, "lng": -79.62405681610109 } },
+         { time: "1606972480", loc: { "lat": 43.72236612700568, "lng": -79.62405681610109 } }, //AMBER
          { time: "1606994975", loc: { "lat": 43.722839100953614, "lng": -79.62431430816652 } },
 
-         { time: "1606997742", loc: { "lat": 43.72296315907589, "lng": -79.62488293647768 } },
+         { time: "1606997742", loc: { "lat": 43.72296315907589, "lng": -79.62488293647768 } }, //RED
          { time: "1607024958", loc: { "lat": 43.722575476590784, "lng": -79.62510824203493 } },
          { time: "1607026007", loc: { "lat": 43.722009455657265, "lng": -79.62525844573976 } },
 
@@ -133,19 +162,19 @@ const demoVeh = {
          { time: "1607511173", loc: { "lat": 43.72112552185925, "lng": -79.6255910396576 } },
          { time: "1607511921", loc: { "lat": 43.7208773977472, "lng": -79.62582170963289 } },
 
-         { time: "1607513796", loc: { "lat": 43.72075333530584, "lng": -79.62568759918214 } },
+         { time: "1607513796", loc: { "lat": 43.72075333530584, "lng": -79.62568759918214 } }, //AMBER
          { time: "1607515801", loc: { "lat": 43.72053622541529, "lng": -79.62521553039552 } },
          { time: "1607521493", loc: { "lat": 43.720509086623636, "lng": -79.62512969970705 } },
 
-         { time: "1607528918", loc: { "lat": 43.720784350940264, "lng": -79.62477564811708 } },
-         { time: "1607530881", loc: { "lat": 43.72113327572119, "lng": -79.62437868118288 } },
+         { time: "1607528918", loc: { "lat": 43.720784350940264, "lng": -79.62477564811708 } }, // NULL
+         { time: "1607530881", loc: { "lat": 43.72113327572119, "lng": -79.62437868118288 } },  // NULL
 
-         { time: "1607532712", loc: { "lat": 43.72150545991439, "lng": -79.62392807006837 } },
+         { time: "1607532712", loc: { "lat": 43.72150545991439, "lng": -79.62392807006837 } }, //AMBER
          { time: "1607570184", loc: { "lat": 43.721714812507, "lng": -79.62370812892915 } },
          { time: "1607588184", loc: { "lat": 43.7218311191868, "lng": -79.62369203567506 } },
 
          { time: "1607624367", loc: { "lat": 43.72212188489844, "lng": -79.62386369705202 } },
-         { time: "1608452183", loc: { "lat": 43.72236612700568, "lng": -79.62405681610109 } },
+         { time: "1608452183", loc: { "lat": 43.72236612700567, "lng": -79.62405681610108 } },
       ],
 
       /* ==== PUBLIC METHODS ==== */
@@ -153,14 +182,14 @@ const demoVeh = {
       init: function () {
          const me = this;
 
-         me.latLngIdx = {};
+         me.latLngByTimeIdx = {};
          me.latLngArr = [];
          me.orderedDateTimes = [];
 
          me._demoVehDataWithTime.sort((a, b) => { return a.time > b.time; });
          for (const obj of me._demoVehDataWithTime) {
             me.latLngArr.push(obj.loc);
-            me.latLngIdx[obj.time] = obj.loc;
+            me.latLngByTimeIdx[obj.time] = obj.loc;
             me.orderedDateTimes.push(obj.time);
          }
       }
@@ -170,20 +199,19 @@ const demoVeh = {
 export const splMapFaultMgr = {
 
    _faultsLayerGroupName: "",
+   _faultsSegmentNamePrefix: "fSeg-",
 
    _defaultPolylineWeight: 3,
    _defaultPolylineSmoothFactor: 1,
-   _defaultPolylineAmberColor: colorHexCodes.spartanLyncAmber,
-   _defaultPolylineRedColor: colorHexCodes.spartanLyncRed,
 
    _vehMarkers: {},
 
-   _init: function (vehMarker) {
+   _init: function (vehMarker, latLngByTimeIdx) {
       const me = this;
 
       if (typeof vehMarker !== "object" || typeof vehMarker.deviceID === "undefined") { return false; }
 
-      const deviceID = vehMarker.deviceID;
+      const vehId = vehMarker.deviceID;
 
       // Tasks we do only once
       if (!me._faultsLayerGroupName) {
@@ -193,106 +221,288 @@ export const splMapFaultMgr = {
          }
       }
 
-      // Init Faults DB object
+      // Init Faults DB object, per Vehicle
       if (typeof vehMarker.splMapFaults === "undefined") {
          vehMarker.splMapFaults = {
-            polylines: []
+            faultSegments: {}
          };
-         me._vehMarkers[deviceID] = vehMarker;
+         me._vehMarkers[vehId] = vehMarker;
+      }
+
+      // Init latLngByTimeIdx hash DB
+      // - Speed up LatLng lookups and searches on large Historical Vehicle Path Indexes
+      if (!splMapFaultUtils.latLngToTimeDB.isGenerated()) {
+         splMapFaultUtils.latLngToTimeDB.generateDB(latLngByTimeIdx);
       }
 
       return vehMarker.splMapFaults;
    },
 
-   _genLatLngTimestamps: function (latLngArr, latLngByTimeIdx) {
+   _getVehName: function (vehId) {
+      return typeof deviceSearch.selectedIDS[vehId] !== "undefined" ? deviceSearch.selectedIDS[vehId].name : vehId.toUpperCase();
+   },
+
+   _genLatLngTimestamps: function (latLngArr, vehPathLatLngByTimeIdx) {
       const timeArr = [];
       for (const idx in latLngArr) {
-         timeArr[idx] = splMapFaultUtils.latlngToTime(latLngArr[idx], latLngArr, latLngByTimeIdx);
+         timeArr[idx] = splMapFaultUtils.searchLatlngArrForTime(latLngArr[idx], latLngArr, vehPathLatLngByTimeIdx);
       }
       return timeArr;
    },
 
-   setLatLngs: function (polyLineLatLngArr, vehMarker, vehDeviceData) {
+   _createPolyline: function (faultId, vehId, startIdx, endIdx, color, vehPathLatLngArr, vehDeviceData, splVehMapFaultsDB, splFaultTimelineEvents) {
       const me = this;
-      const splVehFaultMap = me._init(vehMarker);
       let faultPolyline = null;
-
-      if (!splVehFaultMap) { return; }
-
-      // Create
+      const polylineLatLngSegmentArr = vehPathLatLngArr.slice(parseInt(startIdx), parseInt(endIdx) + 1);
       try {
          faultPolyline = new FaultPolyline(
+            faultId,
+            me._getVehName(vehId),
             me._faultsLayerGroupName,
             me._defaultPolylineSmoothFactor,
             me._defaultPolylineWeight,
-            me._defaultPolylineRedColor,
-            polyLineLatLngArr,
-            me._genLatLngTimestamps(polyLineLatLngArr, vehDeviceData)
+            color,
+            me._genLatLngTimestamps(polylineLatLngSegmentArr, vehDeviceData),
+            polylineLatLngSegmentArr,
+            parseInt(startIdx),
+            endIdx
          );
       }
       catch (err) {
-         console.log("==== splMapFaultMgr.setLatLngs() ERROR:", err);//DEBUG
-         return;
+         console.log("==== splMapFaultMgr._createPolyline() ERROR:", err);
+         return null;
       }
-      splVehFaultMap.polylines.push(faultPolyline);
-
-      // Add metadata
-      faultPolyline.data.startIdx = 0;
-      faultPolyline.data.endIdx = polyLineLatLngArr.length - 1;
+      if (faultPolyline) {
+         splVehMapFaultsDB.faultSegments[faultPolyline.getId()] = {
+            polyline: faultPolyline
+         };
+         faultPolyline.enableFaultInfoTooltip(vehDeviceData, splFaultTimelineEvents);
+      }
+      return faultPolyline;
    },
 
-   addLatLng: function (polyLineLatLngArr, vehMarker, vehDeviceData) {
+   // eslint-disable-next-line complexity
+   _searchVehPathForFaultSegments: function (vehId, vehPathLatLngArr, latLngByTimeIdx, splFaultTimelineEvents) {
+      //const DEBUG = true;
       const me = this;
-      const splVehFaultMap = me._init(vehMarker);
-      if (!splVehFaultMap) { return; }
+      const timerStart = new Date();
+      const segmentsArr = [];
+      let sInfo = null;
+      let sStart = 0;
+      let sEnd = 0;
 
-      //console.log("==== splMapFaultMgr.addLatLng() splVehFaultMap =", splVehFaultMap);//DEBUG
+      // No need for search on single-point segments
+      if (vehPathLatLngArr.length === 1) {
+         const timestamp = splMapFaultUtils.latlngToTime(vehPathLatLngArr[0], latLngByTimeIdx);
+         const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, splFaultTimelineEvents);
+
+         if (faultInfo.faultState) {
+            sInfo = faultInfo;
+            const segmentId = splMapFaultUtils.createLatlngSegmentId(me._faultsSegmentNamePrefix + vehId, vehPathLatLngArr[sStart]);
+            sInfo.id = segmentId ? segmentId : me._faultsSegmentNamePrefix + vehId + "-" + sStart;
+            sInfo.startIdx = 0;
+            sInfo.endIdx = 0;
+            sInfo.pointCount = 1;
+            delete sInfo.tooltipDesc;
+            segmentsArr.push(sInfo);
+         }
+         return segmentsArr;
+      }
+
+      // Search multi-point paths
+      for (const idx in vehPathLatLngArr) {
+         const vehPathLatLng = vehPathLatLngArr[idx];
+         const timestamp = splMapFaultUtils.latlngToTime(vehPathLatLng, latLngByTimeIdx);
+         const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, splFaultTimelineEvents);
+
+         if (!faultInfo) { return segmentsArr; }
+         if (faultInfo.faultState) {
+            if (sStart === sEnd) {
+               sInfo = faultInfo;
+               sStart = idx;
+               sEnd = sStart + 1;
+               if (typeof DEBUG !== "undefined" && DEBUG) { console.log("(", vehId, ")==== idx =", idx, " ================================== START SEGMENT"); }//DEBUG
+            }
+            else {
+               if (sInfo.faultState !== faultInfo.faultState) {
+                  const segmentId = splMapFaultUtils.createLatlngSegmentId(me._faultsSegmentNamePrefix + vehId, vehPathLatLngArr[sStart]);
+                  sInfo.id = segmentId ? segmentId : me._faultsSegmentNamePrefix + vehId + "-" + sStart;
+                  sInfo.startIdx = sStart;
+                  sInfo.endIdx = idx;
+                  sInfo.pointCount = idx - sStart + 1;
+                  delete sInfo.tooltipDesc;
+                  segmentsArr.push(sInfo);
+                  if (typeof DEBUG !== "undefined" && DEBUG) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
+
+                  sInfo = faultInfo;
+                  sStart = idx;
+                  sEnd = sStart + 1;
+                  if (typeof DEBUG !== "undefined" && DEBUG) { console.log("(", vehId, ")==== idx =", idx, " ================================== START SEGMENT"); }//DEBUG
+               }
+               else {
+                  sEnd = idx;
+                  if (typeof DEBUG !== "undefined" && DEBUG) { console.log("(", vehId, ")==== idx =", idx, " ================================== UPDATE SEGMENT END"); }//DEBUG
+               }
+            }
+         }
+         else {
+            if (sStart !== sEnd) {
+               const segmentId = splMapFaultUtils.createLatlngSegmentId(me._faultsSegmentNamePrefix + vehId, vehPathLatLngArr[sStart]);
+               sInfo.id = segmentId ? segmentId : me._faultsSegmentNamePrefix + vehId + "-" + sStart;
+               sInfo.startIdx = sStart;
+               sInfo.endIdx = idx;
+               sInfo.pointCount = idx - sStart + 1;
+               delete sInfo.tooltipDesc;
+               segmentsArr.push(sInfo);
+               sInfo = null;
+               sStart = sEnd = idx;
+               if (typeof DEBUG !== "undefined" && DEBUG) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
+            }
+         }
+         if (typeof DEBUG !== "undefined" && DEBUG) { console.log("(", vehId, ")==== idx =", idx, timestamp, " f =", faultInfo); }//DEBUG
+      }
+      if (sStart !== sEnd) {
+         const segmentId = splMapFaultUtils.createLatlngSegmentId(me._faultsSegmentNamePrefix + vehId, vehPathLatLngArr[sStart]);
+         sInfo.id = segmentId ? segmentId : me._faultsSegmentNamePrefix + vehId + "-" + sStart;
+         sInfo.startIdx = sStart;
+         sInfo.endIdx = vehPathLatLngArr.length - 1;
+         sInfo.pointCount = sInfo.endIdx - sInfo.startIdx + 1;
+         delete sInfo.tooltipDesc;
+         segmentsArr.push(sInfo);
+         if (typeof DEBUG !== "undefined" && DEBUG) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
+      }
+
+      // Show Performance Stats
+      const timerEnd = new Date();
+      console.log("--- splMapFaultMgr.searchVehHistoricPathsForFaultSegments(): VehicleId [", vehId, "]: Scan Elapsed Time " + splMapFaultUtils.convertSecondsToHMS((timerEnd - timerStart) / 1000));
+
+      return segmentsArr;
+   },
+
+   initEventHandlers: function () {
+      const me = this;
+
+      // Init CreateOrUpdate Faults Event Handler
+      splSrv.events.register("onHistoricPathCreatedOrUpdated", (vehId, vehPathLatLngArr) => {
+         const vehMarker = typeof markerList[vehId] !== "undefined" ? markerList[vehId] : null;
+         console.log("==== splMapFaultMgr.onHistoricPathCreatedOrUpdated() vehId =", vehId, "vehPathLatLngArr = ", JSON.stringify(vehPathLatLngArr));//DEBUG
+         if (vehPathLatLngArr.length && vehMarker) {
+            splMapFaultMgr.setLatLngFaults(vehId, vehPathLatLngArr, vehMarker, vehMarker.deviceData, demoVeh.data._demoSplFaultTimelineEvents);
+         }
+      }, false);
+
+      // Init Cleanup Event Handler
+      splSrv.events.register("onPreDateTimeChange", () => me.clear(), false);
+   },
+
+   setLatLngFaults: function (vehId, vehPathLatLngArr, vehMarker, vehDeviceData, splFaultTimelineEvents) {
+      const me = this;
+      const splVehMapFaultsDB = me._init(vehMarker, vehDeviceData);
+      if (!splVehMapFaultsDB || !vehPathLatLngArr.length) { return; }
+
+      // Search veh Path for fault segments
+      for (const newFaultSegmentInfo of me._searchVehPathForFaultSegments(vehId, vehPathLatLngArr, vehDeviceData, splFaultTimelineEvents)) {
+         let faultSegment;
+
+         // Create Segment
+         if (typeof splVehMapFaultsDB.faultSegments[newFaultSegmentInfo.id] === "undefined") {
+            me._createPolyline(
+               newFaultSegmentInfo.id, vehId,
+               newFaultSegmentInfo.startIdx, newFaultSegmentInfo.endIdx,
+               newFaultSegmentInfo.faultColor,
+               vehPathLatLngArr, vehDeviceData,
+               splVehMapFaultsDB, splFaultTimelineEvents
+            );
+            faultSegment = splVehMapFaultsDB.faultSegments[newFaultSegmentInfo.id];
+            faultSegment.info = newFaultSegmentInfo;
+         }
+         // Update Segment
+         else {
+            faultSegment = splVehMapFaultsDB.faultSegments[newFaultSegmentInfo.id];
+            console.log("==== splMapFaultMgr.setLatLngFaults(UPDATE) newPointCount =", newFaultSegmentInfo.pointCount, " oldPointCount =", faultSegment.info.pointCount); // DEBUG
+
+            // Update PolyLine
+            //
+
+            // Update Segment Info
+            faultSegment.info = newFaultSegmentInfo;
+         }
+         console.log("==== splMapFaultMgr.setLatLngFaults() faultSegment =", faultSegment); // DEBUG
+      }
    },
 
    clear: function () {
       const me = this;
-
       layerModel.clearLayersInGroup(me._faultsLayerGroupName);
       for (const vehMarker of Object.values(me._vehMarkers)) {
          if (typeof vehMarker === "undefined" && typeof vehMarker.splMapFaults === "undefined" && vehMarker && vehMarker.splMapFaults) {
             delete vehMarker.splMapFaults;
          }
       }
+      splMapFaultUtils.latLngToTimeDB.clear();
       me._vehMarkers = {};
    }
 };
 
 class FaultPolyline {
 
-   constructor(layerGroupName, smoothFactor, weight, color, latLngArr, latLngTimestampArr) {
+   constructor(faultId, vehName, layerGroupName, smoothFactor, weight, color, myLatLngTimeArr, myLatLngArr, vehPathLatLngStartIdx, vehPathLatLngEndIdx) {
+
+      this.id = faultId;
+      this.vehName = vehName;
 
       this.layerGroupName = layerGroupName;
       this.smoothFactor = smoothFactor;
       this.weight = weight;
       this.color = color;
-      this.latLngArr = latLngArr;
-      this.timeArr = latLngTimestampArr;
+
+      this.myLatLngArr = myLatLngArr;
+      this.myLatLngTimeArr = myLatLngTimeArr;
+
+      this.vehPathLatLngStartIdx = vehPathLatLngStartIdx;
+      this.vehPathLatLngEndIdx = vehPathLatLngEndIdx;
 
       this.polyLine = null;
-      this.data = {};
 
-      if (typeof layerGroupName === "undefined" ||
+      if (this.isUndefinedOrEmpty(
+         faultId, vehName, layerGroupName, smoothFactor, weight, color,
+         vehPathLatLngStartIdx, vehPathLatLngEndIdx
+      )) {
+         throw new Error("Missing or invalid default layerGroupName, smoothFactor, weight, color, vehPathLatLngStartIdx, vehPathLatLngEndIdx, faultId, or vehName");
+      }
+      else if (typeof myLatLngArr === "undefined" || !myLatLngArr.length) {
+         throw new Error("No LatLng points to draw on map");
+      }
+      else if (typeof myLatLngTimeArr === "undefined" || !myLatLngTimeArr.length) {
+         throw new Error("No LatLng timestamps");
+      }
+      else if (myLatLngArr.length !== myLatLngTimeArr.length) {
+         throw new Error("LatLng points and corresponding timestamps do not match");
+      }
+      else {
+         this.draw();
+      }
+   }
+
+   isUndefinedOrEmpty(faultId, vehName, layerGroupName, smoothFactor, weight, color, vehPathLatLngStartIdx, vehPathLatLngEndIdx) {
+      if (typeof faultId === "undefined" ||
+         typeof vehName === "undefined" ||
+         typeof layerGroupName === "undefined" ||
+         typeof vehPathLatLngStartIdx === "undefined" ||
+         typeof vehPathLatLngEndIdx === "undefined" ||
          typeof smoothFactor === "undefined" ||
          typeof weight === "undefined" ||
          typeof color === "undefined" ||
-         !layerGroupName || !smoothFactor || !weight || !color) {
-         throw new Error("Missing default layerGroupName, smoothFactor, weight, or color");
+         !vehName || !layerGroupName || !smoothFactor || !weight || !color ||
+         isNaN(vehPathLatLngStartIdx) || isNaN(vehPathLatLngEndIdx)) {
+         return true;
       }
-      if (typeof latLngArr === "undefined" || !latLngArr.length) {
-         throw new Error("No latLng points to draw on map");
-      }
-      if (typeof latLngTimestampArr === "undefined" || !latLngTimestampArr.length) {
-         throw new Error("No latLng timestamps");
-      }
-      if (latLngArr.length !== latLngTimestampArr.length) {
-         throw new Error("latLng points and corresponding timestamps do not match");
-      }
-      this.draw();
+      return false;
+   }
+
+   getId() {
+      const me = this;
+      return me.id;
    }
 
    draw() {
@@ -301,26 +511,33 @@ class FaultPolyline {
 
       }
       else {
-         me.polyLine = L.polyline(me.latLngArr, {
+         me.polyLine = L.polyline(me.myLatLngArr, {
             smoothFactor: me.smoothFactor,
             weight: me.weight,
             color: me.color
          });
 
+         layerModel.addToLayer(me.layerGroupName, me.polyLine);
+         me.polyLine.bringToFront();
+      }
+   }
+
+   enableFaultInfoTooltip(vehDeviceData, splFaultTimelineEvents) {
+      const me = this;
+      if (me.polyLine) {
          me.polyLine.on("mouseover", (evt) => {
             me.polyLine.unbindTooltip();
 
-            const timestamp = splMapFaultUtils.latlngToTime(evt.latlng, evt.target.getLatLngs(), demoVeh.data.latLngIdx);
-            const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, demoVeh.data._demoSplFaultTimelineEvents);
-            const latLngTxt = (faultInfo.faultState ? `${faultInfo.faultState} fault: ${faultInfo.tooltipDesc} ` : `lat: ${evt.latlng.lat} lng: ${evt.latlng.lng}`);
+            const timestamp = splMapFaultUtils.searchLatlngArrForTime(evt.latlng, me.myLatLngArr, vehDeviceData);
+            const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, splFaultTimelineEvents);
+            const humanTime = faultInfo.faultTime ? "<br />@" + moment.unix(faultInfo.faultTime).format(storage.humanDateTimeFormat) : "";
+            const alertHeader = faultInfo.faultState === "RED" ? splmap.tr("alert_header_red") : splmap.tr("alert_header_amber");
+            const latLngTxt = me.vehName + (faultInfo.faultState ? `: ${alertHeader}:<br />${faultInfo.tooltipDesc}${humanTime}` : "");
 
             me.polyLine.bindTooltip(latLngTxt, {
                "className": "spl-map-vehicle-tooltip",
             }).openTooltip(evt.latlng);
          });
-
-         layerModel.addToLayer(me.layerGroupName, me.polyLine);
-         me.polyLine.bringToFront();
       }
    }
 }
@@ -328,29 +545,79 @@ class FaultPolyline {
 export const splMapFaultUtils = {
 
    /**
+   * searchLatlngArrForTime() Get Unix timestamp of nearest LatLng point in a Leaflet polyline, by searching every segments
+   *
+   * @param {object} latlng          - LatLng position on polyline, as starting point for timestamp search
+   * @param {array} latLngByArr      - Array of Leaflet LatLng points making up polyline
+   * @param {object} latLngByTimeIdx - Object of LatLng points, with Unix timestamps as keys
+   *
+   * @return {int}                   - Unix timestamp of nearest LatLng point to supplied LatLng point in Leaflet polyline
+   */
+   searchLatlngArrForTime: function (latlng, latLngByArr, latLngByTimeIdx) {
+      const me = this;
+      const info = me.findLatLngSegment(latlng, latLngByArr);
+      if (info.found && info.nearestIdx !== null) {
+         const latLngNeedle = info.nearestLatLng;
+         return me.latlngToTime(latLngNeedle, latLngByTimeIdx);
+      }
+      return null;
+   },
+
+   /**
+   * latlngToTime() Return Unix timestamp key to a specific LatLng point value by scanning for LatLng match in DB
+   *
+   * @param {object} latlng          - Specific Real LatLng position in Db
+   * @param {object} latLngByTimeIdx - Object of LatLng points, with Unix timestamps as keys
+   *
+   * @return {int}                   - Unix timestamp of specified LatLng point or NULL if not found
+   */
+   latlngToTime: function (latlng, latLngByTimeIdx) {
+      const me = this;
+      const [lat, lng] = me.parseLatLng(latlng);
+      if (lat && lng) {
+         const latLngNeedle = L.latLng({ "lat": lat, "lng": lng });
+         const timestamp = splMapFaultUtils.latLngToTimeDB.get(latLngNeedle);
+         if (timestamp) {
+            return timestamp;
+         }
+         else if (typeof latLngByTimeIdx === "object") {
+            for (const time of Object.keys(latLngByTimeIdx)) {
+               if (isNaN(time)) { continue; }
+               if (latLngNeedle.equals(me.cleanLatLng(latLngByTimeIdx[time]))) {
+                  splMapFaultUtils.latLngToTimeDB.updateDB(time, latLngNeedle);
+                  return time;
+               }
+            }
+         }
+      }
+      return null;
+   },
+
+   /**
    * faultInfoByTimestamp() SpartanLync Fault Info at a specific time on Leaflet polyline
    *
    * @param {int} currentSecond - Unix timstamp of fault to search for details
    * @param {array} timelineArr - Array of fault event objects sorted on a timeline of sensor faults and ignition events
    *
-   * @return {object}           - Detail of AMBER/RED prioritized faults occuring on a specied second
+   * @return {object}           - Details of AMBER/RED prioritized faults occuring on a specied second
    */
    faultInfoByTimestamp: function (currentSecond, timelineArr) {
 
       const currentStateObj = {
          faultState: "",
          faultColor: "",
+         faultTime: "",
          tooltipDesc: "",
       };
 
       if (!isNaN(currentSecond) && Array.isArray(timelineArr) && timelineArr.length > 1) {
-         timelineArr.sort((a, b) => { return a.time > b.time; });
-         if (currentSecond < timelineArr[0].time || currentSecond > timelineArr[timelineArr.length - 1].time) {
+         timelineArr.sort((a, b) => { return a.latLngTime > b.latLngTime; });
+         if (currentSecond < timelineArr[0].latLngTime || currentSecond > timelineArr[timelineArr.length - 1].latLngTime) {
             return currentStateObj; // Search out of bounds of fault timeline
          }
          for (const idx in timelineArr) {
             if (idx >= timelineArr.length - 1) { continue; }
-            const evtNow = timelineArr[idx];
+            const evtNow = timelineArr[parseInt(idx)];
             const evtNext = timelineArr[parseInt(idx) + 1];
 
             if (typeof evtNow.evtState === "undefined") {
@@ -359,34 +626,12 @@ export const splMapFaultUtils = {
             else if (!(currentStateObj.faultState === "RED" && evtNow.evtState === "AMBER")) {
                currentStateObj.faultState = evtNow.evtState;
                currentStateObj.faultColor = evtNow.evtColor;
+               currentStateObj.faultTime = evtNow.realTime;
                currentStateObj.tooltipDesc = evtNow.tooltipDesc;
             }
-            if (currentSecond >= evtNow.time && currentSecond <= evtNext.time) {
-               return currentStateObj;
-            }
-         }
-      }
-      return null;
-   },
 
-   /**
-   * latlngToTime() Get Unix timestamp of the nearest Leaflet polyline segment point, when supplied a LatLng position on the polyline
-   *
-   * @param {object} latlng          - LatLng position on polyline, as starting point for timestamp search
-   * @param {array} latLngByArr      - Array of Leaflet LatLng points making up polyline
-   * @param {object} latLngByTimeIdx - Object of LatLng points, with Unix timestamps as keys
-   *
-   * @return {int}                   - Unix timestamp of nearest Leaflet polyline segment point to specified LatLng position on polyline
-   */
-   latlngToTime: function (latlng, latLngByArr, latLngByTimeIdx) {
-      const me = this;
-      const info = me.findLatLngSegment(latlng, latLngByArr);
-      if (info.found && info.nearestIdx !== null) {
-         const latLngNeedle = info.nearestLatLng;
-         for (const time of Object.keys(latLngByTimeIdx)) {
-            if (isNaN(time)) { continue; }
-            if (latLngNeedle.equals(latLngByTimeIdx[time])) {
-               return time;
+            if (currentSecond >= evtNow.latLngTime && currentSecond < evtNext.latLngTime) {
+               return currentStateObj;
             }
          }
       }
@@ -417,8 +662,8 @@ export const splMapFaultUtils = {
       if (!latLngArr.length) { return segmentStatusObj; }
       if (latLngArr.length === 1) {
          segmentStatusObj.found = true;
-         segmentStatusObj.startLatLng = segmentStatusObj.endLatLng = latLngArr[0];
-         segmentStatusObj.startIdx = segmentStatusObj.endIdx = 0;
+         segmentStatusObj.startLatLng = segmentStatusObj.endLatLng = segmentStatusObj.nearestLatLng = latLngArr[0];
+         segmentStatusObj.startIdx = segmentStatusObj.endIdx = segmentStatusObj.nearestIdx = 0;
          return segmentStatusObj;
       }
 
@@ -440,5 +685,143 @@ export const splMapFaultUtils = {
          i++;
       }
       return segmentStatusObj;
+   },
+
+   /**
+   * createLatlngSegmentId() Generate a unique Id based on supplied LatLng object and prefix string
+   *
+   * @param {string} idPrefix - What will prefix the Id
+   * @param {object} latlng   - LatLng object supplying Unique Id values
+   *
+   * @return {string}         - Unique Id for Segment
+   */
+   createLatlngSegmentId: function (idPrefix, latLng) {
+      const me = this;
+      const [lat, lng] = me.parseLatLng(latLng);
+      if (lat && lng) {
+         const id = lat + "" + lng;
+         return idPrefix + "_" + id;
+      }
+      return "";
+   },
+
+   /**
+   * convertSecondsToHMS() Convert seconds to human readable format
+   *
+   * @param {int} seconds  - time in seconds to convert
+   *
+   * @return {string}      - Formatted Time in Human format
+   */
+   convertSecondsToHMS: function (seconds) {
+      const sec = Number(seconds);
+      if (sec < 0.01) {
+         return "< 0.01 seconds";
+      }
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor(sec % 3600 / 60);
+      const s = Math.floor((sec % 3600 % 60) * 100) / 100;
+
+      const hDisplay = h > 0 ? h + (h === 1 ? " hour" : " hours") : "";
+      const mDisplay = m > 0 ? m + (m === 1 ? " minute" : " minutes") : "";
+      const sDisplay = s > 0 ? s + (s === 1 ? " second" : " seconds") : "";
+
+      return hDisplay + (hDisplay && mDisplay ? ", " : "") + mDisplay + ((hDisplay || mDisplay) && sDisplay ? ", " : "") + sDisplay;
+   },
+
+   /**
+   * cleanLatLng() Remove speed property from LatLng Object
+   *
+   * @param {object} latlng - LatLng Object to inspect and clean
+   *
+   * @return {object}       - Inspected and cleaned LatLng Object
+   */
+   cleanLatLng: function (latLngObj) {
+      if (typeof latLngObj.speed !== "undefined" && Array.isArray(latLngObj.latLng)) {
+         const [lat, lng] = latLngObj.latLng;
+         return { "lat": lat, "lng": lng };
+      }
+      else {
+         return latLngObj;
+      }
+   },
+
+   /**
+   * parseLatLng() Parse LatLng object into seperate Lap/Lng points
+   *
+   * @param {object} latlng - LatLng position on polyline, as starting point for timestamp search
+   *
+   * @return {array}        - Array of format [ Lat, Lng ] with values NULL if error
+   */
+   parseLatLng: function (latLngObj) {
+      const me = this;
+      try {
+         const loc = L.latLng(me.cleanLatLng(latLngObj));
+         if (typeof loc.lat !== "undefined" && typeof loc.lng !== "undefined") {
+            return [loc.lat, loc.lng];
+         }
+      }
+      catch (err) {
+         console.log("==== splMapFaultUtils.parseLatLng() Error Parsing LatLng: [", latLngObj, "]: Reason:", err);
+      }
+      return [null, null];
+   },
+
+   /**
+   * Utiltiy to manage Hash of LatLng points with hashed LatLng object as Key and Timestamp as value
+   * Required to speed up sequential multiple searches on large Indexes
+   *
+   */
+   latLngToTimeDB: {
+
+      _parent: this,
+      _db: {},
+
+      generateDB: function (latLngByTimeIdx) {
+         const me = this;
+         if (typeof latLngByTimeIdx === "object") {
+            me._db.isGenerated = true;
+            for (const time of Object.keys(latLngByTimeIdx)) {
+               if (isNaN(time)) { continue; }
+               const [lat, lng] = splMapFaultUtils.parseLatLng(splMapFaultUtils.cleanLatLng(latLngByTimeIdx[time]));
+               if (lat && lng) {
+                  const key = lat + "" + lng;
+                  me._db[key] = time;
+               }
+            }
+         }
+      },
+
+      updateDB: function (timestamp, latLng) {
+         const me = this;
+         const [lat, lng] = splMapFaultUtils.parseLatLng(latLng);
+         if (lat && lng) {
+            const key = lat + "" + lng;
+            if (typeof me._db[key] === "undefined") {
+               me._db[key] = timestamp;
+            }
+         }
+      },
+
+      get: function (latLng) {
+         const me = this;
+         const [lat, lng] = splMapFaultUtils.parseLatLng(latLng);
+         if (lat && lng) {
+            const key = lat + "" + lng;
+            if (typeof me._db[key] !== "undefined") {
+               return me._db[key];
+            }
+         }
+         return null;
+      },
+
+      clear: function () {
+         const me = this;
+         me._db = {};
+      },
+
+      isGenerated: function () {
+         const me = this;
+         return typeof me._db.isGenerated === "undefined" ? false : true;
+      }
    }
 };

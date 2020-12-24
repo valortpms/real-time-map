@@ -116,6 +116,8 @@ window.splmap.lang.en = {
   // Fault Alerts
   "alert_tooltip":                                 "{alert_msg}<br />on<br />{timestamp}",
   "alert_header":                                  "Post-Ignition Alert",
+  "alert_header_red":                              "RED Alert",
+  "alert_header_amber":                            "AMBER Alert",
   "alert_sensor_location_header":                  "Sensor Location",
   "alert_missing_sensor":                          "Missing Sensor",
   "alert_temperature_over":                        "Over Temperature",

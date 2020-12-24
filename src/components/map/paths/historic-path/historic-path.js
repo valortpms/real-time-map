@@ -1,4 +1,5 @@
 import L from "leaflet";
+import splSrv from "../../../../spartanlync/services";
 import storage from "../../../../dataStore";
 import layersModel from "../../layers";
 import { getLatLngsForTimeRange } from "../../utils/device-data-helpers";
@@ -47,14 +48,20 @@ export const historicPathModel = {
       this.delayedInterval = null;
       const latLngs = getLatLngsForTimeRange(storage.timeRangeStart, currentSecond, this.deviceData);
       this.polyline.setLatLngs(latLngs);
+
+      // Throw Event notifying of creation of new Historic Path polyline on map
+      if (typeof storage.selectedDevices[this.deviceID] !== "undefined") {
+         splSrv.events.exec("onHistoricPathCreatedOrUpdated", this.deviceID, this.polyline.getLatLngs());
+      }
    },
 
    updateHistoricPath(currentSecond, realLatLng) {
       this.delayedInterval = setTimeout(() => {
          this.polyline.addLatLng(realLatLng);
 
+         // Throw Event notifying of new point added to Historic Path polyline on map
          if (typeof storage.selectedDevices[this.deviceID] !== "undefined") {
-            //console.log("==== historicPathModel.updateHistoricPath(" + storage.selectedDevices[this.deviceID].name + ") currentSecond =", currentSecond, "realLatLng = ", realLatLng);//DEBUG
+            splSrv.events.exec("onHistoricPathCreatedOrUpdated", this.deviceID, this.polyline.getLatLngs());
          }
 
       }, storage.dateKeeper$.getPeriod() * 0.75);

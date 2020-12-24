@@ -167,6 +167,9 @@ export const dateKeeper = {
          this.newTime = getLiveTime();
       }
 
+      // Throw Event notifying of Date/Time change
+      splSrv.events.exec("onPreDateTimeChange");
+
       storage.currentTime = this.newTime;
       updateTimeChangeFunctions(this.newTime);
       resetTransitionAnimation();

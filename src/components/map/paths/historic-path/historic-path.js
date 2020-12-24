@@ -18,7 +18,7 @@ export function initHistoricPath(deviceMarker) {
    const polyline = L.polyline(latLngList, {
       smoothFactor: 1,
       weight: 3,
-      color: colorHexCodes.testLimeGreen //DEBUG  geotabBlue
+      color: colorHexCodes.geotabBlue //DEBUG  geotabBlue testLimeGreen
    });
 
    const historicPathConstructors = {

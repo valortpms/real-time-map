@@ -366,7 +366,6 @@ export const splMapFaultMgr = {
       // Init CreateOrUpdate Faults Event Handler
       splSrv.events.register("onHistoricPathCreatedOrUpdated", (vehId, vehPathLatLngArr) => {
          const vehMarker = typeof markerList[vehId] !== "undefined" ? markerList[vehId] : null;
-         console.log("==== splMapFaultMgr.onHistoricPathCreatedOrUpdated() vehId =", vehId, "pathArr = ", JSON.stringify(vehPathLatLngArr));//DEBUG
          if (vehPathLatLngArr.length && vehMarker) {
             splMapFaultMgr.setLatLngFaults(vehId, vehPathLatLngArr, vehMarker, vehMarker.deviceData, demoVeh.data._demoSplFaultTimelineEvents);
          }
@@ -409,7 +408,7 @@ export const splMapFaultMgr = {
             if (newFaultSegmentInfo.pointCount > faultSegment.info.pointCount) {
                const numNewPoints = newFaultSegmentInfo.pointCount - faultSegment.info.pointCount;
                let i = 1;
-               console.log("==== splMapFaultMgr.setLatLngFaults(", vehId, ") UPDATE =", faultSegment); // DEBUG
+               console.log("==== splMapFaultMgr.setLatLngFaults(", vehId, ") UPDATE =", faultSegment, " splVehMapFaultsDB =", splVehMapFaultsDB); // DEBUG
                while (i <= numNewPoints) {
                   const newPointIdx = faultSegment.info.endIdx + i;
                   const newLatLng = vehPathLatLngArr[newPointIdx];
@@ -449,7 +448,7 @@ export const splMapFaultMgr = {
 
       // Log It
       if (vehsCleared.length) {
-         console.log("==== splMapFaultMgr - Faults on Map cleared for Vehicle(s) [", vehsCleared.join(", "), "]");
+         console.log("---- splMapFaultMgr: Faults on Map cleared for Vehicle(s) [", vehsCleared.join(", "), "]");
       }
    }
 };
@@ -858,3 +857,4 @@ const INITlatLngToTimeDB = function (latLngByTimeIdx) {
 
    this.configure(latLngByTimeIdx);
 };
+

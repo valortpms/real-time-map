@@ -859,6 +859,7 @@
 }
 #RTM-ControlBarContainer.disable {
    opacity: 0.4;
+   overflow: hidden !important;
 }
 #RTM-ControlBarContainer .RTM-Controls-DisableScreen {
    position: absolute;

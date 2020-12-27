@@ -25,17 +25,21 @@ export function initSplMapFaults() {
       // DomButtonIds: speedLabel dateInputLabel timeRangeStartLabel currentTimeLabel
       //
       document.getElementById("speedLabel").addEventListener("click", demoVeh.step.bind(demoVeh));
-      document.getElementById("currentTimeLabel").addEventListener("click", demoVeh.clear.bind(demoVeh));
-      document.getElementById("dateInputLabel").addEventListener("click", demoVeh.utils.enableGetMapLatLng.bind(demoVeh));
+      document.getElementById("dateInputLabel").addEventListener("click", demoVeh.clear.bind(demoVeh));
+      document.getElementById("timeRangeStartLabel").addEventListener("click", demoVeh.utils.switchDebugMode.bind(demoVeh));
+      document.getElementById("currentTimeLabel").addEventListener("click", demoVeh.utils.enableGetMapLatLng.bind(demoVeh));
    });
 }
 
 const demoVeh = {
 
-   _onInitDrawXXLatLngs: 99,               // How many latLng points to draw on initialization
-   _RandomizeOnInitDrawXXLatLngs: false,  // Randomize _onInitDrawXXLatLngs with a number between 1-10
+   _onInitDrawXXLatLngs: 99,              // How many latLng points to draw on initialization
 
-   _mapGroupLayer: "splDemoLayer",  // Demo polyline layers are drawn on this layerGroup
+   _RandomizeOnInitDrawXXLatLngs: true,   // Randomize _onInitDrawXXLatLngs with a number between _RandomizeOnInitMinCoords & _RandomizeOnInitMaxCoords
+   _RandomizeOnInitMinCoords: 2,          // If randomize enabled, minimum # points for _onInitDrawXXLatLngs
+   _RandomizeOnInitMaxCoords: 16,         // If randomize enabled, maximum # points for _onInitDrawXXLatLngs
+
+   _mapGroupLayer: "splDemoLayer",        // Demo polyline layers are drawn on this layerGroup
 
    _polyLine: null,
    _step: null,
@@ -49,7 +53,7 @@ const demoVeh = {
    initDemo: function () {
       const me = this;
 
-      me._onInitDrawXXLatLngs = me._RandomizeOnInitDrawXXLatLngs ? Math.floor((Math.random() * 10) + 1) : me._onInitDrawXXLatLngs;
+      me._onInitDrawXXLatLngs = me._RandomizeOnInitDrawXXLatLngs ? (Math.floor(Math.random() * (me._RandomizeOnInitMaxCoords - me._RandomizeOnInitMinCoords + 1)) + me._RandomizeOnInitMinCoords) : me._onInitDrawXXLatLngs;
 
       if (!me.data.latLngArr || me.data.latLngArr && !me.data.latLngArr.length) { return; }
       me._onInitDrawXXLatLngs = me._onInitDrawXXLatLngs > me.data.latLngArr.length ? me.data.latLngArr.length : me._onInitDrawXXLatLngs;
@@ -109,6 +113,7 @@ const demoVeh = {
       const me = this;
       me._step = 0;
       layerModel.clearLayersInGroup(me._mapGroupLayer);
+      console.log("============ DEMO CLEARED ============");
       splMapFaultMgr.clear();
       me.initDemo();
    },
@@ -117,11 +122,22 @@ const demoVeh = {
    utils: {
 
       _getMapLatLngEnabled: false,
+      debugTracingLevel: 0,
+
+      switchDebugMode: function () {
+         demoVeh.utils.debugTracingLevel = demoVeh.utils.debugTracingLevel + 1 > 3 ? 0 : demoVeh.utils.debugTracingLevel + 1;
+         console.log("============ DEBUG TRACING", !demoVeh.utils.debugTracingLevel ? "DISABLED" : "@ LEVEL " + demoVeh.utils.debugTracingLevel, "============");
+      },
 
       enableGetMapLatLng: function () {
          const me = this;
-         if (!me._getMapLatLngEnabled) {
-            console.log("==== demoVeh.utils.enableGetMapLatLng() ENABLED ====");
+         if (me._getMapLatLngEnabled) {
+            console.log("============ demoVeh.utils.enableGetMapLatLng() DISABLED ============");
+            storage.map.off("click");
+            me._getMapLatLngEnabled = false;
+         }
+         else {
+            console.log("============ demoVeh.utils.enableGetMapLatLng() ENABLED ============");
             storage.map.on("click", (evt) => { console.log(JSON.stringify(evt.latlng)); });
             me._getMapLatLngEnabled = true;
          }
@@ -286,7 +302,6 @@ export const splMapFaultMgr = {
 
    // eslint-disable-next-line complexity
    _searchVehPathForFaultSegments: function (vehId, vehPathLatLngArr, latLngByTimeIdx, splFaultTimelineEvents) {
-      //const DEBUG = true;
       const me = this;
       const segmentsArr = [];
       const latLngByTimeVehAPI = me._vehMarkers[vehId].splMapFaults.historicPathLatLngToTimeDB;
@@ -324,7 +339,7 @@ export const splMapFaultMgr = {
                sInfo = faultInfo;
                sStart = idx;
                sEnd = sStart + 1;
-               if (typeof DEBUG !== "undefined" && DEBUG) { console.log("(", vehId, ")==== idx =", idx, " ================================== START SEGMENT"); }//DEBUG
+               if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== START SEGMENT"); }//DEBUG
             }
             else {
                if (sInfo.faultState !== faultInfo.faultState) {
@@ -335,16 +350,16 @@ export const splMapFaultMgr = {
                   sInfo.pointCount = idx - sStart + 1;
                   delete sInfo.tooltipDesc;
                   segmentsArr.push(sInfo);
-                  if (typeof DEBUG !== "undefined" && DEBUG) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
+                  if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
 
                   sInfo = faultInfo;
                   sStart = idx;
                   sEnd = sStart + 1;
-                  if (typeof DEBUG !== "undefined" && DEBUG) { console.log("(", vehId, ")==== idx =", idx, " ================================== START SEGMENT"); }//DEBUG
+                  if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== START SEGMENT"); }//DEBUG
                }
                else {
                   sEnd = idx;
-                  if (typeof DEBUG !== "undefined" && DEBUG) { console.log("(", vehId, ")==== idx =", idx, " ================================== UPDATE SEGMENT END"); }//DEBUG
+                  if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== UPDATE SEGMENT END"); }//DEBUG
                }
             }
          }
@@ -359,10 +374,10 @@ export const splMapFaultMgr = {
                segmentsArr.push(sInfo);
                sInfo = null;
                sStart = sEnd = idx;
-               if (typeof DEBUG !== "undefined" && DEBUG) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
+               if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
             }
          }
-         if (typeof DEBUG !== "undefined" && DEBUG) { console.log("(", vehId, ")==== idx =", idx, timestamp, " f =", faultInfo); }//DEBUG
+         if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")==== idx =", idx, timestamp, " f =", faultInfo); }//DEBUG
       }
       if (sStart !== sEnd) {
          const segmentId = splMapFaultUtils.createLatlngSegmentId(me._faultsSegmentNamePrefix + vehId, vehPathLatLngArr[sStart]);
@@ -372,7 +387,7 @@ export const splMapFaultMgr = {
          sInfo.pointCount = sInfo.endIdx - sInfo.startIdx + 1;
          delete sInfo.tooltipDesc;
          segmentsArr.push(sInfo);
-         if (typeof DEBUG !== "undefined" && DEBUG) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
+         if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
       }
 
       return segmentsArr;
@@ -386,10 +401,10 @@ export const splMapFaultMgr = {
          const vehMarker = typeof markerList[vehId] !== "undefined" ? markerList[vehId] : null;
          if (vehPathLatLngArr.length && vehMarker) {
             // Wait for Faults to Load
-            console.log("==== onHistoricPathCreatedOrUpdated(", vehId, ") INVOKED");//DEBUG
+            if (demoVeh.utils.debugTracingLevel) { console.log("==== onHistoricPathCreatedOrUpdated(", vehId, ") INVOKED"); }//DEBUG
             splMapFaultMgr.faults.getTimelineEvents(vehId).then((splFaultTimelineEvents) => {
                splMapFaultMgr.setLatLngFaults(vehId, vehPathLatLngArr, vehMarker, vehMarker.deviceData, splFaultTimelineEvents);
-            });//.catch(() => { });
+            }).catch(() => { });
          }
       }, false);
 
@@ -419,7 +434,7 @@ export const splMapFaultMgr = {
             if (faultSegment) {
                faultSegment.info = newFaultSegmentInfo;
             }
-            console.log("==== splMapFaultMgr.setLatLngFaults(", vehId, ") CREATE =", faultSegment); // DEBUG
+            if (demoVeh.utils.debugTracingLevel) { console.log("==== splMapFaultMgr.setLatLngFaults(", vehId, ") CREATE =", faultSegment); } // DEBUG
          }
 
          // Update Segment
@@ -430,7 +445,7 @@ export const splMapFaultMgr = {
             if (newFaultSegmentInfo.pointCount > faultSegment.info.pointCount) {
                const numNewPoints = newFaultSegmentInfo.pointCount - faultSegment.info.pointCount;
                let i = 1;
-               console.log("==== splMapFaultMgr.setLatLngFaults(", vehId, ") UPDATE =", faultSegment, " splVehMapFaultsDB =", splVehMapFaultsDB); // DEBUG
+               if (demoVeh.utils.debugTracingLevel) { console.log("==== splMapFaultMgr.setLatLngFaults(", vehId, ") UPDATE =", faultSegment, " splVehMapFaultsDB =", splVehMapFaultsDB); } // DEBUG
                while (i <= numNewPoints) {
                   const newPointIdx = faultSegment.info.endIdx + i;
                   const newLatLng = vehPathLatLngArr[newPointIdx];
@@ -1012,7 +1027,7 @@ class FaultTimelineEventMgr {
 
       // Sort timeline
       timeline.sort((a, b) => a.latLngTime.toString().localeCompare(b.latLngTime.toString(), undefined, { numeric: true, sensitivity: "base" }));
-      console.log("==== FaultTimelineEventMgr.getTimelineEvents(", vehId, ") timeline =", timeline);//DEBUG
+      if (demoVeh.utils.debugTracingLevel) { console.log("==== FaultTimelineEventMgr.getTimelineEvents(", vehId, ") timeline =", timeline); }//DEBUG
 
       return timeline;
    }

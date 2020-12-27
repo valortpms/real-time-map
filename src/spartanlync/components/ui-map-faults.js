@@ -4,14 +4,21 @@ import moment from "moment-timezone";
 import splSrv from "../services";
 import storage from "../../dataStore";
 import layerModel from "../../components/map/layers/layer-model";
+import { apiConfig } from "../../dataStore/api-config";
 import { colorHexCodes } from "../../constants/color-hex-codes";
 import { deviceSearch } from "../../components/configuration/vehicles-config/vehicle-search";
 import { markerList } from "../../dataStore/map-data";
+import { checkSameDay } from "../../utils/helper";
+import { INITGeotabTpmsTemptracLib } from "../services/api/temptrac-tpms";
 
 export function initSplMapFaults() {
+
+   // Create Faults Timeline Event Mgr
+   splMapFaultMgr.faults = new FaultTimelineEventMgr();
+
+   // Available after SplServices init
    splSrv.events.register("onLoadSplServices", () => {
 
-      // Init
       splMapFaultMgr.initEventHandlers();
 
       // DEMO INIT - PLEASE DELETE ON PROD - DEBUG
@@ -64,8 +71,11 @@ const demoVeh = {
          storage.map.fitBounds(me._polyLine.getBounds());
       }
 
-      //           LIVE DATASOURCES:( vehMarker.deviceID  , Event.latLngs            , vehMarker   , vehMarker.deviceData        , splMapFaultMgr.faults.timelineEvents  )
-      splMapFaultMgr.setLatLngFaults(demoVeh.data.deviceID, me._polyLine.getLatLngs(), demoVeh.data, demoVeh.data.latLngByTimeIdx, splMapFaultMgr.faults.timelineEvents);
+      // Wait for Faults to Load
+      splMapFaultMgr.faults.getTimelineEvents(me.data.deviceID).then((splFaultTimelineEvents) => {
+         //           LIVE DATASOURCES:( vehMarker.deviceID  , Event.latLngs            , vehMarker   , vehMarker.deviceData        , splFaultTimelineEvents  )
+         splMapFaultMgr.setLatLngFaults(demoVeh.data.deviceID, me._polyLine.getLatLngs(), demoVeh.data, demoVeh.data.latLngByTimeIdx, splFaultTimelineEvents);
+      });
    },
 
    step: function () {
@@ -87,8 +97,12 @@ const demoVeh = {
       if (me._step >= me.data.latLngArr.length) { return; }
 
       me._polyLine.addLatLng(me.data.latLngArr[me._step]);
-      //           LIVE DATASOURCES:( vehMarker.deviceID  , Event.latLngs            , vehMarker   , vehMarker.deviceData        , splMapFaultMgr.faults.timelineEvents  )
-      splMapFaultMgr.setLatLngFaults(demoVeh.data.deviceID, me._polyLine.getLatLngs(), demoVeh.data, demoVeh.data.latLngByTimeIdx, splMapFaultMgr.faults.timelineEvents);
+
+      // Wait for Faults to Load
+      splMapFaultMgr.faults.getTimelineEvents(me.data.deviceID).then((splFaultTimelineEvents) => {
+         //           LIVE DATASOURCES:( vehMarker.deviceID  , Event.latLngs            , vehMarker   , vehMarker.deviceData        , splFaultTimelineEvents  )
+         splMapFaultMgr.setLatLngFaults(demoVeh.data.deviceID, me._polyLine.getLatLngs(), demoVeh.data, demoVeh.data.latLngByTimeIdx, splFaultTimelineEvents);
+      });
    },
 
    clear: function () {
@@ -285,7 +299,7 @@ export const splMapFaultMgr = {
          const timestamp = splMapFaultUtils.latlngToTime(vehPathLatLngArr[0], null, latLngByTimeVehAPI, latLngByTimeIdx);
          const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, splFaultTimelineEvents);
 
-         if (faultInfo.faultState) {
+         if (faultInfo && faultInfo.faultState) {
             sInfo = faultInfo;
             const segmentId = splMapFaultUtils.createLatlngSegmentId(me._faultsSegmentNamePrefix + vehId, vehPathLatLngArr[sStart]);
             sInfo.id = segmentId ? segmentId : me._faultsSegmentNamePrefix + vehId + "-" + sStart;
@@ -371,15 +385,16 @@ export const splMapFaultMgr = {
       splSrv.events.register("onHistoricPathCreatedOrUpdated", (vehId, vehPathLatLngArr) => {
          const vehMarker = typeof markerList[vehId] !== "undefined" ? markerList[vehId] : null;
          if (vehPathLatLngArr.length && vehMarker) {
-            splMapFaultMgr.setLatLngFaults(vehId, vehPathLatLngArr, vehMarker, vehMarker.deviceData, splMapFaultMgr.faults.timelineEvents);
+            // Wait for Faults to Load
+            console.log("==== onHistoricPathCreatedOrUpdated(", vehId, ") INVOKED");//DEBUG
+            splMapFaultMgr.faults.getTimelineEvents(vehId).then((splFaultTimelineEvents) => {
+               splMapFaultMgr.setLatLngFaults(vehId, vehPathLatLngArr, vehMarker, vehMarker.deviceData, splFaultTimelineEvents);
+            }).catch(() => { });
          }
       }, false);
 
       // Init Cleanup Event Handler
       splSrv.events.register("onPreDateTimeChange", () => me.clear(), false);
-
-      // Create Faults Timeline Event Mgr
-      me.faults = new FaultTimelineEventMgr();
    },
 
    setLatLngFaults: function (vehId, vehPathLatLngArr, vehMarker, vehDeviceData, splFaultTimelineEvents) {
@@ -404,7 +419,7 @@ export const splMapFaultMgr = {
             if (faultSegment) {
                faultSegment.info = newFaultSegmentInfo;
             }
-            //console.log("==== splMapFaultMgr.setLatLngFaults(", vehId, ") CREATE =", faultSegment); // DEBUG
+            console.log("==== splMapFaultMgr.setLatLngFaults(", vehId, ") CREATE =", faultSegment); // DEBUG
          }
 
          // Update Segment
@@ -415,7 +430,7 @@ export const splMapFaultMgr = {
             if (newFaultSegmentInfo.pointCount > faultSegment.info.pointCount) {
                const numNewPoints = newFaultSegmentInfo.pointCount - faultSegment.info.pointCount;
                let i = 1;
-               //console.log("==== splMapFaultMgr.setLatLngFaults(", vehId, ") UPDATE =", faultSegment, " splVehMapFaultsDB =", splVehMapFaultsDB); // DEBUG
+               console.log("==== splMapFaultMgr.setLatLngFaults(", vehId, ") UPDATE =", faultSegment, " splVehMapFaultsDB =", splVehMapFaultsDB); // DEBUG
                while (i <= numNewPoints) {
                   const newPointIdx = faultSegment.info.endIdx + i;
                   const newLatLng = vehPathLatLngArr[newPointIdx];
@@ -460,7 +475,7 @@ export const splMapFaultMgr = {
    }
 };
 
-export const splMapFaultUtils = {
+const splMapFaultUtils = {
 
    /**
    * searchLatlngArrForTime() Get Unix timestamp of nearest LatLng point in a Leaflet polyline, by searching every segments
@@ -516,7 +531,6 @@ export const splMapFaultUtils = {
             for (const time of Object.keys(latLngByTimeIdx)) {
                if (isNaN(time)) { continue; }
                if (latLngNeedle.equals(me.cleanLatLng(latLngByTimeIdx[time]))) {
-                  splMapFaultUtils.latLngToTimeDB.updateDB(time, latLngNeedle);
                   if (latLngByTimeFaultAPI && typeof latLngByTimeFaultAPI.updateDB === "function") {
                      latLngByTimeFaultAPI.updateDB(time, latLngNeedle);
                   }
@@ -868,22 +882,272 @@ class FaultPolyline {
 class FaultTimelineEventMgr {
 
    constructor() {
-      this._timelineEvents = {};
+
+      this._isfetchComplete = false;
+      this._historicalFaultData = {};
+      this._historicalIgnData = {};
+
+      this._isLiveDay = true;
+      this._dateTimeObj = null;
+      this._dayEndUnix = null;
+
       this.init();
    }
 
    init() {
       const me = this;
-      //me._timelineEvents = demoVeh.data._demoSplFaultTimelineEvents;
+      me.initEvts();
    }
 
-   get timelineEvents() {
+   initEvts() {
       const me = this;
-      return me._timelineEvents;
+
+      // Flush Timetime on Date Change
+      splSrv.events.register("onMapDateChangeResetReOpenPopups", (newTimestamp) => me._onDateChange(newTimestamp), false);
+
+      // If not LiveDay, update Historical Ign/Fault data for new vehicles added to Config Panel
+      splSrv.events.register("onVehConfigPanelLoad", (vehId) => me._onVehConfigPanelLoadHandler(vehId), false);
    }
 
-   set timelineEvents(newEvt) {
+   _onDateChange(newTimestamp) {
       const me = this;
-      me._timelineEvents = newEvt;
+      me._dateTimeObj = moment.unix(newTimestamp);
+      me._dayEndUnix = me._dateTimeObj.clone().endOf("day").unix();
+
+      me.clear();
+      if (!checkSameDay(me._dateTimeObj, moment())) {
+         me._isLiveDay = false;
+         me.fetchIgnAndFaults();
+      }
+      else {
+         me._isLiveDay = true;
+      }
+   }
+
+   _locObjArrToHuman(faultLocArr) {
+      const me = this;
+      const descArr = [];
+      if (typeof faultLocArr !== "undefined" && Array.isArray(faultLocArr) && faultLocArr.length) {
+         faultLocArr.forEach(locObj => {
+            descArr.push(
+               splmap.tr("alert_desc_axle") + " " + locObj.axle + " " +
+               splmap.tr("alert_desc_tire") + " " + locObj.tire + " - " +
+               me._locDescTr(splSrv.vehCompDb.names[locObj.vehComp])
+            );
+         });
+      }
+      return descArr.join(" / ");
+   }
+
+   _locDescTr(rawVal) {
+      let val = rawVal.toString().trim();
+      if (val) {
+         val = val.replace("Axle", splmap.tr("alert_desc_axle"));
+         val = val.replace("Tire", splmap.tr("alert_desc_tire"));
+         val = val.replace("Tractor", splmap.tr("alert_desc_tractor"));
+         val = val.replace("Trailer", splmap.tr("alert_desc_trailer"));
+         val = val.replace("Dolly", splmap.tr("alert_desc_dolly"));
+      }
+      return val;
+   }
+
+   _onVehConfigPanelLoadHandler(vehId) {
+      const me = this;
+
+      const busyPollingFrequency = 1000; // If Busy, poll every 1 second(s) for fetching resource to become free
+      let busyPollingHandlerId = null;
+
+      if (!me._isLiveDay) {
+         if (me._isfetchComplete) {
+            me.fetchIgnAndFaults(vehId);
+         }
+         // Busy fetching other vehicles, must wait and poll till free
+         else {
+            if (!busyPollingHandlerId) {
+               busyPollingHandlerId = setInterval(() => {
+                  if (me._isfetchComplete) {
+                     clearInterval(busyPollingHandlerId);
+                     busyPollingHandlerId = null;
+                     me.fetchIgnAndFaults(vehId);
+                  }
+               }, busyPollingFrequency);
+            }
+         }
+      }
+   }
+
+   createTimelineFromFaultIgnData(vehId, faultData, ignData) {
+      const me = this;
+      const timeline = [];
+
+      // Create timeline array from combination of either/both Fault/Ignition data
+      if (faultData || ignData) {
+         if (faultData && Array.isArray(faultData) && faultData.length) {
+            for (const faultObj of faultData) {
+               if (faultObj && typeof faultObj.alert !== "undefined") {
+                  const faultLocDesc = faultObj.loc ? me._locObjArrToHuman(faultObj.loc) : "";
+                  timeline.push({
+                     latLngTime: parseInt(faultObj.time),
+                     realTime: parseInt(faultObj.time),
+                     evtType: "fault",
+                     evtState: faultObj.alert.color,
+                     evtColor: faultObj.alert.color === "RED" ? colorHexCodes.spartanLyncRed : colorHexCodes.spartanLyncAmber,
+                     tooltipDesc: splmap.tr(faultObj.alert.trId) + (faultLocDesc ? ` ( ${faultLocDesc} )` : "")
+                  });
+               }
+            }
+         }
+         if (ignData && ignData.byTime && typeof ignData.byTime === "object") {
+            for (const time of Object.keys(ignData.byTime)) {
+               const ignStatus = ignData.byTime[time];
+               timeline.push({
+                  latLngTime: parseInt(time),
+                  realTime: parseInt(time),
+                  evtType: ignStatus === "on" ? "IGOn" : "IGOff"
+               });
+            }
+         }
+      }
+
+      // Sort timeline
+      timeline.sort((a, b) => a.latLngTime.toString().localeCompare(b.latLngTime.toString(), undefined, { numeric: true, sensitivity: "base" }));
+      console.log("==== FaultTimelineEventMgr.getTimelineEvents(", vehId, ") timeline =", timeline);//DEBUG
+
+      return timeline;
+   }
+
+   getTimelineEvents(vehId) {
+      const me = this;
+      return new Promise(function (resolve, reject) {
+
+         if (vehId === demoVeh.data.deviceID) { resolve(demoVeh.data._demoSplFaultTimelineEvents); } // DEBUG - For Demo
+
+         // Fetch current fault/ignition data from Vehicle cache
+         if (me._isLiveDay) {
+
+            const faultData = splSrv.cache.getFaultData(vehId);
+            const ignData = splSrv.cache.getIgnData(vehId);
+
+            // Wait for fault/ignition data, if none available.
+            // AND NOT "faultDataNotFound" condition (no Fault Data, only Ign data)
+            if (faultData === null && ignData === null) {
+               splSrv.events.register("onFaultAlert", (faultVehId) => {
+                  if (faultVehId === vehId) {
+                     resolve(me.createTimelineFromFaultIgnData(vehId, splSrv.cache.getFaultData(vehId), splSrv.cache.getIgnData(vehId)));
+                  }
+               });
+               return;
+            }
+
+            // Respond with what we got
+            resolve(me.createTimelineFromFaultIgnData(vehId, faultData, ignData));
+         }
+
+         // Fetch historic fault/ignition data from Geotab APIs
+         else {
+            if (me._isfetchComplete) {
+               resolve(me.createTimelineFromFaultIgnData(vehId, me._historicalFaultData[vehId], me._historicalIgnData[vehId]));
+            }
+            else {
+               splSrv.events.register("onFaultTimelineEventMgrFetchComplete", (vehIdCompleted, opSuccessful) => {
+                  // Complete Operation
+                  if (vehIdCompleted === vehId) {
+                     if (opSuccessful) {
+                        resolve(me.createTimelineFromFaultIgnData(vehIdCompleted, me._historicalFaultData[vehIdCompleted], me._historicalIgnData[vehIdCompleted]));
+                     }
+                     else {
+                        reject();
+                     }
+                  }
+               }, true, vehId);
+            }
+         }
+      });
+   }
+
+   fetchIgnAndFaults(onlyVehId) {
+      const me = this;
+      const vehIds = typeof onlyVehId !== "undefined" && onlyVehId ? [onlyVehId] : Object.values(deviceSearch.selectedIDS).map(vehObj => { return vehObj.id; });
+      const toDateOverride = me._dayEndUnix;
+
+      if (!me._isLiveDay) {
+
+         me._isfetchComplete = false;
+
+         // Fetch some data
+         (async () => {
+            const promises = vehIds.map(async (vehId) => {
+               await (() => {
+                  return new Promise((resolve, reject) => {
+
+                     const aSyncGoLib = INITGeotabTpmsTemptracLib(
+                        apiConfig.api,
+                        splSrv.sensorSearchRetryRangeInDays,
+                        splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds,
+                        [1], // Only use a search range of 1 day for faults & ignition data
+                        splSrv.faultSearchTimeRangeForRepeatSearchesInSeconds
+                     );
+                     aSyncGoLib.getFaults(vehId, function (faults, vehIgnitionInfo) {
+
+                        if (faults) {
+
+                           // Update Ign/Fault data
+                           if (vehIgnitionInfo && (vehIgnitionInfo["on-latest"] || vehIgnitionInfo["off-latest"])) {
+                              me._historicalFaultData[vehId] = faults;
+                              me._historicalIgnData[vehId] = vehIgnitionInfo;
+                              resolve();
+                           }
+                           // Report on Ignition data missing
+                           else {
+                              me._historicalFaultData[vehId] = faults;
+                              reject([vehId, "Ignition data not found"]);
+                           }
+                           return;
+                        }
+                        else {
+
+                           // Update Ignition data, but report Fault data missing
+                           if (vehIgnitionInfo && (vehIgnitionInfo["on-latest"] || vehIgnitionInfo["off-latest"])) {
+                              me._historicalIgnData[vehId] = vehIgnitionInfo;
+                              reject([vehId, "Fault data not found"]);
+                           }
+                           // Report on Fault and Ignition data missing
+                           else {
+                              reject([vehId, "Fault + Ignition data not found"]);
+                           }
+                           return;
+                        }
+
+                     }, true, toDateOverride);
+
+                     return;
+                  });
+               })();
+
+               splSrv.events.queueExec("onFaultTimelineEventMgrFetchComplete", vehId, true);
+            });
+
+            await Promise.allSettled(promises).then(resultArr => resultArr.map((result) => {
+               if (result.status === "rejected") {
+                  const [failedVehId, reason] = result.reason;
+                  if (failedVehId) {
+                     const vehName = deviceSearch.selectedIDS[failedVehId] !== "undefined" ? deviceSearch.selectedIDS[failedVehId].name + ` (${failedVehId})` : failedVehId;
+                     console.log("---- FaultTimelineEventMgr() Error fetching historical data from Vehicle [", vehName, "]:", reason);
+                     splSrv.events.queueExec("onFaultTimelineEventMgrFetchComplete", failedVehId, false);
+                  }
+               }
+            }));
+
+            // Purge any leftover Registrations (By this point they are failed)
+            me._isfetchComplete = true;
+            splSrv.events.queueClear("onFaultTimelineEventMgrFetchComplete");
+         })();
+      }
+   }
+
+   clear() {
+      const me = this;
+      me._historicalFaultData = {};
+      me._historicalIgnData = {};
    }
 }

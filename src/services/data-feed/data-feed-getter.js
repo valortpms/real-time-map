@@ -241,7 +241,7 @@ export function historicalFeedDataComplete(historicalFeedDataList) {
    // Archive non-live historical data
    else {
       if (!storage.isLiveDay && !storage.historicalDataArchive) {
-         console.log("Historical data from the past now Archived!");
+         console.log("Historical data from the past sucessfully Archived!");
          storage.historicalDataArchive = historicalFeedDataList;
       }
 

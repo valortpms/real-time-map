@@ -49,7 +49,10 @@ export class SplSensorDataTypesButton extends Component {
    componentDidMount() {
       const me = this;
 
-      // Register this is a new instance in Veh configuration panel
+      // Notify Listeners on Addition of Vehicle to Map
+      splSrv.events.exec("onVehConfigPanelLoad", me.vehId);
+
+      // Register as a new instance in Veh configuration panel
       splSrv.vehRegistry.loadingBegin(me.vehId, me);
 
       // Prevent duplicate Initial Invocation(s)

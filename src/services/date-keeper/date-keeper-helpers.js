@@ -1,6 +1,6 @@
 import layersModel from "../../components/map/layers/layer-model";
 import moment from "moment-timezone";
-import { checkSameDay, } from "../../utils/helper";
+import { checkSameDay } from "../../utils/helper";
 import { playBackSpeedModel } from "../../components/controls/speed-control/playback-speed";
 import storage from "../../dataStore";
 import {

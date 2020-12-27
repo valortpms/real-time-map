@@ -1,4 +1,6 @@
 import moment from "moment-timezone";
+import "core-js/stable";
+import "regenerator-runtime/runtime";
 
 /* eslint-disable complexity */
 /* eslint-disable camelcase */
@@ -102,6 +104,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
 
          _fromFaultDate: null,
          _toFaultDate: null,
+         _toFaultDateOverride: null,
 
          _repSType: null,
          _repCallback: null,
@@ -118,7 +121,8 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
          * @param {string} devId    - Geotab Device Id
          * @param {string} devComp  - Vehicle component (null = all/any, tractor, trailer1, dolly, trailer2)
          * @param {string} callback - Callback func to invoke upon retrieval of data
-         * @param {boolean} firstTimeCallOverride - Manually override firstTime/repeat behaviour
+         * @param {any} firstTimeCallOverride - Manually override firstTime/repeat behaviour
+         * @param {int} toDateOverride - Manually override value of _toDate property
          *
          * If first call, start with a search over last 24 hours.
          * - If nothing found, retry with 2 days, then 1 week, 1 month, 2 months, then we give up
@@ -149,6 +153,8 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
          *
          * @param {string} devId    - Geotab Device Id
          * @param {string} callback - Callback func to invoke upon retrieval of fault data
+         * @param {any} firstTimeCallOverride - Manually override firstTime/repeat behaviour
+         * @param {int} toDateOverride - Manually override value of _toFaultDate property
          *
          * If first call, start with a search over last 24 hours.
          * - If nothing found, retry with 2 days, then 1 week, 1 month, 2 months, then we give up
@@ -159,12 +165,15 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
          * @return {array} Array of Fault objects, sorted by time from oldest to newest
          * @return {array} Array of Ignition data objects, sorted by time from oldest to newest
          */
-         getFaults: function (devId, callback, firstTimeCallOverride) {
+         getFaults: function (devId, callback, firstTimeCallOverride, toDateOverride) {
             if (devId.toString().trim() === "" || typeof callback === "undefined" || typeof callback !== "function") {
                return;
             }
             if (typeof firstTimeCallOverride !== "undefined" && firstTimeCallOverride !== null) {
                me._apiFaultFirstTimeCall = firstTimeCallOverride;
+            }
+            if (typeof toDateOverride !== "undefined" && toDateOverride !== null) {
+               me._toFaultDateOverride = toDateOverride;
             }
             me._devId = devId;
             me._fDataCallback = callback;
@@ -193,7 +202,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                   }
                }
             };
-            console.log("--- getVehStatus(): Collecting latest Vehicle Status information...");
+            console.log("--- VehicleID [ " + devId + " ]: getVehStatus(): Collecting latest Vehicle Status information...");
 
             // Invoke Device Status API Call
             me._timer.a1 = new Date();
@@ -202,7 +211,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                   if (result && result.length) {
                      const vehStatusObj = result[0];
                      me._timer.a2 = new Date();
-                     console.log("--- getVehStatus(): Vehicle Status Info retrieved - " + me._convertSecondsToHMS((me._timer.a2 - me._timer.a1) / 1000));
+                     console.log("--- VehicleID [ " + devId + " ]: getVehStatus(): Vehicle Status Info retrieved - " + me._convertSecondsToHMS((me._timer.a2 - me._timer.a1) / 1000));
                      vStatusCallback(vehStatusObj);
                   }
                   else {
@@ -212,8 +221,8 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                },
                function (errorString) {
                   me._timer.a2 = new Date();
-                  console.log("--- Vehicle Status Info retrieval failed - " + me._convertSecondsToHMS((me._timer.a2 - me._timer.a1) / 1000));
-                  console.log("--- Error: getVehStatus.api.call(): " + errorString);
+                  console.log("--- VehicleID [ " + devId + " ]: Vehicle Status Info retrieval failed - " + me._convertSecondsToHMS((me._timer.a2 - me._timer.a1) / 1000));
+                  console.log("--- VehicleID [ " + devId + " ]: Error: getVehStatus.api.call(): " + errorString);
                   vStatusCallback(null);
                });
          },
@@ -248,23 +257,32 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
          },
 
          _setDateRangeAndInvokeFaultCalls: function () {
-            me._toFaultDate = moment().utc().format();
+            me._toFaultDate = me._toFaultDateOverride ? moment.unix(me._toFaultDateOverride).utc().format() : moment().utc().format();
 
             // First call, search for data over last few days
             if (me._apiFaultFirstTimeCall) {
 
-               // If retry limit is reached without fault data, send a failure response to callback func
+               // If retry limit is reached without fault data, send a callback failure response
                if (me._apiCallFaultRetryCount === me._timeFaultSearchRetryRangeInDays.length) {
                   me._apiCallFaultRetryCount = 0;
+                  me._toFaultDateOverride = null;
                   me._fDataCallback(null, me._vehIgnitionData);
                   return;
                }
                // Iterate date range array USING _apiCallFaultRetryCount until a successful API response
                me._fromFaultDate = moment().utc().subtract(me._timeFaultSearchRetryRangeInDays[me._apiCallFaultRetryCount], "day").format();
+               if (me._toFaultDateOverride) {
+                  // Calculate FROM using user-supplied UNIX timestamp instead of NOW
+                  me._fromFaultDate = moment.unix(me._toFaultDateOverride).utc().subtract(me._timeFaultSearchRetryRangeInDays[me._apiCallFaultRetryCount], "day").format();
+               }
             }
             // Repeat call, search over the last few minutes
             else {
                me._fromFaultDate = moment().utc().subtract(me._timeRangeForRepeatFaultSearchesInSeconds, "seconds").format();
+               if (me._toFaultDateOverride) {
+                  // Calculate FROM using user-supplied UNIX timestamp instead of NOW
+                  me._fromDate = moment.unix(me._toFaultDateOverride).utc().subtract(me._timeRangeForRepeatFaultSearchesInSeconds, "seconds").format();
+               }
             }
 
             // Build then perform TPMS/Temptrac Multicall
@@ -320,186 +338,190 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
             }
 
             me._timer.b3 = new Date();
-            api.multiCall(apiCall, function (result) {
-               if (result && result.length >= 3) {
-                  let faultDataFound = false;
-                  let tireLocData = {};
-                  const fdata = {};
+            api.multiCall(apiCall,
+               function (result) {
+                  if (result && result.length >= 3) {
+                     let faultDataFound = false;
+                     let tireLocData = {};
+                     const fdata = {};
 
-                  me._timer.b4 = new Date();
-                  console.log("Fault data for VehicleID [ " + me._devId + " ] retrieved - " + me._convertSecondsToHMS((me._timer.b4 - me._timer.b3) / 1000));
-                  console.log("Fault data for VehicleID [ " + me._devId + " ] being analyzed - Please Wait!");
+                     me._timer.b4 = new Date();
+                     console.log("Fault data for VehicleID [ " + me._devId + " ] retrieved - " + me._convertSecondsToHMS((me._timer.b4 - me._timer.b3) / 1000));
+                     console.log("Fault data for VehicleID [ " + me._devId + " ] being analyzed - Please Wait!");
 
-                  // Collect Ignition data
-                  me._vehIgnitionData = me._generateVehIgnitionDb(result[1]);
+                     // Collect Ignition data
+                     me._vehIgnitionData = me._generateVehIgnitionDb(result[1]);
 
-                  // Assemble and merge Tire Location data from multi-vehicle Component query
-                  for (let i = 2; i < result.length; i++) {
-                     tireLocData = { ...tireLocData, ...me._generateFaultAxleLocDb(result[i]) };
-                  }
-
-                  // Analyze fault data
-                  me._timer.b3 = new Date();
-                  for (const frec of result[0]) {
-                     if (!frec.id || frec.device.id !== me._devId || typeof frec.diagnostic.id === "undefined") {
-                        continue; // Invalid records discarded
-                     }
-                     const faultId = frec.diagnostic.id;
-                     const recObj = {
-                        id: faultId,
-                        time: moment(frec.dateTime).unix()
-                     };
-
-                     // Keep the most recent fault record by time
-                     if (typeof fdata[faultId] === "undefined") {
-                        fdata[faultId] = recObj;
-                     }
-                     else if (recObj.time > fdata[faultId].time) {
-                        fdata[faultId] = recObj;
+                     // Assemble and merge Tire Location data from multi-vehicle Component query
+                     for (let i = 2; i < result.length; i++) {
+                        tireLocData = { ...tireLocData, ...me._generateFaultAxleLocDb(result[i]) };
                      }
 
-                     // Attach VehComponent/Axle/Tire location to Fault record (If found in Tire Location DB)
-                     if (Object.keys(tireLocData).length) {
-                        Object.keys(tireLocData).forEach(vehComp => {
-                           if (typeof tireLocData[vehComp][fdata[faultId].time] !== "undefined") {
-                              const tireLocRec = tireLocData[vehComp][fdata[faultId].time];
-                              tireLocRec.vehComp = vehComp;
-                              if (typeof fdata[faultId].loc === "undefined") {
-                                 fdata[faultId].loc = [];
-                              }
-                              fdata[faultId].loc.push(tireLocRec);
-                           }
-                        });
-                     }
+                     // Analyze fault data
+                     me._timer.b3 = new Date();
+                     for (const frec of result[0]) {
+                        if (!frec.id || frec.device.id !== me._devId || typeof frec.diagnostic.id === "undefined") {
+                           continue; // Invalid records discarded
+                        }
+                        const faultId = frec.diagnostic.id;
+                        const recObj = {
+                           id: faultId,
+                           time: moment(frec.dateTime).unix()
+                        };
 
-                     // Attach Alert level to a few Faults (TPMS-related)
-                     if (typeof fdata[faultId].alert === "undefined" && typeof me._tpmsAlerts[faultId] !== "undefined") {
-                        fdata[faultId].alert = me._tpmsAlerts[faultId];
-                     }
-
-                     // Specify whether fault occurred after the most recent ignition
-                     fdata[faultId].occurredOnLatestIgnition = fdata[faultId].time >= me._vehIgnitionData["on-latest"] ? true : false;
-
-                     faultDataFound = true;
-                  }
-                  if (!faultDataFound) {
-                     if (me._apiFaultFirstTimeCall) {
-
-                        // If its a first time call + no fault date found, Retry with a different date range
-                        console.log("NO FAULT DATA FOUND! Retrying search with another date range...");
-                        me._apiCallFaultRetryCount++;
-                        me._setDateRangeAndInvokeFaultCalls();
-                        return;
-                     }
-                     else {
-
-                        // Repeat calls will fails with "No Results" found. No Retry. Return "No Results" response to callback
-                        console.log("NO FAULT DATA FOUND for this date range!");
-                        me._apiCallFaultRetryCount = 0;
-                        me._fDataCallback(null, me._vehIgnitionData);
-                        return;
-                     }
-                  }
-                  else {
-                     // Future calls after this successful response will not be a first-timer
-                     me._apiFaultFirstTimeCall = false;
-
-                     // Build API calls for searching for diagnostic descriptions for the Fault Ids found
-                     const calls = [];
-                     const faultArr = [];
-                     if (Object.keys(fdata).length) {
-                        for (const faultId in fdata) {
-                           if (fdata.hasOwnProperty(faultId)) {
-                              calls.push(["Get", {
-                                 typeName: "Diagnostic",
-                                 search: {
-                                    id: faultId
-                                 }
-                              }]);
-                           }
+                        // Keep the most recent fault record by time
+                        if (typeof fdata[faultId] === "undefined") {
+                           fdata[faultId] = recObj;
+                        }
+                        else if (recObj.time > fdata[faultId].time) {
+                           fdata[faultId] = recObj;
                         }
 
-                        // Search for Diagnostic descriptions
-                        api.multiCall(calls, function (result) {
-                           if (result && result.length) {
-                              for (const res of result) {
-                                 if (Array.isArray(res) && res.length) {
-                                    for (const frec of res) {
-                                       if (typeof frec.name === "undefined" || !frec.id ||
-                                          typeof fdata[frec.id] === "undefined") {
-                                          continue; // Invalid / missing records discarded
-                                       }
-                                       fdata[frec.id].msg = frec.name;
-                                       faultArr.push(fdata[frec.id]);
-                                    }
+                        // Attach VehComponent/Axle/Tire location to Fault record (If found in Tire Location DB)
+                        if (Object.keys(tireLocData).length) {
+                           Object.keys(tireLocData).forEach(vehComp => {
+                              if (typeof tireLocData[vehComp][fdata[faultId].time] !== "undefined") {
+                                 const tireLocRec = tireLocData[vehComp][fdata[faultId].time];
+                                 tireLocRec.vehComp = vehComp;
+                                 if (typeof fdata[faultId].loc === "undefined") {
+                                    fdata[faultId].loc = [];
                                  }
-                                 else if (typeof res === "object" &&
-                                    typeof res.name !== "undefined" &&
-                                    typeof res.id !== "undefined" &&
-                                    res.id !== "" && res.id !== null &&
-                                    typeof fdata[res.id] !== "undefined"
-                                 ) {
-                                    fdata[res.id].msg = res.name;
-                                    faultArr.push(fdata[res.id]);
-                                 }
+                                 fdata[faultId].loc.push(tireLocRec);
                               }
+                           });
+                        }
 
-                              me._timer.b4 = new Date();
-                              console.log("Fault data for VehicleID [ " + me._devId + " ] analyzed and sorted - " + me._convertSecondsToHMS((me._timer.b4 - me._timer.b3) / 1000) + ".");
+                        // Attach Alert level to a few Faults (TPMS-related)
+                        if (typeof fdata[faultId].alert === "undefined" && typeof me._tpmsAlerts[faultId] !== "undefined") {
+                           fdata[faultId].alert = me._tpmsAlerts[faultId];
+                        }
 
-                              // Return fault data to callback
-                              me._apiCallFaultRetryCount = 0;
-                              me._fDataCallback(faultArr, me._vehIgnitionData);
-                              return;
-                           }
-                           else {
-                              if (me._apiFaultFirstTimeCall) {
-                                 me._apiCallFaultRetryCount++;
-                                 me._setDateRangeAndInvokeFaultCalls();
-                                 return;
-                              }
+                        // Specify whether fault occurred after the most recent ignition
+                        fdata[faultId].occurredOnLatestIgnition = fdata[faultId].time >= me._vehIgnitionData["on-latest"] ? true : false;
 
-                              // Return "NOT-FOUND" result to callback
-                              me._apiCallFaultRetryCount = 0;
-                              me._fDataCallback(null, me._vehIgnitionData);
-                           }
-                        });
+                        faultDataFound = true;
                      }
-                     else {
+                     if (!faultDataFound) {
                         if (me._apiFaultFirstTimeCall) {
+
+                           // If its a first time call + no fault date found, Retry with a different date range
+                           console.log("VehicleID [ " + me._devId + " ]: NO FAULT DATA FOUND! Retrying search with another date range...");
                            me._apiCallFaultRetryCount++;
                            me._setDateRangeAndInvokeFaultCalls();
                            return;
                         }
+                        else {
 
-                        // Return "NOT-FOUND" result to callback
-                        me._apiCallFaultRetryCount = 0;
-                        me._fDataCallback(null, me._vehIgnitionData);
+                           // Repeat calls will fails with "No Results" found. No Retry. Return "No Results" callback response
+                           console.log("VehicleID [ " + me._devId + " ]: NO FAULT DATA FOUND for this date range!");
+                           me._apiCallFaultRetryCount = 0;
+                           me._toFaultDateOverride = null;
+                           me._fDataCallback(null, me._vehIgnitionData);
+                           return;
+                        }
+                     }
+                     else {
+                        // Future calls after this successful response will not be a first-timer
+                        me._apiFaultFirstTimeCall = false;
+
+                        // Build API calls for searching for diagnostic descriptions for the Fault Ids found
+                        const calls = [];
+                        const faultArr = [];
+                        if (Object.keys(fdata).length) {
+                           for (const faultId in fdata) {
+                              if (fdata.hasOwnProperty(faultId)) {
+                                 calls.push(["Get", {
+                                    typeName: "Diagnostic",
+                                    search: {
+                                       id: faultId
+                                    }
+                                 }]);
+                              }
+                           }
+
+                           // Search for Diagnostic descriptions
+                           api.multiCall(calls,
+                              function (result) {
+                                 if (result && result.length) {
+                                    for (const res of result) {
+                                       if (Array.isArray(res) && res.length) {
+                                          for (const frec of res) {
+                                             if (typeof frec.name === "undefined" || !frec.id ||
+                                                typeof fdata[frec.id] === "undefined") {
+                                                continue; // Invalid / missing records discarded
+                                             }
+                                             fdata[frec.id].msg = frec.name;
+                                             faultArr.push(fdata[frec.id]);
+                                          }
+                                       }
+                                       else if (typeof res === "object" &&
+                                          typeof res.name !== "undefined" &&
+                                          typeof res.id !== "undefined" &&
+                                          res.id !== "" && res.id !== null &&
+                                          typeof fdata[res.id] !== "undefined"
+                                       ) {
+                                          fdata[res.id].msg = res.name;
+                                          faultArr.push(fdata[res.id]);
+                                       }
+                                    }
+
+                                    me._timer.b4 = new Date();
+                                    console.log("Fault data for VehicleID [ " + me._devId + " ] analyzed and sorted - " + me._convertSecondsToHMS((me._timer.b4 - me._timer.b3) / 1000) + ".");
+
+                                    // Return "NOT-FOUND" callback response
+                                    me._apiCallFaultRetryCount = 0;
+                                    me._toFaultDateOverride = null;
+                                    me._fDataCallback(faultArr, me._vehIgnitionData);
+                                    return;
+                                 }
+                                 else {
+                                    if (me._apiFaultFirstTimeCall) {
+                                       me._apiCallFaultRetryCount++;
+                                       me._setDateRangeAndInvokeFaultCalls();
+                                       return;
+                                    }
+
+                                    // Return "NOT-FOUND" callback response
+                                    me._apiCallFaultRetryCount = 0;
+                                    me._fDataCallback(null, me._vehIgnitionData);
+                                 }
+                              });
+                        }
+                        else {
+                           if (me._apiFaultFirstTimeCall) {
+                              me._apiCallFaultRetryCount++;
+                              me._setDateRangeAndInvokeFaultCalls();
+                              return;
+                           }
+
+                           // Return "NOT-FOUND" callback response
+                           me._apiCallFaultRetryCount = 0;
+                           me._fDataCallback(null, me._vehIgnitionData);
+                        }
                      }
                   }
-               }
 
-               // No results from API Call, Retry
-               else {
+                  // No results from API Call, Retry
+                  else {
 
-                  // Retry if its a first time call
-                  if (me._apiFaultFirstTimeCall) {
-                     me._apiCallFaultRetryCount++;
-                     me._setDateRangeAndInvokeFaultCalls();
-                     return;
+                     // Retry if its a first time call
+                     if (me._apiFaultFirstTimeCall) {
+                        me._apiCallFaultRetryCount++;
+                        me._setDateRangeAndInvokeFaultCalls();
+                        return;
+                     }
+
+                     // Return "NOT-FOUND" callback response
+                     console.log("VehicleID [ " + me._devId + " ]: NO FAULT DATA FOUND for this date range!");
+                     me._apiCallFaultRetryCount = 0;
+                     me._toFaultDateOverride = null;
+                     me._fDataCallback(null, me._vehIgnitionData);
                   }
-
-                  // Return "NOT-FOUND" result to callback
-                  console.log("NO FAULT DATA FOUND for this date range!");
-                  me._apiCallFaultRetryCount = 0;
-                  me._fDataCallback(null, me._vehIgnitionData);
-               }
-            },
-
+               },
                function (errorString) {
                   me._timer.b4 = new Date();
-                  console.log("--- Sensor data retrieval failed - " + me._convertSecondsToHMS((me._timer.b4 - me._timer.b3) / 1000));
-                  console.log("--- Error: getFaults.api.multiCall(): " + errorString);
+                  console.log("--- VehicleID [ " + me._devId + " ]: Sensor data retrieval failed - " + me._convertSecondsToHMS((me._timer.b4 - me._timer.b3) / 1000));
+                  console.log("--- VehicleID [ " + me._devId + " ]: Error: getFaults.api.multiCall(): " + errorString);
 
                   // Retry if its a first time call
                   if (me._apiFaultFirstTimeCall) {
@@ -508,8 +530,9 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                      return;
                   }
 
-                  // Return "NOT-FOUND" result to callback
+                  // Return "NOT-FOUND" callback response
                   me._apiCallFaultRetryCount = 0;
+                  me._toFaultDateOverride = null;
                   me._fDataCallback(null, me._vehIgnitionData);
                });
          },
@@ -730,8 +753,8 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                },
                function (errorString) {
                   me._timer.b2 = new Date();
-                  console.log("--- Sensor data retrieval failed - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000));
-                  console.log("--- Error: getData.api.multiCall(): " + errorString);
+                  console.log("--- VehicleID [ " + me._devId + " ]: Sensor data retrieval failed - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000));
+                  console.log("--- VehicleID [ " + me._devId + " ]: Error: getData.api.multiCall(): " + errorString);
 
                   // Retry if its a first time call
                   if (me._apiFirstTimeCall) {

@@ -143,10 +143,10 @@ const SpartanLyncServices = {
                }
             }
             if (newOrUpdatedFaultCount) {
-               console.log("[" + newOrUpdatedFaultCount + "] NEW POST-IGNITION SPARTANLYNC FAULTS FOUND or UPDATED after the last search.");
+               console.log("VehicleID [ " + vehId + " ]: [" + newOrUpdatedFaultCount + "] NEW POST-IGNITION SPARTANLYNC FAULTS FOUND or UPDATED after the last search.");
             }
             else {
-               console.log("NO NEW POST-IGNITION SPARTANLYNC FAULT DATA FOUND for this date range!");
+               console.log("VehicleID [ " + vehId + " ]: NO NEW POST-IGNITION SPARTANLYNC FAULT DATA FOUND for this date range!");
             }
          }
       },
@@ -305,6 +305,7 @@ const SpartanLyncServices = {
    events: {
 
       _events: {},
+      _queue: {},
 
       /**
       * Register callbacks to event array
@@ -312,20 +313,33 @@ const SpartanLyncServices = {
       * @param {string}   event        - Name of Event (Required)
       * @param {function} callback     - Callback executed when this event occurs
       * @param {boolean}  execOnceOnly - Execute Callback once, then remove from Event Array (Optional - Default: true)
+      * @param {string}   vehicleId    - Required VehicleId parameter when executed by queueExec() method
       *
       * @returns EventId (for Event callback deletion)
       */
-      register: function (event, callback, execOnceOnly) {
+      register: function (event, callback, execOnceOnly, vehicleId) {
          const me = this;
          const execOneTime = typeof execOnceOnly !== "undefined" && execOnceOnly === false ? false : true;
+         const vehId = typeof vehicleId !== "undefined" && vehicleId ? vehicleId : null;
          const evtId = moment().unix() + "_" + Math.random().toString(36).substring(7);
 
          if (event !== null && typeof event !== "undefined" && typeof callback === "function") {
+
+            // If in Queue, execute it
+            if (vehId && typeof me._queue[event] !== "undefined" && typeof me._queue[event][vehId] !== "undefined") {
+               const params = me._queue[event][vehId];
+               callback(vehId, ...params);
+               delete me._queue[event][vehId];
+               if (execOneTime) { return null; } // Do not register on event, as it's already been executed
+            }
+
+            // Now proceed with registration
             if (typeof me._events[event] === "undefined") {
                me._events[event] = [{
                   id: evtId,
                   func: callback,
-                  execOnce: execOneTime
+                  execOnce: execOneTime,
+                  vehId: vehId
                }];
                return evtId;
             }
@@ -333,7 +347,8 @@ const SpartanLyncServices = {
                me._events[event].push({
                   id: evtId,
                   func: callback,
-                  execOnce: execOneTime
+                  execOnce: execOneTime,
+                  vehId: vehId
                });
                return evtId;
             }
@@ -341,7 +356,7 @@ const SpartanLyncServices = {
       },
 
       /**
-      * Invoke registered callbacks (if any) on a event(s) array
+      * Execute registered callbacks (if any) on a event(s) array
       *
       * @param {string} event - Name of Event Array to execute stored callbacks (Required)
       * @param {array} params - parameters passed to callbacks (Optional)
@@ -362,6 +377,81 @@ const SpartanLyncServices = {
                }
                return !callee.execOnce;
             });
+         }
+      },
+
+      /**
+      * Execute registered per-vehicle callbacks in event(s) array.
+      * If vehicle registration not found, queue it for anticipiated future registration
+      *
+      * Use clearQueue() method to clear the queued callbacks
+      *
+      * @param {string} event - Name of Event Array to execute stored callbacks (Required)
+      * @param {string} vehId - Events registered and executed by VehicleId (Required)
+      * @param {array} params - parameters passed to callbacks (Optional)
+      *
+      * @returns void
+      */
+      queueExec: function (event, vehId, ...params) {
+         const me = this;
+         if (event && vehId) {
+            // If Event registered to this vehicle, execute it
+            if (typeof me._events[event] !== "undefined" && me.findVehIdInEvent(event, vehId)) {
+               me._events[event] = me._events[event].filter((callee) => {
+                  if (callee.vehId && callee.vehId === vehId) {
+                     if (typeof callee.func === "function") {
+                        params.unshift(vehId);
+                        callee.func(...params);
+                     }
+                     return !callee.execOnce;
+                  }
+                  return true;
+               });
+            }
+            // Otherwise queue it, for future
+            else {
+               if (typeof me._queue[event] === "undefined") { me._queue[event] = {}; }
+               params.unshift(vehId);
+               me._queue[event][vehId] = params;
+            }
+         }
+      },
+
+      /**
+      * Search Events for specific VehicleId
+      *
+      * @param {string} event - Name of Event Array to search
+      * @param {string} vehId - VehicleId to find
+      *
+      * @returns boolean
+      */
+      findVehIdInEvent: function (event, vehId) {
+         const me = this;
+         if (event && vehId && typeof me._events[event] !== "undefined" &&
+            Array.isArray(me._events[event]) && me._events[event].length) {
+            for (const evtObj of me._events[event]) {
+               if (evtObj && evtObj.vehId && evtObj.vehId === vehId) {
+                  return true;
+               }
+            }
+         }
+         return false;
+      },
+
+      /**
+      * Clear queue of all vehicles assigned to event
+      *
+      * @param {string} event - Name of Event Queue to clear
+      *
+      * @returns void
+      */
+      queueClear: function (event) {
+         const me = this;
+         if (typeof me._queue[event] !== "undefined") {
+            if (typeof me._events[event] !== "undefined") {
+               delete me._events[event];
+            }
+            delete me._queue[event];
          }
       },
 

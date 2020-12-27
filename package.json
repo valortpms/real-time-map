@@ -19,9 +19,9 @@
 	"author": "Jay Zuo",
 	"license": "ISC",
 	"dependencies": {
-		"@babel/core": "^7.9.6",
 		"@babel/plugin-proposal-object-rest-spread": "^7.9.6",
 		"@babel/preset-env": "^7.9.6",
+		"@babel/runtime": "^7.12.5",
 		"@material/select": "^3.2.0",
 		"@material/slider": "^3.2.0",
 		"Leaflet.MultiOptionsPolyline": "github:hgoebl/Leaflet.MultiOptionsPolyline",
@@ -30,6 +30,7 @@
 		"babel-preset-env": "^1.7.0",
 		"babel-preset-react": "^6.24.1",
 		"circular-dependency-plugin": "^5.2.0",
+		"core-js": "^3.8.1",
 		"enzyme": "^3.11.0",
 		"enzyme-adapter-react-16": "^1.15.2",
 		"enzyme-to-json": "^3.4.4",
@@ -56,10 +57,13 @@
 		"react": "^16.13.1",
 		"react-dom": "^16.13.1",
 		"react-tooltip": "^4.2.6",
+		"regenerator-runtime": "^0.13.7",
 		"rxjs": "^6.5.5",
 		"sweetalert2": "^9.14.0"
 	},
 	"devDependencies": {
+		"@babel/core": "^7.12.10",
+		"@babel/plugin-transform-runtime": "^7.12.10",
 		"@babel/preset-react": "^7.9.4",
 		"babel-eslint": "^10.1.0",
 		"copy-webpack-plugin": "^6.0.1",

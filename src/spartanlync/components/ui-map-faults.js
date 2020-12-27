@@ -32,8 +32,8 @@ export function initSplMapFaults() {
 
 const demoVeh = {
 
-   _onInitDrawXXLatLngs: 1,               // How many latLng points to draw on initialization
-   _RandomizeOnInitDrawXXLatLngs: true,  // Randomize _onInitDrawXXLatLngs with a number between 1-10
+   _onInitDrawXXLatLngs: 99,               // How many latLng points to draw on initialization
+   _RandomizeOnInitDrawXXLatLngs: false,  // Randomize _onInitDrawXXLatLngs with a number between 1-10
 
    _mapGroupLayer: "splDemoLayer",  // Demo polyline layers are drawn on this layerGroup
 
@@ -389,7 +389,7 @@ export const splMapFaultMgr = {
             console.log("==== onHistoricPathCreatedOrUpdated(", vehId, ") INVOKED");//DEBUG
             splMapFaultMgr.faults.getTimelineEvents(vehId).then((splFaultTimelineEvents) => {
                splMapFaultMgr.setLatLngFaults(vehId, vehPathLatLngArr, vehMarker, vehMarker.deviceData, splFaultTimelineEvents);
-            }).catch(() => { });
+            });//.catch(() => { });
          }
       }, false);
 
@@ -575,14 +575,15 @@ const splMapFaultUtils = {
             if (typeof evtNow.evtState === "undefined") {
                currentStateObj.faultState = currentStateObj.faultColor = currentStateObj.tooltipDesc = "";
             }
-            else if (!(currentStateObj.faultState === "RED" && evtNow.evtState === "AMBER")) {
+            else {
                currentStateObj.faultState = evtNow.evtState;
                currentStateObj.faultColor = evtNow.evtColor;
                currentStateObj.faultTime = evtNow.realTime;
                currentStateObj.tooltipDesc = evtNow.tooltipDesc;
             }
 
-            if (currentSecond >= evtNow.latLngTime && currentSecond < evtNext.latLngTime) {
+            if ((typeof evtNow.evtState !== "undefined" && currentStateObj.faultState !== evtNow.evtState) ||
+               (currentSecond >= evtNow.latLngTime && currentSecond < evtNext.latLngTime)) {
                return currentStateObj;
             }
          }

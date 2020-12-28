@@ -204,7 +204,7 @@ export const INITSplSessionMgr = function (myApi, credentials) {
             credentials: me._credentials
          },
          (result) => {
-            if (me._isSuccess(result)) {
+            if (me._isSuccess(result) && result.data !== null && result.data) {
                const settings = result.data;
                if (typeof settings.storageObj !== "undefined" &&
                   typeof settings.deviceIdDb !== "undefined") {
@@ -266,7 +266,7 @@ export const INITSplSessionMgr = function (myApi, credentials) {
             credentials: me._credentials
          },
          (result) => {
-            if (me._isSuccess(result)) {
+            if (me._isSuccess(result) && result.data !== null && result.data) {
                const settings = result.data;
                if (typeof settings.accepted !== "undefined" &&
                   typeof settings.storageObj !== "undefined" &&
@@ -289,6 +289,48 @@ export const INITSplSessionMgr = function (myApi, credentials) {
    };
 
    /**
+   * getTempTracFaults() Fetch Temptrac Faults
+   *
+   * @param {function} callback - Handler for post-retrieval
+   *
+   * @return {array}  FaulsArray - Temptrac Faults found within date range or NULL if empty
+   *
+   */
+   this.getTempTracFaults = function (tempThreshold, toDate, searchRangeArr, searchUnit, callback, errorCallback) {
+      const me = this;
+      if (!callback || typeof callback !== "function" || !me._api || !me._credentials) { return; }
+
+      me._callback = callback;
+      me._errorCallback = errorCallback && typeof errorCallback === "function" ? errorCallback : null;
+      me._api.requestService(
+         {
+            temptracfaults: {
+               tempThreshold: tempThreshold,
+               toDate: toDate,
+               searchRange: searchRangeArr,
+               searchUnit: searchUnit
+            },
+            credentials: me._credentials
+         },
+         (result) => {
+            if (me._isSuccess(result)) {
+               me._callback(result.data);
+            }
+            else {
+               me._handleAppError(result, "---- splSessionMgr(): getTempTracFaults(): FETCHING ERROR ----");
+            }
+         },
+         // API ERROR FETCHING
+         (result) => {
+            const msg = "---- splSessionMgr(): getTempTracFaults(): API ERROR FETCHING: " + result;
+            if (me._errorCallback) {
+               me._errorCallback(msg);
+            }
+         }
+      );
+   };
+
+   /**
     *  Handler for Setting debug in SplAPI
     */
    this.enableDebug = function (enable) {
@@ -300,7 +342,7 @@ export const INITSplSessionMgr = function (myApi, credentials) {
       if (typeof result !== "undefined" && result !== null && typeof result === "object" &&
          typeof result.responseStatus !== "undefined" && result.responseStatus !== null &&
          typeof result.responseStatus && result.responseStatus === "success" &&
-         typeof result.data !== "undefined" && result.data !== null && result.data
+         typeof result.data !== "undefined"
       ) {
          return true;
       }
@@ -308,8 +350,8 @@ export const INITSplSessionMgr = function (myApi, credentials) {
    };
 
    this._handleAppError = function (result, msg) {
-      const me = this,
-         outMsg = msg || "";
+      const me = this;
+      let outMsg = msg || "";
       console.log(msg);
       if (typeof result !== "undefined" && result !== null && typeof result === "object" &&
          typeof result.responseStatus !== "undefined" && result.responseStatus !== null &&

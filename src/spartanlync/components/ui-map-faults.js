@@ -12,6 +12,7 @@ import { checkSameDay } from "../../utils/helper";
 import { INITGeotabTpmsTemptracLib } from "../services/api/temptrac-tpms";
 import {
    filterMarkerButton,
+   getStrongText,
    escapeQuotes,
    getDefaultPopupText
 } from "../../components/map/popups/popup-helpers";
@@ -901,7 +902,7 @@ class FaultPolyline {
             }
             // Non-Mobile VehName-only Popup content
             else {
-               popupHtml = filterMarkerButton(me.vehId, vehNameEscaped) + vehNameEscaped;
+               popupHtml = filterMarkerButton(me.vehId, vehNameEscaped) + getStrongText(vehNameEscaped);
             }
             popupObj
                .openPopup(evt.latlng)
@@ -1248,12 +1249,14 @@ class FaultTimelineEventMgr {
             const promises = vehIds.map(async (vehId) => {
                await (() => {
                   return new Promise((resolve, reject) => {
+                     const searchRangeArr = [1]; // Only use a search range of 1 day for faults & ignition data
 
+                     // Poll for TPMS Faults
                      const aSyncGoLib = INITGeotabTpmsTemptracLib(
                         apiConfig.api,
                         splSrv.sensorSearchRetryRangeInDays,
                         splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds,
-                        [1], // Only use a search range of 1 day for faults & ignition data
+                        searchRangeArr,
                         splSrv.faultSearchTimeRangeForRepeatSearchesInSeconds
                      );
                      aSyncGoLib.getFaults(vehId, function (faults, vehIgnitionInfo) {
@@ -1288,6 +1291,13 @@ class FaultTimelineEventMgr {
                         }
 
                      }, true, toDateOverride);
+
+                     // Poll for TempTrac Faults
+                     const searchUnit = "days";
+                     const toFaultDate = moment.unix(toDateOverride).utc().format();
+                     splSrv.sessionMgr.getTempTracFaults("fridge", toFaultDate, searchRangeArr, searchUnit, (faults) => {
+                        console.log("==== fetchIgnAndFaults.getTempTracFaults() faults =", faults);//DEBUG
+                     });
 
                      return;
                   });

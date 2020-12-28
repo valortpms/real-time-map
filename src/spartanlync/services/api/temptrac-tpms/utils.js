@@ -59,7 +59,7 @@ export function fetchVehFaultsAndIgnitionAsync(vehId, firstTimeCallOverride) {
       const searchUnit = overrideFirstTimeCall ? "days" : "hours";
       splSrv.sessionMgr.getTempTracFaults("fridge", toFaultDate, searchRangeArr, searchUnit, (faults) => {
          console.log("==== fetchVehFaultsAndIgnitionAsync.getTempTracFaults() faults =", faults);//DEBUG
-      });
+      }, (reason) => { /* Handle error condition */ });
 
    });
 };

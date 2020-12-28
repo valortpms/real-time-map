@@ -1297,7 +1297,7 @@ class FaultTimelineEventMgr {
                      const toFaultDate = moment.unix(toDateOverride).utc().format();
                      splSrv.sessionMgr.getTempTracFaults("fridge", toFaultDate, searchRangeArr, searchUnit, (faults) => {
                         console.log("==== fetchIgnAndFaults.getTempTracFaults() faults =", faults);//DEBUG
-                     });
+                     }, (reason) => { /* Handle error condition */ });
 
                      return;
                   });

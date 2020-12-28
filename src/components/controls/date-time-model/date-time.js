@@ -1,3 +1,4 @@
+import ReactTooltip from "react-tooltip";
 import storage from "../../../dataStore";
 import moment from "moment-timezone";
 import splSrv from "../../../spartanlync/services";
@@ -6,6 +7,8 @@ import { showSnackBar } from "../../snackbar/snackbar";
 import { ENTER_KEY } from "../../../constants/key-codes";
 
 export const dateTimeModel = {
+
+   _clearTooltipsHandlerId: null,
 
    get dateInput() {
       return document.getElementById("dateInputBox");
@@ -29,6 +32,16 @@ export const dateTimeModel = {
 
    get controlBarObj() {
       return document.getElementById("RTM-ControlBarContainer");
+   },
+
+   clearTooltips() {
+      const me = this;
+      if (!me._clearTooltipsHandlerId) {
+         me._clearTooltipsHandlerId = setTimeout(function () {
+            me._clearTooltipsHandlerId = null;
+            ReactTooltip.hide();
+         }, 200);
+      }
    },
 
    initDateTimeInput() {
@@ -89,6 +102,7 @@ export const dateTimeModel = {
    keyENTEROnApplyBtn(evt) {
       evt.preventDefault();
       if (evt.keyCode === ENTER_KEY) {
+         this.clearTooltips();
          for (const applyBtn of this.applyBtns) {
             if (typeof applyBtn !== "undefined" && applyBtn.classList.contains("active")) {
                applyBtn.click();
@@ -146,6 +160,8 @@ export const dateTimeModel = {
       evt.preventDefault();
       evt.stopPropagation();
 
+      this.clearTooltips();
+
       if (typeof buttonObj !== "undefined" && inputElemName) {
          let inputElemVal = "";
          switch (inputElemName) {
@@ -172,6 +188,8 @@ export const dateTimeModel = {
       const buttonObj = evt.target.parentElement.querySelector("button.apply-changes-btn");
       const inputElemName = buttonObj.getAttribute("data-input-name");
       const inputElemVal = buttonObj.getAttribute("data-input-val");
+
+      this.clearTooltips();
 
       evt.preventDefault();
       evt.stopPropagation();

@@ -12,7 +12,6 @@ import { checkSameDay } from "../../utils/helper";
 import { INITGeotabTpmsTemptracLib } from "../services/api/temptrac-tpms";
 import {
    filterMarkerButton,
-   getStrongText,
    escapeQuotes,
    getDefaultPopupText
 } from "../../components/map/popups/popup-helpers";
@@ -30,18 +29,20 @@ export function initSplMapFaults() {
       // DEMO INIT - PLEASE DELETE ON PROD - DEBUG
       // DomButtonIds: speedLabel dateInputLabel timeRangeStartLabel currentTimeLabel
       //
-      document.getElementById("speedLabel").addEventListener("click", demoVeh.step.bind(demoVeh));
-      document.getElementById("dateInputLabel").addEventListener("click", demoVeh.clear.bind(demoVeh));
-      document.getElementById("timeRangeStartLabel").addEventListener("click", demoVeh.utils.switchDebugMode.bind(demoVeh));
-      document.getElementById("currentTimeLabel").addEventListener("click", demoVeh.utils.enableGetMapLatLng.bind(demoVeh));
+      if (!L.Browser.mobile) { // Disabled for Mobile Browsers
+         document.getElementById("speedLabel").addEventListener("click", demoVeh.step.bind(demoVeh));
+         document.getElementById("dateInputLabel").addEventListener("click", demoVeh.clear.bind(demoVeh));
+         document.getElementById("timeRangeStartLabel").addEventListener("click", demoVeh.utils.switchDebugMode.bind(demoVeh));
+         document.getElementById("currentTimeLabel").addEventListener("click", demoVeh.utils.enableGetMapLatLng.bind(demoVeh));
+      }
    });
 }
 
 const demoVeh = {
 
-   _onInitDrawXXLatLngs: 99,              // How many latLng points to draw on initialization
+   _onInitDrawXXLatLngs: 1,               // How many latLng points to draw on initialization
 
-   _RandomizeOnInitDrawXXLatLngs: true,   // Randomize _onInitDrawXXLatLngs with a number between _RandomizeOnInitMinCoords & _RandomizeOnInitMaxCoords
+   _RandomizeOnInitDrawXXLatLngs: false,  // Randomize _onInitDrawXXLatLngs with a number between _RandomizeOnInitMinCoords & _RandomizeOnInitMaxCoords
    _RandomizeOnInitMinCoords: 2,          // If randomize enabled, minimum # points for _onInitDrawXXLatLngs
    _RandomizeOnInitMaxCoords: 16,         // If randomize enabled, maximum # points for _onInitDrawXXLatLngs
 
@@ -949,7 +950,6 @@ class FaultPolyline {
                }
             }
          });
-
 
          return me.vehMarker.splMapFaults.vehFaultsPopupObj;
       }

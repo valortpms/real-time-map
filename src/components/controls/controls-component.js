@@ -10,6 +10,7 @@ import { pausePlayModel } from "./play-pause/play-pause-model";
 import { playBackSpeedModel } from "./speed-control/playback-speed";
 
 export class ControlsView extends React.Component {
+
    componentDidMount() {
       playBackSpeedModel.initPlayBackSpeed();
       pausePlayModel.initPausePlay();

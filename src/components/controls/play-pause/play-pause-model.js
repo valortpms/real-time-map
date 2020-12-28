@@ -1,3 +1,4 @@
+import ReactTooltip from "react-tooltip";
 import storage from "../../../dataStore/index";
 import { SPACE_KEY } from "../../../constants/key-codes";
 
@@ -6,9 +7,13 @@ export const pausePlayModel = {
    pausePlayIcon: undefined,
 
    initPausePlay() {
+      storage.dateKeeper$.subscribe(this.updatePausePlay.bind(this));
+
       this.pausePlayIcon = document.getElementById("RTMControlButton");
       this.pausePlayIcon.classList.add("RTM-pauseIcon");
-      storage.dateKeeper$.subscribe(this.updatePausePlay.bind(this));
+      this.pausePlayIcon.addEventListener("click", () => setTimeout(function () {
+         ReactTooltip.hide(); // Clear Tooltip a few seconds after user clicks button
+      }, 1000));
    },
 
    updatePausePlay() {

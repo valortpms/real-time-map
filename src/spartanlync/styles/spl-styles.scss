@@ -335,6 +335,7 @@
    -moz-animation: fadein 0.5s; /* Firefox */
    -webkit-animation: fadein 0.5s; /* Safari and Chrome */
    -o-animation: fadein 0.5s; /* Opera */
+   animation: fadein 0.5s; /* Standard */
 }
 #RTM-config-view .spl-list-item .btn-content-wrapper .btn-content-close {
    position: absolute;

@@ -281,7 +281,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                me._fromFaultDate = moment().utc().subtract(me._timeRangeForRepeatFaultSearchesInSeconds, "seconds").format();
                if (me._toFaultDateOverride) {
                   // Calculate FROM using user-supplied UNIX timestamp instead of NOW
-                  me._fromDate = moment.unix(me._toFaultDateOverride).utc().subtract(me._timeRangeForRepeatFaultSearchesInSeconds, "seconds").format();
+                  me._fromFaultDate = moment.unix(me._toFaultDateOverride).utc().subtract(me._timeRangeForRepeatFaultSearchesInSeconds, "seconds").format();
                }
             }
 

@@ -858,35 +858,28 @@ class FaultPolyline {
       this.drawPolyline(myLatLngArr);
    }
 
+   getFaultDescHtml(latLng) {
+      const me = this;
+
+      const latLngByTimeVehAPI = me.vehMarker.splMapFaults.historicPathLatLngToTimeDB;
+      const timestamp = splMapFaultUtils.searchLatlngArrForTime(latLng, me.polyLine.getLatLngs(), me.latLngByTimeAPI, latLngByTimeVehAPI, me.vehDeviceData);
+      const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, me.splFaultTimelineEvents);
+      const humanTime = faultInfo.faultTime ? "<br />@" + moment.unix(faultInfo.faultTime).format(storage.humanDateTimeFormat) : "";
+      const alertHeader = faultInfo.faultState === "RED" ? splmap.tr("alert_header_red") : splmap.tr("alert_header_amber");
+      const latLngTxt = me.vehName + (faultInfo.faultState ? `: ${alertHeader}:<br />${faultInfo.tooltipDesc}${humanTime}` : "");
+
+      return latLngTxt;
+   }
+
    enableToolipOn(leafletObj) {
       const me = this;
 
-      if (leafletObj) {
+      if (leafletObj && !L.Browser.mobile) {
          const tooltipFunc = (evt) => {
             leafletObj.unbindTooltip();
-
-            const latLngByTimeVehAPI = me.vehMarker.splMapFaults.historicPathLatLngToTimeDB;
-            const timestamp = splMapFaultUtils.searchLatlngArrForTime(evt.latlng, me.polyLine.getLatLngs(), me.latLngByTimeAPI, latLngByTimeVehAPI, me.vehDeviceData);
-            const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, me.splFaultTimelineEvents);
-            const humanTime = faultInfo.faultTime ? "<br />@" + moment.unix(faultInfo.faultTime).format(storage.humanDateTimeFormat) : "";
-            const alertHeader = faultInfo.faultState === "RED" ? splmap.tr("alert_header_red") : splmap.tr("alert_header_amber");
-            const latLngTxt = me.vehName + (faultInfo.faultState ? `: ${alertHeader}:<br />${faultInfo.tooltipDesc}${humanTime}` : "");
-
-            leafletObj.bindTooltip(latLngTxt, {
-               "className": "spl-map-vehicle-tooltip",
+            leafletObj.bindTooltip(me.getFaultDescHtml(evt.latlng), {
+               className: "spl-map-vehicle-tooltip",
             }).openTooltip(evt.latlng);
-
-            leafletObj.on("popupopen", () => {
-               const vehHistoricPathPolylineObj = me.vehMarker.historicPath.polyline;
-               const vehLivePathPolylineObj = me.vehMarker.livePath.polyline;
-               if (vehHistoricPathPolylineObj && vehHistoricPathPolylineObj.isPopupOpen()) {
-                  vehHistoricPathPolylineObj.closePopup();
-               }
-               if (vehLivePathPolylineObj && vehLivePathPolylineObj.isPopupOpen()) {
-                  vehLivePathPolylineObj.closePopup();
-               }
-            });
-
          };
          leafletObj.on("mouseover", tooltipFunc);
       }
@@ -898,9 +891,20 @@ class FaultPolyline {
       if (leafletObj) {
          const popupObj = me.initPopup(leafletObj);
          const popupFunc = (evt) => {
-            const latlng = evt.latlng;
+            let popupHtml = "";
+            const vehNameEscaped = escapeQuotes(me.vehName);
+
+            // Mobile-only Fault Popup Content
+            if (L.Browser.mobile) {
+               popupHtml = filterMarkerButton(me.vehId, vehNameEscaped) + me.getFaultDescHtml(evt.latlng);
+            }
+            // Non-Mobile VehName-only Popup content
+            else {
+               popupHtml = filterMarkerButton(me.vehId, vehNameEscaped) + vehNameEscaped;
+            }
             popupObj
-               .openPopup(latlng)
+               .openPopup(evt.latlng)
+               .setPopupContent(popupHtml)
                .bringToFront();
          };
          leafletObj.on("click", popupFunc);
@@ -917,27 +921,35 @@ class FaultPolyline {
             return me.vehMarker.splMapFaults.vehFaultsPopupObj;
          }
          me.vehMarker.splMapFaults.vehFaultsPopupObj = leafletObj;
-
          leafletObj.bindPopup(getDefaultPopupText(me.vehId), {
+            className: L.Browser.mobile ? "map-popup-content-mobile" : "map-popup-content",
+            maxWidth: 500,
             autoClose: false,
          });
 
          leafletObj.on("popupopen", (evt) => {
 
             // Resolving overlap, bring active popup to front
-            evt.popup.bringToFront();
-            if (!evt.popup._container.getAttribute("data-click-to-front")) {
+            if (evt.popup._container.getAttribute("data-click-to-front") === null) {
                evt.popup._container.addEventListener("click", function () {
                   evt.popup.bringToFront();
                });
                evt.popup._container.setAttribute("data-click-to-front", true);
             }
 
-            // Get VehName as Popup content
-            const vehName = typeof deviceSearch.selectedIDS[me.vehId] !== "undefined" ? escapeQuotes(deviceSearch.selectedIDS[me.vehId].name) : me.vehId;
-            const popupHtml = filterMarkerButton(me.vehId, vehName) + getStrongText(vehName);
-            leafletObj.setPopupContent(popupHtml);
+            // Close other popups
+            if (me.vehMarker && me.vehMarker.historicPath && me.vehMarker.historicPath.polyline) {
+               const vehHistoricPathPolylineObj = me.vehMarker.historicPath.polyline;
+               const vehLivePathPolylineObj = me.vehMarker.livePath.polyline;
+               if (vehHistoricPathPolylineObj && vehHistoricPathPolylineObj.isPopupOpen()) {
+                  vehHistoricPathPolylineObj.closePopup();
+               }
+               if (vehLivePathPolylineObj && vehLivePathPolylineObj.isPopupOpen()) {
+                  vehLivePathPolylineObj.closePopup();
+               }
+            }
          });
+
 
          return me.vehMarker.splMapFaults.vehFaultsPopupObj;
       }

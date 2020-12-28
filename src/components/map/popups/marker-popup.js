@@ -37,9 +37,12 @@ export function initMarkerPopup(deviceMarker) {
 
    mapMarker.bindPopup(popup).on("popupopen", (evt) => {
       popup.bringToFront();
-      evt.popup._container.addEventListener("click", function () {
-         popup.bringToFront();
-      });
+      if (!evt.popup._container.getAttribute("data-click-to-front")) {
+         evt.popup._container.addEventListener("click", function () {
+            popup.bringToFront();
+         });
+         evt.popup._container.setAttribute("data-click-to-front", true);
+      }
    });
 
    const constructors = {

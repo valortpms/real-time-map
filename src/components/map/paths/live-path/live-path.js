@@ -48,7 +48,7 @@ export const livePathModel = {
    animationIntervalIDs: {},
 
    init(deviceID, ruleID) {
-      bindDeviceNamePopup(deviceID, this.polyline);
+      bindDeviceNamePopup(deviceID, this.polyline, "live");
       layersModel.addToMovingLayer(this.polyline);
       this.setPolyLineColor(ruleID);
    },

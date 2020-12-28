@@ -17,7 +17,7 @@ export const mapModel = {
          doubleClickZoom: false,
          closePopupOnClick: false,
          markerZoomAnimation: false,
-         preferCanvas: true,
+         //preferCanvas: true,
          worldCopyJump: true
       });
       if (MAPBOX && MAPBOX.ACCESS_TOKEN) {

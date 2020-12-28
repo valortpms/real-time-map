@@ -10,6 +10,12 @@ import { deviceSearch } from "../../components/configuration/vehicles-config/veh
 import { markerList } from "../../dataStore/map-data";
 import { checkSameDay } from "../../utils/helper";
 import { INITGeotabTpmsTemptracLib } from "../services/api/temptrac-tpms";
+import {
+   filterMarkerButton,
+   getStrongText,
+   escapeQuotes,
+   getDefaultPopupText
+} from "../../components/map/popups/popup-helpers";
 
 export function initSplMapFaults() {
 
@@ -235,6 +241,7 @@ export const splMapFaultMgr = {
    _faultsSegmentNamePrefix: "fSeg-",
 
    _defaultPolylineWeight: 3,
+   _defaultCircleMarkerRadius: 2,
    _defaultPolylineSmoothFactor: 1,
 
    _vehMarkers: {},
@@ -283,6 +290,7 @@ export const splMapFaultMgr = {
             me._faultsLayerGroupName,
             me._defaultPolylineSmoothFactor,
             me._defaultPolylineWeight,
+            me._defaultCircleMarkerRadius,
             color,
             vehPathLatLngArr.slice(startIdx, endIdx + 1)
          );
@@ -404,9 +412,12 @@ export const splMapFaultMgr = {
             if (demoVeh.utils.debugTracingLevel) { console.log("==== onHistoricPathCreatedOrUpdated(", vehId, ") INVOKED"); }//DEBUG
             splMapFaultMgr.faults.getTimelineEvents(vehId).then((splFaultTimelineEvents) => {
                splMapFaultMgr.setLatLngFaults(vehId, vehPathLatLngArr, vehMarker, vehMarker.deviceData, splFaultTimelineEvents);
-            }).catch(() => { });
+            }).catch((r) => { console.log("==== onHistoricPathCreatedOrUpdated ERROR:", r); });
          }
       }, false);
+
+      // Fault Popup Closure Event Handler
+      splSrv.events.register("onCloseAllPopupsForVeh", (vehId) => me.closeAllPopupsFor(vehId), false);
 
       // Init Cleanup Event Handler
       splSrv.events.register("onPreDateTimeChange", () => me.clear(), false);
@@ -463,6 +474,19 @@ export const splMapFaultMgr = {
    getVehMarker: function (vehId) {
       const me = this;
       return typeof me._vehMarkers[vehId] !== "undefined" ? me._vehMarkers[vehId] : null;
+   },
+
+   closeAllPopupsFor: function (vehId) {
+      const me = this;
+      for (const vehMarker of Object.values(me._vehMarkers)) {
+         if (typeof vehMarker !== "undefined" && typeof vehMarker.splMapFaults !== "undefined" &&
+            vehMarker && vehMarker.splMapFaults && vehMarker.splMapFaults.vehFaultsPopupObj) {
+            const vehFaultsPopupObj = vehMarker.splMapFaults.vehFaultsPopupObj;
+            if (vehId === vehMarker.deviceID) {
+               vehFaultsPopupObj.closePopup();
+            }
+         }
+      }
    },
 
    clear: function () {
@@ -794,7 +818,7 @@ const INITlatLngToTimeDB = function (latLngByTimeIdx) {
 
 class FaultPolyline {
 
-   constructor(faultId, vehId, vehName, layerGroupName, smoothFactor, weight, color, myLatLngArr) {
+   constructor(faultId, vehId, vehName, layerGroupName, smoothFactor, weight, radius, color, myLatLngArr) {
 
       this.id = faultId;
       this.vehId = vehId;
@@ -803,69 +827,181 @@ class FaultPolyline {
       this.layerGroupName = layerGroupName;
       this.smoothFactor = smoothFactor;
       this.weight = weight;
+      this.radius = radius;
       this.color = color;
 
-      this.myLatLngArr = myLatLngArr;
+      this.vehMarker = null;
+      this.vehDeviceData = null;
       this.latLngByTimeAPI = null;
+      this.splFaultTimelineEvents = null;
 
       this.polyLine = null;
+      this.circleMarkers = [];
 
-      if (this.isUndefinedOrEmpty(faultId, vehId, vehName, layerGroupName, smoothFactor, weight, color)) {
-         throw new Error("Missing or invalid default layerGroupName, smoothFactor, weight, color, faultId, vehId, or vehName");
-      }
-      if (typeof myLatLngArr === "undefined" || !myLatLngArr.length) {
-         throw new Error("No LatLng points to draw on map");
-      }
-      this.draw();
-   }
+      this.enablePopupOn = this.enablePopupOn.bind(this);
+      this.enableToolipOn = this.enableToolipOn.bind(this);
 
-   isUndefinedOrEmpty(faultId, vehId, vehName, layerGroupName, smoothFactor, weight, color) {
       if (typeof faultId === "undefined" ||
          typeof vehId === "undefined" ||
          typeof vehName === "undefined" ||
          typeof layerGroupName === "undefined" ||
          typeof smoothFactor === "undefined" ||
          typeof weight === "undefined" ||
+         typeof radius === "undefined" ||
          typeof color === "undefined" ||
-         !vehId || !vehName || !layerGroupName || !smoothFactor || !weight || !color) {
-         return true;
+         !vehId || !vehName || !layerGroupName || !smoothFactor || !weight || !radius || !color) {
+         throw new Error("Missing or invalid default layerGroupName, smoothFactor, weight, radius, color, faultId, vehId, or vehName");
       }
-      return false;
+      if (typeof myLatLngArr === "undefined" || !myLatLngArr.length) {
+         throw new Error("No LatLng points to draw on map");
+      }
+      this.drawPolyline(myLatLngArr);
+   }
+
+   enableToolipOn(leafletObj) {
+      const me = this;
+
+      if (leafletObj) {
+         const tooltipFunc = (evt) => {
+            leafletObj.unbindTooltip();
+
+            const latLngByTimeVehAPI = me.vehMarker.splMapFaults.historicPathLatLngToTimeDB;
+            const timestamp = splMapFaultUtils.searchLatlngArrForTime(evt.latlng, me.polyLine.getLatLngs(), me.latLngByTimeAPI, latLngByTimeVehAPI, me.vehDeviceData);
+            const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, me.splFaultTimelineEvents);
+            const humanTime = faultInfo.faultTime ? "<br />@" + moment.unix(faultInfo.faultTime).format(storage.humanDateTimeFormat) : "";
+            const alertHeader = faultInfo.faultState === "RED" ? splmap.tr("alert_header_red") : splmap.tr("alert_header_amber");
+            const latLngTxt = me.vehName + (faultInfo.faultState ? `: ${alertHeader}:<br />${faultInfo.tooltipDesc}${humanTime}` : "");
+
+            leafletObj.bindTooltip(latLngTxt, {
+               "className": "spl-map-vehicle-tooltip",
+            }).openTooltip(evt.latlng);
+
+            leafletObj.on("popupopen", () => {
+               const vehHistoricPathPolylineObj = me.vehMarker.historicPath.polyline;
+               const vehLivePathPolylineObj = me.vehMarker.livePath.polyline;
+               if (vehHistoricPathPolylineObj && vehHistoricPathPolylineObj.isPopupOpen()) {
+                  vehHistoricPathPolylineObj.closePopup();
+               }
+               if (vehLivePathPolylineObj && vehLivePathPolylineObj.isPopupOpen()) {
+                  vehLivePathPolylineObj.closePopup();
+               }
+            });
+
+         };
+         leafletObj.on("mouseover", tooltipFunc);
+      }
+   }
+
+   enablePopupOn(leafletObj) {
+      const me = this;
+
+      if (leafletObj) {
+         const popupObj = me.initPopup(leafletObj);
+         const popupFunc = (evt) => {
+            const latlng = evt.latlng;
+            popupObj
+               .openPopup(latlng)
+               .bringToFront();
+         };
+         leafletObj.on("click", popupFunc);
+      }
+   }
+
+   initPopup(leafletObj) {
+      const me = this;
+      if (leafletObj) {
+
+         // Use the first Leaflet object as the Vehicle Popup Hosting Layer,
+         // then we just move it around as the user clicks on it.
+         if (typeof me.vehMarker.splMapFaults.vehFaultsPopupObj !== "undefined") {
+            return me.vehMarker.splMapFaults.vehFaultsPopupObj;
+         }
+         me.vehMarker.splMapFaults.vehFaultsPopupObj = leafletObj;
+
+         leafletObj.bindPopup(getDefaultPopupText(me.vehId), {
+            autoClose: false,
+         });
+
+         leafletObj.on("popupopen", (evt) => {
+
+            // Resolving overlap, bring active popup to front
+            evt.popup.bringToFront();
+            if (!evt.popup._container.getAttribute("data-click-to-front")) {
+               evt.popup._container.addEventListener("click", function () {
+                  evt.popup.bringToFront();
+               });
+               evt.popup._container.setAttribute("data-click-to-front", true);
+            }
+
+            // Get VehName as Popup content
+            const vehName = typeof deviceSearch.selectedIDS[me.vehId] !== "undefined" ? escapeQuotes(deviceSearch.selectedIDS[me.vehId].name) : me.vehId;
+            const popupHtml = filterMarkerButton(me.vehId, vehName) + getStrongText(vehName);
+            leafletObj.setPopupContent(popupHtml);
+         });
+
+         return me.vehMarker.splMapFaults.vehFaultsPopupObj;
+      }
    }
 
    enableFaultInfoTooltip(vehDeviceData, splFaultTimelineEvents) {
       const me = this;
       if (me.polyLine) {
-         const latLngByTimeVehAPI = splMapFaultMgr.getVehMarker(me.vehId).splMapFaults.historicPathLatLngToTimeDB;
+         me.vehDeviceData = vehDeviceData;
+         me.latLngByTimeAPI = new INITlatLngToTimeDB(me.vehDeviceData);
+         me.vehMarker = splMapFaultMgr.getVehMarker(me.vehId);
+         me.splFaultTimelineEvents = splFaultTimelineEvents;
 
-         me.latLngByTimeAPI = new INITlatLngToTimeDB(vehDeviceData);
+         // Enable Tooltips / Popups  on polyLine
+         me.enableToolipOn(me.polyLine);
+         me.enablePopupOn(me.polyLine);
 
-         me.polyLine.on("mouseover", (evt) => {
-            me.polyLine.unbindTooltip();
-
-            const timestamp = splMapFaultUtils.searchLatlngArrForTime(evt.latlng, me.myLatLngArr, me.latLngByTimeAPI, latLngByTimeVehAPI, vehDeviceData);
-            const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, splFaultTimelineEvents);
-            const humanTime = faultInfo.faultTime ? "<br />@" + moment.unix(faultInfo.faultTime).format(storage.humanDateTimeFormat) : "";
-            const alertHeader = faultInfo.faultState === "RED" ? splmap.tr("alert_header_red") : splmap.tr("alert_header_amber");
-            const latLngTxt = me.vehName + (faultInfo.faultState ? `: ${alertHeader}:<br />${faultInfo.tooltipDesc}${humanTime}` : "");
-
-            me.polyLine.bindTooltip(latLngTxt, {
-               "className": "spl-map-vehicle-tooltip",
-            }).openTooltip(evt.latlng);
-         });
+         // Enable Tooltips / Popups on all current CircleMarkers
+         if (me.circleMarkers && me.circleMarkers.length) {
+            for (const circleMarker of me.circleMarkers) {
+               me.enableToolipOn(circleMarker);
+               me.enablePopupOn(circleMarker);
+            }
+         }
       }
    }
 
-   draw() {
+   drawPolyline(myLatLngArr) {
       const me = this;
-      if (!me.polyLine) {
-         me.polyLine = L.polyline(me.myLatLngArr, {
+      if (!me.polyLine && Array.isArray(myLatLngArr) && myLatLngArr.length) {
+         me.polyLine = L.polyline(myLatLngArr, {
             smoothFactor: me.smoothFactor,
             weight: me.weight,
-            color: me.color
+            color: me.color,
          });
          layerModel.addToLayer(me.layerGroupName, me.polyLine);
          me.polyLine.bringToFront();
+
+         // Create circleMarkers on Fault Path
+         for (const latLng of myLatLngArr) {
+            me.drawCircleMarker(L.latLng(latLng));
+         }
+      }
+   }
+
+   drawCircleMarker(latLng) {
+      const me = this;
+      if (latLng && me.polyLine) {
+         const circleMarker = L.circleMarker(latLng, {
+            radius: me.radius,
+            stroke: true,
+            fill: true,
+            color: me.color,
+            weight: me.weight
+         });
+         layerModel.addToLayer(me.layerGroupName, circleMarker);
+         circleMarker.bringToFront();
+         me.circleMarkers.push(circleMarker);
+
+         // Enable Tooltip / Popup
+         if (me.vehDeviceData && me.latLngByTimeAPI && me.splFaultTimelineEvents && me.vehMarker) {
+            me.enableToolipOn(circleMarker);
+            me.enablePopupOn(circleMarker);
+         }
       }
    }
 
@@ -876,6 +1012,7 @@ class FaultPolyline {
             const latLngByTimeVehAPI = splMapFaultMgr.getVehMarker(me.vehId).splMapFaults.historicPathLatLngToTimeDB;
             const timestamp = splMapFaultUtils.latlngToTime(newLatLng, me.latLngByTimeAPI, latLngByTimeVehAPI, vehDeviceData);
             me.polyLine.addLatLng(L.latLng(newLatLng));
+            me.drawCircleMarker(L.latLng(newLatLng));
             if (timestamp) {
                me.latLngByTimeAPI.updateDB(timestamp, newLatLng);
             }
@@ -992,51 +1129,15 @@ class FaultTimelineEventMgr {
       }
    }
 
-   createTimelineFromFaultIgnData(vehId, faultData, ignData) {
-      const me = this;
-      const timeline = [];
-
-      // Create timeline array from combination of either/both Fault/Ignition data
-      if (faultData || ignData) {
-         if (faultData && Array.isArray(faultData) && faultData.length) {
-            for (const faultObj of faultData) {
-               if (faultObj && typeof faultObj.alert !== "undefined") {
-                  const faultLocDesc = faultObj.loc ? me._locObjArrToHuman(faultObj.loc) : "";
-                  timeline.push({
-                     latLngTime: parseInt(faultObj.time),
-                     realTime: parseInt(faultObj.time),
-                     evtType: "fault",
-                     evtState: faultObj.alert.color,
-                     evtColor: faultObj.alert.color === "RED" ? colorHexCodes.spartanLyncRed : colorHexCodes.spartanLyncAmber,
-                     tooltipDesc: splmap.tr(faultObj.alert.trId) + (faultLocDesc ? ` ( ${faultLocDesc} )` : "")
-                  });
-               }
-            }
-         }
-         if (ignData && ignData.byTime && typeof ignData.byTime === "object") {
-            for (const time of Object.keys(ignData.byTime)) {
-               const ignStatus = ignData.byTime[time];
-               timeline.push({
-                  latLngTime: parseInt(time),
-                  realTime: parseInt(time),
-                  evtType: ignStatus === "on" ? "IGOn" : "IGOff"
-               });
-            }
-         }
-      }
-
-      // Sort timeline
-      timeline.sort((a, b) => a.latLngTime.toString().localeCompare(b.latLngTime.toString(), undefined, { numeric: true, sensitivity: "base" }));
-      if (demoVeh.utils.debugTracingLevel) { console.log("==== FaultTimelineEventMgr.getTimelineEvents(", vehId, ") timeline =", timeline); }//DEBUG
-
-      return timeline;
-   }
-
    getTimelineEvents(vehId) {
       const me = this;
       return new Promise(function (resolve, reject) {
 
-         if (vehId === demoVeh.data.deviceID) { resolve(demoVeh.data._demoSplFaultTimelineEvents); } // DEBUG - For Demo
+         // DEBUG - For Demo
+         if (vehId === demoVeh.data.deviceID) {
+            if (demoVeh.utils.debugTracingLevel) { console.log("==== FaultTimelineEventMgr.getTimelineEvents(", vehId, ") timeline =", demoVeh.data._demoSplFaultTimelineEvents); }
+            resolve(demoVeh.data._demoSplFaultTimelineEvents);
+         }
 
          // Fetch current fault/ignition data from Vehicle cache
          if (me._isLiveDay) {
@@ -1079,6 +1180,46 @@ class FaultTimelineEventMgr {
             }
          }
       });
+   }
+
+   createTimelineFromFaultIgnData(vehId, faultData, ignData) {
+      const me = this;
+      const timeline = [];
+
+      // Create timeline array from combination of either/both Fault/Ignition data
+      if (faultData || ignData) {
+         if (faultData && Array.isArray(faultData) && faultData.length) {
+            for (const faultObj of faultData) {
+               if (faultObj && typeof faultObj.alert !== "undefined") {
+                  const faultLocDesc = faultObj.loc ? me._locObjArrToHuman(faultObj.loc) : "";
+                  timeline.push({
+                     latLngTime: parseInt(faultObj.time),
+                     realTime: parseInt(faultObj.time),
+                     evtType: "fault",
+                     evtState: faultObj.alert.color,
+                     evtColor: faultObj.alert.color === "RED" ? colorHexCodes.spartanLyncRed : colorHexCodes.spartanLyncAmber,
+                     tooltipDesc: splmap.tr(faultObj.alert.trId) + (faultLocDesc ? ` ( ${faultLocDesc} )` : "")
+                  });
+               }
+            }
+         }
+         if (ignData && ignData.byTime && typeof ignData.byTime === "object") {
+            for (const time of Object.keys(ignData.byTime)) {
+               const ignStatus = ignData.byTime[time];
+               timeline.push({
+                  latLngTime: parseInt(time),
+                  realTime: parseInt(time),
+                  evtType: ignStatus === "on" ? "IGOn" : "IGOff"
+               });
+            }
+         }
+      }
+
+      // Sort timeline
+      timeline.sort((a, b) => a.latLngTime.toString().localeCompare(b.latLngTime.toString(), undefined, { numeric: true, sensitivity: "base" }));
+      if (demoVeh.utils.debugTracingLevel) { console.log("==== FaultTimelineEventMgr.getTimelineEvents(", vehId, ") timeline =", timeline); }//DEBUG
+
+      return timeline;
    }
 
    fetchIgnAndFaults(onlyVehId) {

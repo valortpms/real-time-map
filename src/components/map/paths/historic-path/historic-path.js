@@ -33,7 +33,7 @@ export function initHistoricPath(deviceMarker) {
    };
 
    layersModel.addToMovingLayer(polyline);
-   bindDeviceNamePopup(deviceID, polyline);
+   bindDeviceNamePopup(deviceID, polyline, "historical");
    return newHistoricPath;
 }
 

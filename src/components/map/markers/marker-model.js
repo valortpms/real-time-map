@@ -205,7 +205,6 @@ export const deviceMarkerModel = {
       //Add new exceptions
       const newException = this.exceptionData[currentSecond];
       if (this.currentExceptions && newException) {
-         // console.log('newException', newException);
          Object.keys(newException).forEach(endTime => {
             const initExceptionStart = createObjectKeyIfNotExist(this.currentExceptions, endTime);
             if (initExceptionStart) {

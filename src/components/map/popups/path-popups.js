@@ -1,4 +1,5 @@
 import storage from "../../../dataStore";
+import splSrv from "../../../spartanlync/services";
 import { getExceptionColor } from "../../../utils/helper";
 import {
    retrieveDeviceInfo,
@@ -8,19 +9,41 @@ import {
    getDefaultPopupText,
    closeAllTooltips
 } from "./popup-helpers";
+import { markerList } from "../../../dataStore/map-data";
 
-export function bindDeviceNamePopup(deviceID, polyline) {
+export function bindDeviceNamePopup(deviceID, polyline, type) {
 
    polyline.bindPopup(getDefaultPopupText(deviceID), {
       autoClose: false,
-   }).on("popupopen", (evt) => {
-      evt.popup.bringToFront();
-      evt.popup._container.addEventListener("click", function () {
-         evt.popup.bringToFront();
-      });
    });
 
-   polyline.on("popupopen", () => {
+   polyline.on("popupopen", (evt) => {
+
+      splSrv.events.exec("onCloseAllPopupsForVeh", deviceID);
+
+      // If I'm LIVE, close HISTORICAL, and visa-versa
+      const vehMarkerObj = markerList[deviceID];
+      if (vehMarkerObj) {
+         if (type === "live") {
+            if (vehMarkerObj.historicPath.polyline.isPopupOpen()) {
+               vehMarkerObj.historicPath.polyline.closePopup();
+            }
+         }
+         else {
+            if (vehMarkerObj.livePath.polyline.isPopupOpen()) {
+               vehMarkerObj.livePath.polyline.closePopup();
+            }
+         }
+      }
+
+      evt.popup.bringToFront();
+      if (!evt.popup._container.getAttribute("data-click-to-front")) {
+         evt.popup._container.addEventListener("click", function () {
+            evt.popup.bringToFront();
+         });
+         evt.popup._container.setAttribute("data-click-to-front", true);
+      }
+
       retrieveDeviceInfo(deviceID).then(deviceData => {
          const { name } = deviceData;
          const cleanedName = escapeQuotes(name);

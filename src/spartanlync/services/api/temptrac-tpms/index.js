@@ -61,6 +61,12 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                color: "AMBER"
             },
 
+            "aZOW3ovi390i98yF2ZKR1qg": {
+               name: "Leak Detected",
+               type: "Tire Pressure Fault",
+               trId: "leak_detected",
+               color: "RED"
+            },
             "aDXwtFQfg4EKkLSFd5Hs2rA": {
                name: "Extreme Over Pressure",
                type: "Tire Pressure Fault",
@@ -105,6 +111,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
          _fromFaultDate: null,
          _toFaultDate: null,
          _toFaultDateOverride: null,
+         _showAllFaults: false,
 
          _repSType: null,
          _repCallback: null,
@@ -165,7 +172,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
          * @return {array} Array of Fault objects, sorted by time from oldest to newest
          * @return {array} Array of Ignition data objects, sorted by time from oldest to newest
          */
-         getFaults: function (devId, callback, firstTimeCallOverride, toDateOverride) {
+         getFaults: function (devId, callback, firstTimeCallOverride, toDateOverride, showAllFaults) {
             if (devId.toString().trim() === "" || typeof callback === "undefined" || typeof callback !== "function") {
                return;
             }
@@ -177,6 +184,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
             }
             me._devId = devId;
             me._fDataCallback = callback;
+            me._showAllFaults = typeof showAllFaults !== "undefined" && showAllFaults === true ? true : false;
             me._setDateRangeAndInvokeFaultCalls();
          },
 
@@ -244,6 +252,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
             me._apiFirstTimeCall = true;
             me._apiFaultFirstTimeCall = true;
             me._vehIgnitionData = null;
+            me._showAllFaults = false;
          },
 
          resetForNewVehComponent: function () {
@@ -254,6 +263,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
             me._apiFirstTimeCall = true;
             me._apiFaultFirstTimeCall = true;
             me._vehIgnitionData = null;
+            me._showAllFaults = false;
          },
 
          _setDateRangeAndInvokeFaultCalls: function () {
@@ -341,6 +351,8 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
             api.multiCall(apiCall,
                function (result) {
                   if (result && result.length >= 3) {
+                     const fromFaultDateUnix = moment(me._fromFaultDate).unix();
+                     const toFaultDateUnix = moment(me._toFaultDate).unix();
                      let faultDataFound = false;
                      let tireLocData = {};
                      const fdata = {};
@@ -360,13 +372,16 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                      // Analyze fault data
                      me._timer.b3 = new Date();
                      for (const frec of result[0]) {
-                        if (!frec.id || frec.device.id !== me._devId || typeof frec.diagnostic.id === "undefined") {
+                        const frecDateUnix = moment(frec.dateTime).unix();
+                        if (!frec.id || frec.device.id !== me._devId || typeof frec.diagnostic.id === "undefined" ||
+                           !(frecDateUnix >= fromFaultDateUnix && frecDateUnix <= toFaultDateUnix)) {
                            continue; // Invalid records discarded
                         }
-                        const faultId = frec.diagnostic.id;
+                        const faultId = !me._showAllFaults ? frec.diagnostic.id : frec.diagnostic.id + "_" + (Math.random().toString(36).substr(2, 5));
                         const recObj = {
                            id: faultId,
-                           time: moment(frec.dateTime).unix()
+                           diagId: frec.diagnostic.id,
+                           time: frecDateUnix
                         };
 
                         // Keep the most recent fault record by time
@@ -392,8 +407,8 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                         }
 
                         // Attach Alert level to a few Faults (TPMS-related)
-                        if (typeof fdata[faultId].alert === "undefined" && typeof me._tpmsAlerts[faultId] !== "undefined") {
-                           fdata[faultId].alert = me._tpmsAlerts[faultId];
+                        if (typeof fdata[faultId].alert === "undefined" && typeof me._tpmsAlerts[fdata[faultId].diagId] !== "undefined") {
+                           fdata[faultId].alert = me._tpmsAlerts[fdata[faultId].diagId];
                         }
 
                         // Specify whether fault occurred after the most recent ignition
@@ -427,15 +442,17 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                         // Build API calls for searching for diagnostic descriptions for the Fault Ids found
                         const calls = [];
                         const faultArr = [];
+                        const diagDesc = {};
                         if (Object.keys(fdata).length) {
-                           for (const faultId in fdata) {
-                              if (fdata.hasOwnProperty(faultId)) {
+                           for (const faultId of Object.keys(fdata)) {
+                              if (typeof diagDesc[fdata[faultId].diagId] === "undefined") {
                                  calls.push(["Get", {
                                     typeName: "Diagnostic",
                                     search: {
-                                       id: faultId
+                                       id: fdata[faultId].diagId
                                     }
                                  }]);
+                                 diagDesc[fdata[faultId].diagId] = "";
                               }
                            }
 
@@ -443,32 +460,34 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                            api.multiCall(calls,
                               function (result) {
                                  if (result && result.length) {
+
+                                    // Assemble Diagnostic descriptions
                                     for (const res of result) {
                                        if (Array.isArray(res) && res.length) {
                                           for (const frec of res) {
-                                             if (typeof frec.name === "undefined" || !frec.id ||
-                                                typeof fdata[frec.id] === "undefined") {
+                                             if (typeof frec.name === "undefined" || !frec.id) {
                                                 continue; // Invalid / missing records discarded
                                              }
-                                             fdata[frec.id].msg = frec.name;
-                                             faultArr.push(fdata[frec.id]);
+                                             diagDesc[frec.id] = frec.name;
                                           }
                                        }
-                                       else if (typeof res === "object" &&
-                                          typeof res.name !== "undefined" &&
-                                          typeof res.id !== "undefined" &&
-                                          res.id !== "" && res.id !== null &&
-                                          typeof fdata[res.id] !== "undefined"
-                                       ) {
-                                          fdata[res.id].msg = res.name;
-                                          faultArr.push(fdata[res.id]);
+                                       else if (typeof res === "object" && typeof res.name !== "undefined" && res.id) {
+                                          diagDesc[res.id] = res.name;
+                                       }
+                                    }
+
+                                    // Merge Diagnostic descriptions with Fault data
+                                    for (const faultId of Object.keys(fdata)) {
+                                       if (diagDesc[fdata[faultId].diagId]) {
+                                          fdata[faultId].msg = diagDesc[fdata[faultId].diagId];
+                                          faultArr.push(fdata[faultId]);
                                        }
                                     }
 
                                     me._timer.b4 = new Date();
                                     console.log("Fault data for VehicleID [ " + me._devId + " ] analyzed and sorted - " + me._convertSecondsToHMS((me._timer.b4 - me._timer.b3) / 1000) + ".");
 
-                                    // Return "NOT-FOUND" callback response
+                                    // Return fault data to callback
                                     me._apiCallFaultRetryCount = 0;
                                     me._toFaultDateOverride = null;
                                     me._fDataCallback(faultArr, me._vehIgnitionData);
@@ -584,6 +603,8 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
             me._api.multiCall(me._buildApiCall(vehComps),
                function (result) {
                   if (result && result.length) {
+                     const fromDateUnix = moment(me._fromDate).unix();
+                     const toDateUnix = moment(me._toDate).unix();
                      let sensorDataFound = false;
                      const sdata = {};
 
@@ -596,10 +617,10 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                      for (const res of result) {
                         if (Array.isArray(res) && res.length) {
                            for (const srec of res) {
-                              // Invalid records discarded
+                              const srecDateUnix = moment(srec.dateTime).unix();
                               if (!srec.id || !srec.dateTime || srec.device.id !== me._devId || typeof srec.diagnostic.id === "undefined" ||
-                                 !(moment(srec.dateTime).unix() > moment(me._fromDate).unix() && moment(srec.dateTime).unix() < moment(me._toDate).unix())) {
-                                 continue;
+                                 !(srecDateUnix > fromDateUnix && srecDateUnix < toDateUnix)) {
+                                 continue; // Invalid records discarded
                               }
                               const diagName = me._locLib.idxIds[srec.diagnostic.id];
                               const vehCompType = me._locLib[diagName].type;
@@ -620,7 +641,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                                  const recObj = {
                                     id: locId,
                                     type: "Temptrac",
-                                    time: moment(srec.dateTime).unix(),
+                                    time: srecDateUnix,
                                     zone: zone,
                                     val: me._fromDataToValueObj(srec)
                                  };
@@ -640,7 +661,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                                  const recObj = {
                                     id: locId,
                                     type: "Tire Temperature",
-                                    time: moment(srec.dateTime).unix(),
+                                    time: srecDateUnix,
                                     axle: axle,
                                     val: me._fromDataToValueObj(srec)
                                  };
@@ -660,7 +681,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                                  const recObj = {
                                     id: locId,
                                     type: "Tire Pressure",
-                                    time: moment(srec.dateTime).unix(),
+                                    time: srecDateUnix,
                                     axle: axle,
                                     val: me._fromDataToValueObj(srec)
                                  };

@@ -296,7 +296,7 @@ export const INITSplSessionMgr = function (myApi, credentials) {
    * @return {array}  FaulsArray - Temptrac Faults found within date range or NULL if empty
    *
    */
-   this.getTempTracFaults = function (tempThreshold, toDate, searchRangeArr, searchUnit, callback, errorCallback) {
+   this.getTempTracFaults = function (vehId, fromDate, toDate, tempThreshold, callback, errorCallback) {
       const me = this;
       if (!callback || typeof callback !== "function" || !me._api || !me._credentials) { return; }
 
@@ -305,10 +305,10 @@ export const INITSplSessionMgr = function (myApi, credentials) {
       me._api.requestService(
          {
             temptracfaults: {
-               tempThreshold: tempThreshold,
+               vehId: vehId,
+               fromDate: fromDate,
                toDate: toDate,
-               searchRange: searchRangeArr,
-               searchUnit: searchUnit
+               tempThreshold: tempThreshold
             },
             credentials: me._credentials
          },

@@ -96,8 +96,6 @@ const SpartanLyncServices = {
    cache: {
 
       _faultCache: {},
-      _historicalFaultCache: {},
-
       _ignitionCache: {},
 
       getFaultData: function (vehId) {
@@ -112,7 +110,7 @@ const SpartanLyncServices = {
          return null;
       },
 
-      storeFaultData: function (vehId, data) {
+      storeFaultData: function (vehId, data, quiet) {
          const me = this;
          if (typeof data !== "undefined" && data !== null && Array.isArray(data) && data.length) {
 
@@ -128,6 +126,7 @@ const SpartanLyncServices = {
                   me._faultCache[vehId][faultId] = {};
                }
                if (typeof me._faultCache[vehId][faultId].time === "undefined" || faultObj.time > me._faultCache[vehId][faultId].time) {
+
                   // Exclude "Sensor Fault" Types / "Missing Sensor" Fault from cache
                   if (typeof faultObj.alert !== "undefined" && typeof faultObj.alert.type !== "undefined" &&
                      faultObj.alert.type === "Sensor Fault") {
@@ -142,11 +141,12 @@ const SpartanLyncServices = {
                   me._faultCache[vehId][faultId] = faultObj;
                }
             }
+            if (typeof quiet !== "undefined" && quiet === true) { return; }
             if (newOrUpdatedFaultCount) {
-               console.log("VehicleID [ " + vehId + " ]: [" + newOrUpdatedFaultCount + "] NEW POST-IGNITION SPARTANLYNC FAULTS FOUND or UPDATED after the last search.");
+               console.log("VehicleID [ " + vehId + " ]: [" + newOrUpdatedFaultCount + "] New Post-Ignition SpartanLync TPMS FAULTS FOUND or UPDATED after the last search.");
             }
             else {
-               console.log("VehicleID [ " + vehId + " ]: NO NEW POST-IGNITION SPARTANLYNC FAULT DATA FOUND for this date range!");
+               console.log("VehicleID [ " + vehId + " ]: NO New Post-Ignition SpartanLync TPMS FAULT DATA FOUND for this date range!");
             }
          }
       },

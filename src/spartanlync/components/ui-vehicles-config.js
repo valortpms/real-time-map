@@ -136,8 +136,7 @@ export class SplSensorDataTypesButton extends Component {
                splSrv.events.exec("onFaultAlert", me.vehId, me);
             }
          })
-         .catch((reason) =>
-            console.log("---- Error while searching for FAULTS on VehicleID [ " + me.vehId + " ] named [ " + me.vehName + " ]: ", reason));
+         .catch(reason => console.log("---- Error while searching for FAULTS on VehicleID [ " + me.vehId + " ] named [ " + me.vehName + " ]: ", reason));
    }
 
    /**
@@ -158,7 +157,7 @@ export class SplSensorDataTypesButton extends Component {
 
             me.configureSensorDataTypesBtn();
          })
-         .catch((reason) => {
+         .catch(reason => {
             if (reason === splSrv.sensorDataNotFoundMsg) {
                console.log("---- NO SENSORS FOUND for VehicleID [ " + me.vehId + " ] named [ " + me.vehName + " ]");
                me.noSensorsFoundOnThisVehicle = true;
@@ -351,7 +350,7 @@ export class SplSensorDataTypesButton extends Component {
          .then((sensorData) => {
             splHtmlOut = splSensorDataParser.generateSensorDataHtml(sensorData, me.vehId, me.sdataTools);
          })
-         .catch((reason) => {
+         .catch(reason => {
             splHtmlOut = me.renderSplSensorSearchErrorHtml(reason);
             setTimeout(() => {
                // on Error, close content UI after a short time for user to read the error
@@ -408,7 +407,7 @@ export class SplSensorDataTypesButton extends Component {
                      me.sdataCache = sdata;
                      me.configureSensorDataTypesBtn();
                   })
-                  .catch((reason) => {
+                  .catch(reason => {
                      if (reason === splSrv.sensorDataNotFoundMsg) {
                         console.log("Sensor Data for VehicleID [ " + me.vehId + " ] named [ " + me.vehName + " ] reports NO SENSORS for this time range");
                      }

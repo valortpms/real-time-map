@@ -10,6 +10,7 @@ import { deviceSearch } from "../../components/configuration/vehicles-config/veh
 import { markerList } from "../../dataStore/map-data";
 import { checkSameDay } from "../../utils/helper";
 import { INITGeotabTpmsTemptracLib } from "../services/api/temptrac-tpms";
+import { getTempTracFaultsAsync, updateTempTracFaultStatusUsingIgnData } from "../services/api/temptrac-tpms/utils";
 import {
    filterMarkerButton,
    getStrongText,
@@ -411,10 +412,10 @@ export const splMapFaultMgr = {
          const vehMarker = typeof markerList[vehId] !== "undefined" ? markerList[vehId] : null;
          if (vehPathLatLngArr.length && vehMarker) {
             // Wait for Faults to Load
-            if (demoVeh.utils.debugTracingLevel) { console.log("==== onHistoricPathCreatedOrUpdated(", vehId, ") INVOKED"); }//DEBUG
+            if (demoVeh.utils.debugTracingLevel === 3) { console.log("==== onHistoricPathCreatedOrUpdated(", vehId, ") INVOKED vehPathLatLngArr =", vehPathLatLngArr); }//DEBUG
             splMapFaultMgr.faults.getTimelineEvents(vehId).then((splFaultTimelineEvents) => {
                splMapFaultMgr.setLatLngFaults(vehId, vehPathLatLngArr, vehMarker, vehMarker.deviceData, splFaultTimelineEvents);
-            }).catch((r) => { console.log("==== onHistoricPathCreatedOrUpdated ERROR:", r); });
+            }).catch(reason => console.log("---- onHistoricPathCreatedOrUpdated ERROR:", reason));
          }
       }, false);
 
@@ -429,6 +430,7 @@ export const splMapFaultMgr = {
       const me = this;
       const splVehMapFaultsDB = me._init(vehMarker, vehDeviceData);
       if (!splVehMapFaultsDB || !vehPathLatLngArr.length) { return; }
+      if (demoVeh.utils.debugTracingLevel === 3) { console.log("==== setLatLngFaults(", vehId, ") INVOKED"); }//DEBUG
 
       // Search veh Path for fault segments
       for (const newFaultSegmentInfo of me._searchVehPathForFaultSegments(vehId, vehPathLatLngArr, vehDeviceData, splFaultTimelineEvents)) {
@@ -1095,11 +1097,19 @@ class FaultTimelineEventMgr {
       const descArr = [];
       if (typeof faultLocArr !== "undefined" && Array.isArray(faultLocArr) && faultLocArr.length) {
          faultLocArr.forEach(locObj => {
-            descArr.push(
-               splmap.tr("alert_desc_axle") + " " + locObj.axle + " " +
-               splmap.tr("alert_desc_tire") + " " + locObj.tire + " - " +
-               me._locDescTr(splSrv.vehCompDb.names[locObj.vehComp])
-            );
+            if (typeof locObj.zone !== "undefined") {
+               descArr.push(
+                  splmap.tr("alert_desc_zone") + " " + locObj.zone + " - " +
+                  me._locDescTr(splSrv.vehCompDb.names[locObj.vehComp])
+               );
+            }
+            else {
+               descArr.push(
+                  splmap.tr("alert_desc_axle") + " " + locObj.axle + " " +
+                  splmap.tr("alert_desc_tire") + " " + locObj.tire + " - " +
+                  me._locDescTr(splSrv.vehCompDb.names[locObj.vehComp])
+               );
+            }
          });
       }
       return descArr.join(" / ");
@@ -1148,13 +1158,12 @@ class FaultTimelineEventMgr {
 
          // DEBUG - For Demo
          if (vehId === demoVeh.data.deviceID) {
-            if (demoVeh.utils.debugTracingLevel) { console.log("==== FaultTimelineEventMgr.getTimelineEvents(", vehId, ") timeline =", demoVeh.data._demoSplFaultTimelineEvents); }
+            if (demoVeh.utils.debugTracingLevel) { console.log("==== FaultTimelineEventMgr.getTimelineEvents(", vehId, ") timeline =", demoVeh.data._demoSplFaultTimelineEvents); }//DEBUG
             resolve(demoVeh.data._demoSplFaultTimelineEvents);
          }
 
          // Fetch current fault/ignition data from Vehicle cache
          if (me._isLiveDay) {
-
             const faultData = splSrv.cache.getFaultData(vehId);
             const ignData = splSrv.cache.getIgnData(vehId);
 
@@ -1195,6 +1204,7 @@ class FaultTimelineEventMgr {
       });
    }
 
+   // eslint-disable-next-line complexity
    createTimelineFromFaultIgnData(vehId, faultData, ignData) {
       const me = this;
       const timeline = [];
@@ -1208,10 +1218,17 @@ class FaultTimelineEventMgr {
                   timeline.push({
                      latLngTime: parseInt(faultObj.time),
                      realTime: parseInt(faultObj.time),
-                     evtType: "fault",
+                     evtType: faultObj.id.indexOf("temptrac") > -1 ? "temtracFault" : "tpmsFault",
                      evtState: faultObj.alert.color,
                      evtColor: faultObj.alert.color === "RED" ? colorHexCodes.spartanLyncRed : colorHexCodes.spartanLyncAmber,
                      tooltipDesc: splmap.tr(faultObj.alert.trId) + (faultLocDesc ? ` ( ${faultLocDesc} )` : "")
+                  });
+               }
+               else if (faultObj && typeof faultObj.id !== "undefined" && faultObj.id.indexOf("temptrac") > -1 && faultObj.time) {
+                  timeline.push({
+                     latLngTime: parseInt(faultObj.time),
+                     realTime: parseInt(faultObj.time),
+                     evtType: faultObj.id
                   });
                }
             }
@@ -1239,6 +1256,8 @@ class FaultTimelineEventMgr {
       const me = this;
       const vehIds = typeof onlyVehId !== "undefined" && onlyVehId ? [onlyVehId] : Object.values(deviceSearch.selectedIDS).map(vehObj => { return vehObj.id; });
       const toDateOverride = me._dayEndUnix;
+      const firstTimeCallOverride = true;
+      const showAllFaults = true;
 
       if (!me._isLiveDay) {
 
@@ -1248,58 +1267,85 @@ class FaultTimelineEventMgr {
          (async () => {
             const promises = vehIds.map(async (vehId) => {
                await (() => {
-                  return new Promise((resolve, reject) => {
+                  return new Promise((finalResolve, finalReject) => {
                      const searchRangeArr = [1]; // Only use a search range of 1 day for faults & ignition data
 
                      // Poll for TPMS Faults
-                     const aSyncGoLib = INITGeotabTpmsTemptracLib(
-                        apiConfig.api,
-                        splSrv.sensorSearchRetryRangeInDays,
-                        splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds,
-                        searchRangeArr,
-                        splSrv.faultSearchTimeRangeForRepeatSearchesInSeconds
-                     );
-                     aSyncGoLib.getFaults(vehId, function (faults, vehIgnitionInfo) {
+                     const fTask1 = new Promise((subResolve1, subReject1) => {
+                        const aSyncGoLib = INITGeotabTpmsTemptracLib(
+                           apiConfig.api,
+                           splSrv.sensorSearchRetryRangeInDays,
+                           splSrv.sensorSearchTimeRangeForRepeatSearchesInSeconds,
+                           searchRangeArr,
+                           splSrv.faultSearchTimeRangeForRepeatSearchesInSeconds
+                        );
+                        aSyncGoLib.getFaults(vehId, function (faults, vehIgnitionInfo) {
 
-                        if (faults) {
+                           if (faults) {
 
-                           // Update Ign/Fault data
-                           if (vehIgnitionInfo && (vehIgnitionInfo["on-latest"] || vehIgnitionInfo["off-latest"])) {
-                              me._historicalFaultData[vehId] = faults;
-                              me._historicalIgnData[vehId] = vehIgnitionInfo;
-                              resolve();
+                              // Update Ign/Fault data
+                              if (vehIgnitionInfo && (vehIgnitionInfo["on-latest"] || vehIgnitionInfo["off-latest"])) {
+                                 me._historicalFaultData[vehId] = faults;
+                                 me._historicalIgnData[vehId] = vehIgnitionInfo;
+                                 subResolve1();
+                              }
+                              // Report on Ignition data missing
+                              else {
+                                 me._historicalFaultData[vehId] = faults;
+                                 subReject1([vehId, "Ignition data not found"]);
+                              }
+                              return;
                            }
-                           // Report on Ignition data missing
                            else {
-                              me._historicalFaultData[vehId] = faults;
-                              reject([vehId, "Ignition data not found"]);
-                           }
-                           return;
-                        }
-                        else {
 
-                           // Update Ignition data, but report Fault data missing
-                           if (vehIgnitionInfo && (vehIgnitionInfo["on-latest"] || vehIgnitionInfo["off-latest"])) {
-                              me._historicalIgnData[vehId] = vehIgnitionInfo;
-                              reject([vehId, "Fault data not found"]);
+                              // Update Ignition data, but report Fault data missing
+                              if (vehIgnitionInfo && (vehIgnitionInfo["on-latest"] || vehIgnitionInfo["off-latest"])) {
+                                 me._historicalIgnData[vehId] = vehIgnitionInfo;
+                                 subReject1([vehId, "Fault data not found"]);
+                              }
+                              // Report on Fault and Ignition data missing
+                              else {
+                                 subReject1([vehId, "Fault + Ignition data not found"]);
+                              }
+                              return;
                            }
-                           // Report on Fault and Ignition data missing
-                           else {
-                              reject([vehId, "Fault + Ignition data not found"]);
-                           }
-                           return;
-                        }
 
-                     }, true, toDateOverride);
+                        }, firstTimeCallOverride, toDateOverride, showAllFaults);
+                     });
 
                      // Poll for TempTrac Faults
-                     const searchUnit = "days";
-                     const toFaultDate = moment.unix(toDateOverride).utc().format();
-                     splSrv.sessionMgr.getTempTracFaults("fridge", toFaultDate, searchRangeArr, searchUnit, (faults) => {
-                        console.log("==== fetchIgnAndFaults.getTempTracFaults() faults =", faults);//DEBUG
-                     }, (reason) => { /* Handle error condition */ });
+                     const fTask2 = new Promise((subResolve2) => {
+                        const searchUnit = "days";
+                        const toFaultDateObj = moment.unix(toDateOverride).utc();
+                        getTempTracFaultsAsync(vehId, toFaultDateObj, searchRangeArr, searchUnit, "fridge")
+                           .then((faults) => {
+                              subResolve2(faults);
+                           });
+                     });
 
-                     return;
+                     // Merge all the faults together
+                     Promise.allSettled([fTask1, fTask2])
+                        .then(([tpms, temptrac]) => {
+                           const tpmsRejectInfo = tpms.status === "rejected" ? tpms.reason : false;
+                           const temptracFaults = temptrac.value;
+
+                           if (tpmsRejectInfo) {
+                              finalReject(tpmsRejectInfo);
+                           }
+                           if (temptracFaults && me._historicalIgnData[vehId]) {
+                              updateTempTracFaultStatusUsingIgnData(vehId, temptracFaults, me._historicalIgnData[vehId]);
+
+                              // Merge into Historical Faults
+                              for (const idx in temptracFaults) {
+                                 temptracFaults[idx].id = temptracFaults[idx].id + "_" + idx; // Make each FaultId unique, so entire fault history is collected
+                                 me._historicalFaultData[vehId].push(temptracFaults[idx]);
+                              }
+
+                              // Sort Historical Faults
+                              me._historicalFaultData[vehId].sort((a, b) => a.time.toString().localeCompare(b.time.toString(), undefined, { numeric: true, sensitivity: "base" }));
+                           }
+                           finalResolve();
+                        });
                   });
                })();
 

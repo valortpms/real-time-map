@@ -1820,6 +1820,12 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
           color: "AMBER"
         },
 
+        "aZOW3ovi390i98yF2ZKR1qg": {
+          name: "Leak Detected",
+          type: "Tire Pressure Fault",
+          trId: "leak_detected",
+          color: "RED"
+        },
         "aDXwtFQfg4EKkLSFd5Hs2rA": {
           name: "Extreme Over Pressure",
           type: "Tire Pressure Fault",
@@ -2034,6 +2040,8 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
           .multiCall(apiCall)
           .then(function (result) {
             if (result && result.length >= 3) {
+              const fromFaultDateUnix = moment(me._fromFaultDate).unix();
+              const toFaultDateUnix = moment(me._toFaultDate).unix();
               let faultDataFound = false;
               let tireLocData = {};
               const fdata = {};
@@ -2053,13 +2061,15 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
               // Analyze fault data
               me._timer.b3 = new Date();
               for (const frec of result[0]) {
-                if (!frec.id || frec.device.id !== me._devId || typeof frec.diagnostic.id === "undefined") {
+                const frecDateUnix = moment(frec.dateTime).unix();
+                if (!frec.id || frec.device.id !== me._devId || typeof frec.diagnostic.id === "undefined" ||
+                  !(frecDateUnix >= fromFaultDateUnix && frecDateUnix <= toFaultDateUnix)) {
                   continue; // Invalid records discarded
                 }
                 const faultId = frec.diagnostic.id;
                 const recObj = {
                   id: faultId,
-                  time: moment(frec.dateTime).unix()
+                  time: frecDateUnix
                 };
 
                 // Keep the most recent fault record by time
@@ -2280,6 +2290,8 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
           .multiCall(me._buildApiCall(vehComps))
           .then(function (result) {
             if (result && result.length) {
+              const fromDateUnix = moment(me._fromDate).unix();
+              const toDateUnix = moment(me._toDate).unix();
               let sensorDataFound = false;
               const sdata = {};
 
@@ -2292,15 +2304,15 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
               for (const res of result) {
                 if (Array.isArray(res) && res.length) {
                   for (const srec of res) {
-                    // Invalid records discarded
+                    const srecDateUnix = moment(srec.dateTime).unix();
                     if (
                       !srec.id ||
                       !srec.dateTime ||
                       srec.device.id !== me._devId ||
                       typeof srec.diagnostic.id === "undefined" ||
-                      !(moment(srec.dateTime).unix() > moment(me._fromDate).unix() && moment(srec.dateTime).unix() < moment(me._toDate).unix())
+                      !(srecDateUnix > fromDateUnix && srecDateUnix < toDateUnix)
                     ) {
-                      continue;
+                      continue; // Invalid records discarded
                     }
                     const diagName = me._locLib.idxIds[srec.diagnostic.id];
                     const vehCompType = me._locLib[diagName].type;
@@ -2321,7 +2333,7 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
                       const recObj = {
                         id: locId,
                         type: "Temptrac",
-                        time: moment(srec.dateTime).unix(),
+                        time: srecDateUnix,
                         zone: zone,
                         val: me._fromDataToValueObj(srec),
                       };
@@ -2340,7 +2352,7 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
                       const recObj = {
                         id: locId,
                         type: "Tire Temperature",
-                        time: moment(srec.dateTime).unix(),
+                        time: srecDateUnix,
                         axle: axle,
                         val: me._fromDataToValueObj(srec),
                       };
@@ -2359,7 +2371,7 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
                       const recObj = {
                         id: locId,
                         type: "Tire Pressure",
-                        time: moment(srec.dateTime).unix(),
+                        time: srecDateUnix,
                         axle: axle,
                         val: me._fromDataToValueObj(srec),
                       };

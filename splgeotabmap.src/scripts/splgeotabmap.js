@@ -17,6 +17,8 @@ geotab.addin.splgeotabmap = (elt, service) => {
 
   const uiUpdatePollingTime = 20;                                     // How frequently does update service refresh ToolTip / MenuItem UI (In seconds)
 
+  const panelOpenMinWindowWidth = 900;                                // Minimum window pixel width to keep Sensor Data panel open
+
   const addInLocalStorageKeyName = "splGeotabMapStore";               // Lookup key to use when saving/retrieving/removing data from Browser Local Storage
   const addInLocalStorageSecret = "DKrKcInKvtb9wRB0le1qI7arr12yVTHU"; // Secret Passphrase used to encrypt/decryt storage data saved to Browser
 
@@ -136,6 +138,9 @@ geotab.addin.splgeotabmap = (elt, service) => {
     resetBtnElemObj: elt.querySelector(splSelResetBtn),
 
     // App Settings
+    panelClosedManually: false,
+    panelOpenAllowed: false,
+    panelOpenMinWindowWidth: panelOpenMinWindowWidth,
     timeFormat: splHumanTimeFormat,
     vehComponents: vehComponents,
     storeLifetime: cachedStoreLifetime,

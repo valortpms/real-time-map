@@ -70,6 +70,9 @@ const onLoadInitEvents = function (my) {
     }
   });
 
+  // Monitor resizing of parent window width
+  window.addEventListener("resize", () => my.app.windowWidthMonitor());
+
   // Event: Reset Button clicked
   my.resetBtnElemObj.addEventListener("click", () => {
     my.app.resetApp();
@@ -396,6 +399,9 @@ const SplGeotabMapUtils = function (my) {
           me.tr.switchTo(my.storage.splStore.lang);
         }
 
+        // Monitor Parent Window Width
+        me.windowWidthMonitor();
+
         // Init Panel Vehicle Jumper
         my.ui.panelVehJumper.init();
 
@@ -715,7 +721,8 @@ const SplGeotabMapUtils = function (my) {
           }
 
           // Open UI Panel, if closed and not invoded by the UpdateService Task
-          if (!inUpdateMode) {
+          me.windowWidthMonitor();
+          if (!inUpdateMode && my.panelOpenAllowed) {
             my.ui.openPanel();
           }
         }
@@ -1260,6 +1267,10 @@ const SplGeotabMapUtils = function (my) {
               ) ? true : false;
           }
         }
+      },
+
+      windowWidthMonitor: function () {
+        my.panelOpenAllowed = typeof parent.window.innerWidth !== "undefined" && parent.window.innerWidth >= my.panelOpenMinWindowWidth && !my.panelClosedManually ? true : false;
       },
 
       /**

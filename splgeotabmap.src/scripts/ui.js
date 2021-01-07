@@ -18,6 +18,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, panelLabelId, panelT
   this._panelOpenCloseBtnElemObj = null;
   this._panelElemObj = null;
   this._panelClosedClass = "";
+  this._panelCloseClicked = false;
 
   this._panelLabelId = "";
   this._panelLabelObj = null;
@@ -34,7 +35,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, panelLabelId, panelT
 
     me._callback = callback && typeof callback === "function" ? callback : me._callback !== null ? me._callback : null;
 
-    // Init DomLoaded Handler
+    // Init Handler(s)
     window.initOnDomLoad = me.onDomLoad.bind(this);
 
     // Invoke callback if provided
@@ -241,7 +242,9 @@ const InitOutputUI = function (my, rootDomObj, containerId, panelLabelId, panelT
 
           // If vehicle in Watchlist, jump to it in Panel UI
           if (me.panelVehJumper.menuItemExists(vehId)) {
-            me.openPanel();
+            if (my.panelOpenAllowed) {
+              me.openPanel();
+            }
             me.panelVehJumper.onClickHandler(vehId);
           }
           // Otherwise add veh to Watchlist & show in Panel UI
@@ -508,6 +511,17 @@ const InitOutputUI = function (my, rootDomObj, containerId, panelLabelId, panelT
     data.lastReadTimestamp = my.app.convertUnixToTzHuman(me._lastReadTimestampUnix);
 
     return data;
+  };
+
+  /**
+   * Handler for panel open / closed click event
+   *
+   *  @returns void
+   */
+  this.panelBtnClicked = function (evt) {
+    if (!my.panelClosedManually && my.ui.isPanelClosed()) {
+      my.panelClosedManually = true;
+    }
   };
 
   /**
@@ -1108,6 +1122,9 @@ const InitOutputUI = function (my, rootDomObj, containerId, panelLabelId, panelT
     // The panel selector Ids could change by Geotab without warning, so test and report if broken
     if (typeof me._panelOpenCloseBtnElemObj === "undefined" || me._panelOpenCloseBtnElemObj === null) {
       console.log("--- Could not get handle on Add-In Panel Open/Close button within iframe Parent DOM...update Selector",);
+    }
+    else {
+      me._panelOpenCloseBtnElemObj.addEventListener("click", me.panelBtnClicked);
     }
     if (typeof me._panelElemObj === "undefined" || me._panelElemObj === null) {
       console.log("--- Could not get handle on Add-In Panel Container Element within iframe Parent DOM...update Selector",);

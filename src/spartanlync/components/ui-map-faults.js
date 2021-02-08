@@ -85,7 +85,7 @@ const demoVeh = {
       }
 
       // Wait for Faults to Load
-      splMapFaultMgr.faults.getTimelineEvents(me.data.deviceID).then((splFaultTimelineEvents) => {
+      splMapFaultMgr.faults.getTimelineEvents(me.data.deviceID).then(splFaultTimelineEvents => {
          //           LIVE DATASOURCES:( vehMarker.deviceID  , Event.latLngs            , vehMarker   , vehMarker.deviceData        , splFaultTimelineEvents  )
          splMapFaultMgr.setLatLngFaults(demoVeh.data.deviceID, me._polyLine.getLatLngs(), demoVeh.data, demoVeh.data.latLngByTimeIdx, splFaultTimelineEvents);
       });
@@ -112,7 +112,7 @@ const demoVeh = {
       me._polyLine.addLatLng(me.data.latLngArr[me._step]);
 
       // Wait for Faults to Load
-      splMapFaultMgr.faults.getTimelineEvents(me.data.deviceID).then((splFaultTimelineEvents) => {
+      splMapFaultMgr.faults.getTimelineEvents(me.data.deviceID).then(splFaultTimelineEvents => {
          //           LIVE DATASOURCES:( vehMarker.deviceID  , Event.latLngs            , vehMarker   , vehMarker.deviceData        , splFaultTimelineEvents  )
          splMapFaultMgr.setLatLngFaults(demoVeh.data.deviceID, me._polyLine.getLatLngs(), demoVeh.data, demoVeh.data.latLngByTimeIdx, splFaultTimelineEvents);
       });
@@ -398,7 +398,7 @@ export const splMapFaultMgr = {
          sInfo.pointCount = sInfo.endIdx - sInfo.startIdx + 1;
          delete sInfo.tooltipDesc;
          segmentsArr.push(sInfo);
-         if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
+         if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")====================================== CREATE SEGMENT"); }//DEBUG
       }
 
       return segmentsArr;
@@ -413,7 +413,7 @@ export const splMapFaultMgr = {
          if (vehPathLatLngArr.length && vehMarker) {
             // Wait for Faults to Load
             if (demoVeh.utils.debugTracingLevel === 3) { console.log("==== onHistoricPathCreatedOrUpdated(", vehId, ") INVOKED vehPathLatLngArr =", vehPathLatLngArr); }//DEBUG
-            splMapFaultMgr.faults.getTimelineEvents(vehId).then((splFaultTimelineEvents) => {
+            splMapFaultMgr.faults.getTimelineEvents(vehId).then(splFaultTimelineEvents => {
                splMapFaultMgr.setLatLngFaults(vehId, vehPathLatLngArr, vehMarker, vehMarker.deviceData, splFaultTimelineEvents);
             }).catch(reason => console.log("---- onHistoricPathCreatedOrUpdated ERROR:", reason));
          }
@@ -1282,6 +1282,8 @@ class FaultTimelineEventMgr {
                         aSyncGoLib.getFaults(vehId, function (faults, vehIgnitionInfo) {
 
                            if (faults) {
+                              if (demoVeh.utils.debugTracingLevel === 1) { console.log("======== fetchIgnAndFaults(", vehId, ") TPMS faults =", faults); }//DEBUG
+                              if (demoVeh.utils.debugTracingLevel === 1) { console.log("======== fetchIgnAndFaults(", vehId, ") TPMS vehIgnitionInfo =", vehIgnitionInfo); }//DEBUG
 
                               // Update Ign/Fault data
                               if (vehIgnitionInfo && (vehIgnitionInfo["on-latest"] || vehIgnitionInfo["off-latest"])) {
@@ -1319,6 +1321,7 @@ class FaultTimelineEventMgr {
                         const toFaultDateObj = moment.unix(toDateOverride).utc();
                         getTempTracFaultsAsync(vehId, toFaultDateObj, searchRangeArr, searchUnit, "fridge")
                            .then((faults) => {
+                              if (demoVeh.utils.debugTracingLevel === 1) { console.log("======== fetchIgnAndFaults(", vehId, ") TEMPTRAC faults =", faults); }//DEBUG
                               subResolve2(faults);
                            });
                      });
@@ -1329,10 +1332,7 @@ class FaultTimelineEventMgr {
                            const tpmsRejectInfo = tpms.status === "rejected" ? tpms.reason : false;
                            const temptracFaults = temptrac.value;
 
-                           if (tpmsRejectInfo) {
-                              finalReject(tpmsRejectInfo);
-                           }
-                           if (temptracFaults && me._historicalIgnData[vehId]) {
+                           if (vehId && temptracFaults && temptracFaults.length) {
                               updateTempTracFaultStatusUsingIgnData(vehId, temptracFaults, me._historicalIgnData[vehId]);
 
                               // Merge into Historical Faults
@@ -1343,6 +1343,9 @@ class FaultTimelineEventMgr {
 
                               // Sort Historical Faults
                               me._historicalFaultData[vehId].sort((a, b) => a.time.toString().localeCompare(b.time.toString(), undefined, { numeric: true, sensitivity: "base" }));
+                           }
+                           if (tpmsRejectInfo) {
+                              finalReject(tpmsRejectInfo);
                            }
                            finalResolve();
                         });
@@ -1357,7 +1360,7 @@ class FaultTimelineEventMgr {
                   const [failedVehId, reason] = result.reason;
                   if (failedVehId) {
                      const vehName = deviceSearch.selectedIDS[failedVehId] !== "undefined" ? deviceSearch.selectedIDS[failedVehId].name + ` (${failedVehId})` : failedVehId;
-                     console.log("---- FaultTimelineEventMgr() Error fetching historical data from Vehicle [", vehName, "]:", reason);
+                     console.log("!!!! Vehicle [", vehName, "] ERROR fetching historical data:", reason);
                      splSrv.events.queueExec("onFaultTimelineEventMgrFetchComplete", failedVehId, false);
                   }
                }
@@ -1366,6 +1369,7 @@ class FaultTimelineEventMgr {
             // Purge any leftover Registrations (By this point they are failed)
             me._isfetchComplete = true;
             splSrv.events.queueClear("onFaultTimelineEventMgrFetchComplete");
+
          })();
       }
    }

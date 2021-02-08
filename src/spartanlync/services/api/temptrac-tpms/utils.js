@@ -92,10 +92,11 @@ export function getTempTracFaultsAsync(vehId, toFaultDateObj, searchRangeArr, se
          typeof toFaultDateObj !== "object" || !moment.isMoment(toFaultDateObj)) {
          resolve(null);
       }
-      const toFaultDate = toFaultDateObj.format();
-      let fdata = null;
 
       (async () => {
+         const toFaultDate = toFaultDateObj.format();
+         let fdata = null;
+
          for (const idx in searchRangeArr) {
             const searchRange = searchRangeArr[idx];
             const fromFaultDate = moment.unix(toFaultDateObj.unix()).utc().subtract(searchRange, searchUnit).format();
@@ -116,7 +117,7 @@ export function getTempTracFaultsAsync(vehId, toFaultDateObj, searchRangeArr, se
 
          // Report to console
          if (fdata === null || fdata && !fdata.length) {
-            console.log("VehicleID [ " + vehId + " ]: NO Temptrac FAULT DATA FOUND for this date range!");
+            console.log("VehicleID [ " + vehId + " ]: NO TempTrac FAULT DATA FOUND for this date range!");
          }
          resolve(fdata);
       })();
@@ -130,25 +131,23 @@ export function getTempTracFaultsAsync(vehId, toFaultDateObj, searchRangeArr, se
 *  @returns void
 */
 export function updateTempTracFaultStatusUsingIgnData(vehId, fdata, ignData, quiet) {
-   if (ignData && ignData["on-latest"] && fdata && fdata.length) {
+   if (fdata && fdata.length) {
       let PostIgnFaultCount = 0;
       for (const idx in fdata) {
-         if (typeof fdata[idx].occurredOnLatestIgnition !== "undefined") {
-            if (typeof fdata[idx].time !== "undefined" && fdata[idx].time >= ignData["on-latest"]) {
-               fdata[idx].occurredOnLatestIgnition = true;
-               PostIgnFaultCount++;
-            }
-            else {
-               fdata[idx].occurredOnLatestIgnition = false;
-            }
+         if (ignData && ignData["on-latest"] && typeof fdata[idx].time !== "undefined" && fdata[idx].time >= ignData["on-latest"]) {
+            fdata[idx].occurredOnLatestIgnition = true;
+            PostIgnFaultCount++;
+         }
+         else {
+            fdata[idx].occurredOnLatestIgnition = false;
          }
       }
       if (typeof quiet === "undefined" || typeof quiet !== "undefined" && quiet === false) {
          if (PostIgnFaultCount) {
-            console.log("VehicleID [ " + vehId + " ]: [" + PostIgnFaultCount + "] New Post-Ignition SpartanLync Temptrac FAULTS FOUND after the last search.");
+            console.log("VehicleID [ " + vehId + " ]: PROCESSED [" + PostIgnFaultCount + "] New Post-Ignition SpartanLync Temptrac FAULTS after the last search.");
          }
          else {
-            console.log("VehicleID [ " + vehId + " ]: [" + fdata.length + "] SpartanLync Temptrac FAULTS FOUND after the last search.");
+            console.log("VehicleID [ " + vehId + " ]: PROCESSED [" + fdata.length + "] SpartanLync Temptrac FAULTS after the last search.");
          }
       }
    }

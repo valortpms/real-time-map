@@ -300,8 +300,7 @@ export const INITSplSessionMgr = function (myApi, credentials) {
       const me = this;
       if (!callback || typeof callback !== "function" || !me._api || !me._credentials) { return; }
 
-      me._callback = callback;
-      me._errorCallback = errorCallback && typeof errorCallback === "function" ? errorCallback : null;
+      const errCallback = errorCallback && typeof errorCallback === "function" ? errorCallback : null;
       me._api.requestService(
          {
             temptracfaults: {
@@ -314,7 +313,7 @@ export const INITSplSessionMgr = function (myApi, credentials) {
          },
          (result) => {
             if (me._isSuccess(result)) {
-               me._callback(result.data);
+               callback(result.data);
             }
             else {
                me._handleAppError(result, "---- splSessionMgr(): getTempTracFaults(): FETCHING ERROR ----");
@@ -323,8 +322,8 @@ export const INITSplSessionMgr = function (myApi, credentials) {
          // API ERROR FETCHING
          (result) => {
             const msg = "---- splSessionMgr(): getTempTracFaults(): API ERROR FETCHING: " + result;
-            if (me._errorCallback) {
-               me._errorCallback(msg);
+            if (errCallback) {
+               errCallback(msg);
             }
          }
       );

@@ -949,8 +949,8 @@
 }
 #RTM-ControlsContainer #RTM-LiveButton .go-live-help {
    position: absolute;
-   top: 5px;
-   right: 0px;
+   top: -1px;
+   right: -5px;
    z-index: 99;
 
    color: #000000;
@@ -958,10 +958,11 @@
    font-weight: normal;
    text-transform: initial;
 
+   width: 100px;
    padding: 1px 3px;
    border-width: 1px;
    border-radius: 4px;
-
+   white-space: break-spaces;
    opacity: 1;
    transition: opacity 0.6s ease;
 }
@@ -1227,8 +1228,6 @@
    #RTM-ControlsContainer #RTM-LiveButton .go-live-help {
       top: -1px;
       right: -10px;
-      width: 100px;
-      white-space: break-spaces;
    }
 }
 
@@ -1286,6 +1285,8 @@
    #RTM-ControlsContainer #RTM-LiveButton .go-live-help {
       top: 5px;
       right: 80px;
+      white-space: nowrap;
+      width: 140px;
    }
 
    #RTM-ViewContainer .spl-modal-popup {

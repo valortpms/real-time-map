@@ -211,6 +211,15 @@ const SpartanLyncServiceTools = {
          // Language translate elements in DOM that needed time to load
          me.tr.onDomLoaded();
 
+         // Margin Fix for New Geotab UI title bar when loading Add-Ins
+         const docBodyObj = document.getElementsByTagName("body");
+         const searchForStyleAttrib = "margin:";
+         if (docBodyObj && docBodyObj.length && typeof docBodyObj[0].getAttribute("style")) {
+            if (docBodyObj[0].getAttribute("style").indexOf(searchForStyleAttrib) > -1) {
+               docBodyObj[0].removeAttribute("style");
+            }
+         }
+
       }, (errMsg) => {
          const msg = splmap.tr("splmap_service_failed");
          console.log(msg + ": " + errMsg);

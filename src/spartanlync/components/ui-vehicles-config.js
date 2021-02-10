@@ -130,6 +130,8 @@ export class SplSensorDataTypesButton extends Component {
                splSrv.cache.updateFaultStatusUsingIgnData(me.vehId);
             }
 
+            console.log("==== fetchFaultsAndIgnitionData(", me.vehId, ") splSrv.cache =", splSrv.cache._faultCache[me.vehId]); //DEBUG
+
             // Invoke New Fault event handlers by throwing a New-Fault Event
             splSrv.vehRegistry.loadingEnd(me.vehId);
             if (splSrv.cache.isFaultFound(faults) || faultsFoundPriorToUpdate !== splSrv.cache.isFaultFound(faults)) {

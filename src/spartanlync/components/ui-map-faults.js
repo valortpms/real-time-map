@@ -350,7 +350,7 @@ export const splMapFaultMgr = {
                sInfo = faultInfo;
                sStart = idx;
                sEnd = sStart + 1;
-               if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== START SEGMENT"); }//DEBUG
+               if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== START SEGMENT"); }//DEBUG
             }
             else {
                if (sInfo.faultState !== faultInfo.faultState) {
@@ -361,16 +361,16 @@ export const splMapFaultMgr = {
                   sInfo.pointCount = idx - sStart + 1;
                   delete sInfo.tooltipDesc;
                   segmentsArr.push(sInfo);
-                  if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
+                  if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
 
                   sInfo = faultInfo;
                   sStart = idx;
                   sEnd = sStart + 1;
-                  if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== START SEGMENT"); }//DEBUG
+                  if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== START SEGMENT"); }//DEBUG
                }
                else {
                   sEnd = idx;
-                  if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== UPDATE SEGMENT END"); }//DEBUG
+                  if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== UPDATE SEGMENT END"); }//DEBUG
                }
             }
          }
@@ -385,10 +385,10 @@ export const splMapFaultMgr = {
                segmentsArr.push(sInfo);
                sInfo = null;
                sStart = sEnd = idx;
-               if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
+               if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
             }
          }
-         if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")==== idx =", idx, timestamp, " f =", faultInfo); }//DEBUG
+         if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, timestamp, " f =", faultInfo); }//DEBUG
       }
       if (sStart !== sEnd) {
          const segmentId = splMapFaultUtils.createLatlngSegmentId(me._faultsSegmentNamePrefix + vehId, vehPathLatLngArr[sStart]);
@@ -398,7 +398,7 @@ export const splMapFaultMgr = {
          sInfo.pointCount = sInfo.endIdx - sInfo.startIdx + 1;
          delete sInfo.tooltipDesc;
          segmentsArr.push(sInfo);
-         if (demoVeh.utils.debugTracingLevel === 2) { console.log("(", vehId, ")====================================== CREATE SEGMENT"); }//DEBUG
+         if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")====================================== CREATE SEGMENT"); }//DEBUG
       }
 
       return segmentsArr;
@@ -573,7 +573,8 @@ const splMapFaultUtils = {
          if (latLngByTimeIdx && typeof latLngByTimeIdx === "object") {
             for (const time of Object.keys(latLngByTimeIdx)) {
                if (isNaN(time)) { continue; }
-               if (latLngNeedle.equals(me.cleanLatLng(latLngByTimeIdx[time]))) {
+               const latLngHaystack = me.cleanLatLng(latLngByTimeIdx[time]);
+               if (latLngNeedle.equals(latLngHaystack)) {
                   if (latLngByTimeFaultAPI && typeof latLngByTimeFaultAPI.updateDB === "function") {
                      latLngByTimeFaultAPI.updateDB(time, latLngNeedle);
                   }
@@ -607,8 +608,19 @@ const splMapFaultUtils = {
 
       if (!isNaN(currentSecond) && Array.isArray(timelineArr) && timelineArr.length > 1) {
          timelineArr.sort((a, b) => { return a.latLngTime > b.latLngTime; });
+
+         // Search out of bounds of fault timeline
          if (currentSecond < timelineArr[0].latLngTime || currentSecond > timelineArr[timelineArr.length - 1].latLngTime) {
-            return currentStateObj; // Search out of bounds of fault timeline
+
+            // If search is after end of timeline, return last fault if exists
+            const lastTimelineEvt = timelineArr[timelineArr.length - 1];
+            if (currentSecond > lastTimelineEvt.latLngTime && typeof lastTimelineEvt.evtState !== "undefined") {
+               currentStateObj.faultState = lastTimelineEvt.evtState;
+               currentStateObj.faultColor = lastTimelineEvt.evtColor;
+               currentStateObj.faultTime = lastTimelineEvt.realTime;
+               currentStateObj.tooltipDesc = lastTimelineEvt.tooltipDesc;
+            }
+            return currentStateObj;
          }
          for (const idx in timelineArr) {
             if (idx >= timelineArr.length - 1) { continue; }
@@ -753,7 +765,7 @@ const splMapFaultUtils = {
       try {
          const loc = L.latLng(me.cleanLatLng(latLngObj));
          if (typeof loc.lat !== "undefined" && typeof loc.lng !== "undefined") {
-            return [loc.lat, loc.lng];
+            return [loc.lat.toString().match(/^-?\d+(?:\.\d{0,7})?/)[0], loc.lng.toString().match(/^-?\d+(?:\.\d{0,7})?/)[0]]; // If longer, truncate to 7 decimal places
          }
       }
       catch (err) {

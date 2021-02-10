@@ -131,6 +131,7 @@ window.splmap.lang.en = {
   "alert_battery_low_voltage":                     "Vehicle Battery has LOW Voltage",
   "alert_tire_temperature_fault":                  "Tire Temperature Fault",
   "alert_tire_pressure_fault":                     "Tire Pressure Fault",
+  "alert_temptrac_fault":                          "TempTrac Fault",
   "alert_desc_zone":                               "Zone",
   "alert_desc_axle":                               "Axle",
   "alert_desc_tire":                               "Tire",

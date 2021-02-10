@@ -131,6 +131,7 @@ window.splmap.lang.fr = {
   "alert_battery_low_voltage":                     "La batterie du véhicule a une tension FAIBLE",
   "alert_tire_temperature_fault":                  "Erreur de température des pneus",
   "alert_tire_pressure_fault":                     "Défaut de pression des pneus",
+  "alert_temptrac_fault":                          "Défaut TempTrac",
   "alert_desc_zone":                               "Zone",
   "alert_desc_axle":                               "Essieu",
   "alert_desc_tire":                               "Pneu",

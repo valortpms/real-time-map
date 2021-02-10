@@ -62,7 +62,6 @@ export function fetchVehFaultsAndIgnitionAsync(vehId, firstTimeCallOverride) {
          const searchUnit = overrideFirstTimeCall === null ? "days" : "hours";
          getTempTracFaultsAsync(vehId, toFaultDateObj, searchRangeArr, searchUnit, "fridge")
             .then((faults) => {
-               splSrv.cache.storeFaultData(vehId, faults, true);
                subResolve2(faults);
             });
       });
@@ -130,25 +129,23 @@ export function getTempTracFaultsAsync(vehId, toFaultDateObj, searchRangeArr, se
 *
 *  @returns void
 */
-export function updateTempTracFaultStatusUsingIgnData(vehId, fdata, ignData, quiet) {
+export function updateTempTracFaultStatusUsingIgnData(vehId, fdata, ignData) {
    if (fdata && fdata.length) {
       let PostIgnFaultCount = 0;
       for (const idx in fdata) {
-         if (ignData && ignData["on-latest"] && typeof fdata[idx].time !== "undefined" && fdata[idx].time >= ignData["on-latest"]) {
+         if (ignData && ignData["on-latest"] && typeof fdata[idx].time !== "undefined" && fdata[idx].time < ignData["on-latest"]) {
+            fdata[idx].occurredOnLatestIgnition = false;
+         }
+         else {
             fdata[idx].occurredOnLatestIgnition = true;
             PostIgnFaultCount++;
          }
-         else {
-            fdata[idx].occurredOnLatestIgnition = false;
-         }
       }
-      if (typeof quiet === "undefined" || typeof quiet !== "undefined" && quiet === false) {
-         if (PostIgnFaultCount) {
-            console.log("VehicleID [ " + vehId + " ]: PROCESSED [" + PostIgnFaultCount + "] New Post-Ignition SpartanLync Temptrac FAULTS after the last search.");
-         }
-         else {
-            console.log("VehicleID [ " + vehId + " ]: PROCESSED [" + fdata.length + "] SpartanLync Temptrac FAULTS after the last search.");
-         }
+      if (PostIgnFaultCount) {
+         console.log("VehicleID [ " + vehId + " ]: PROCESSED [" + PostIgnFaultCount + "] New Post-Ignition SpartanLync Temptrac FAULTS after the last search.");
+      }
+      else {
+         console.log("VehicleID [ " + vehId + " ]: PROCESSED [" + fdata.length + "] SpartanLync Temptrac FAULTS after the last search.");
       }
    }
 };

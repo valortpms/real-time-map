@@ -744,9 +744,37 @@ export const splSensorDataParser = {
                   typeof faultObj.loc !== "undefined" &&
                   Array.isArray(faultObj.loc) && faultObj.loc.length &&
                   faultObj.occurredOnLatestIgnition &&
-                  (faultObj.alert.type === "Tire Pressure Fault" || faultObj.alert.type === "Tire Temperature Fault")
+                  (
+                     faultObj.alert.type === "Tire Pressure Fault" ||
+                     faultObj.alert.type === "Tire Temperature Fault" ||
+                     faultObj.alert.type === "TempTrac Temperature Fault"
+                  )
                ) {
+                  // eslint-disable-next-line complexity
                   faultObj.loc.forEach(locObj => {
+
+                     // TempTrac Temperature Alerts
+                     if (typeof locObj.vehComp !== "undefined" &&
+                        typeof cloneData[compId].temptrac !== "undefined" &&
+                        faultObj.alert.type === "TempTrac Temperature Fault" &&
+                        locObj.vehComp === compId) {
+
+                        const locId = "temptrac_zone" + locObj.zone;
+                        if (typeof cloneData[compId].temptrac[locId] !== "undefined") {
+                           if (typeof cloneData[compId].temptrac[locId].alert === "undefined" || (
+                              typeof cloneData[compId].temptrac[locId].alert !== "undefined" &&
+                              faultObj.time > cloneData[compId].temptrac[locId].alert.time)) {
+                              cloneData[compId].temptrac[locId].alert = {
+                                 time: faultObj.time,
+                                 class: "alert-" + faultObj.alert.color.toLowerCase(),
+                                 html:
+                                    "<p class='spl-vehicle-alert-tooltip-header'>" + splmap.tr("alert_header") + ":</p>" +
+                                    splmap.tr(faultObj.alert.trId) + "<br />( " + splmap.tr("alert_temptrac_fault") + " )<br />" +
+                                    "@" + splSrv.convertUnixToTzHuman(faultObj.time) + "<p>"
+                              };
+                           }
+                        }
+                     }
 
                      // TPMS Pressure Alerts
                      if (typeof locObj.vehComp !== "undefined" &&
@@ -864,8 +892,8 @@ export const splSensorDataParser = {
             if (locObj.type === "Temptrac") {
                const locHtml = me._convertLocToShortName(locObj.zone);
                outHtml += htmlEntities.decode(renderToString((
-                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'><p style='margin: 0px; padding: 0px;'>${sensorTimeLabel}:</p>${sensorTime}</div>`} data-for="splTooltip">
-                     <div className="val-loc">{`${locHtml}`}</div>
+                  <div className={`${animationClassName}`} data-tip={`<div style='margin: 0px; padding: 0px; text-align: center;'>${alertTooltipHtml}<p style='margin: 0px; padding: 0px;'>${sensorTimeLabel}:</p>${sensorTime}</div>`} data-for="splTooltip">
+                     <div className={`val-loc ${alertClass}`}>{`${locHtml}`}</div>
                      <div className="val-temp">{`${locObj.val.c}`} <span>&#8451;</span><p>{`${locObj.val.f}`} <span>&#8457;</span></p></div>
                   </div>
                )));

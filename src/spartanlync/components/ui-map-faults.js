@@ -15,7 +15,8 @@ import {
    filterMarkerButton,
    getStrongText,
    escapeQuotes,
-   getDefaultPopupText
+   getDefaultPopupText,
+   closeAllTooltips
 } from "../../components/map/popups/popup-helpers";
 
 export function initSplMapFaults() {
@@ -344,6 +345,8 @@ export const splMapFaultMgr = {
          const timestamp = splMapFaultUtils.latlngToTime(vehPathLatLng, null, latLngByTimeVehAPI, latLngByTimeIdx);
          const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, splFaultTimelineEvents);
 
+         if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " t =", timestamp, " LatLng =", vehPathLatLng, " faultInfo =", faultInfo); }//DEBUG
+
          if (!faultInfo) { return segmentsArr; }
          if (faultInfo.faultState) {
             if (sStart === sEnd) {
@@ -388,7 +391,7 @@ export const splMapFaultMgr = {
                if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
             }
          }
-         if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, timestamp, " f =", faultInfo); }//DEBUG
+         if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " f =", faultInfo); }//DEBUG
       }
       if (sStart !== sEnd) {
          const segmentId = splMapFaultUtils.createLatlngSegmentId(me._faultsSegmentNamePrefix + vehId, vehPathLatLngArr[sStart]);
@@ -412,7 +415,7 @@ export const splMapFaultMgr = {
          const vehMarker = typeof markerList[vehId] !== "undefined" ? markerList[vehId] : null;
          if (vehPathLatLngArr.length && vehMarker) {
             // Wait for Faults to Load
-            if (demoVeh.utils.debugTracingLevel === 3) { console.log("==== onHistoricPathCreatedOrUpdated(", vehId, ") INVOKED vehPathLatLngArr =", vehPathLatLngArr); }//DEBUG
+            if (demoVeh.utils.debugTracingLevel === 3) { console.log("============ onHistoricPathCreatedOrUpdated(", vehId, ") INVOKED vehPathLatLngArr =", vehPathLatLngArr); }//DEBUG
             splMapFaultMgr.faults.getTimelineEvents(vehId).then(splFaultTimelineEvents => {
                splMapFaultMgr.setLatLngFaults(vehId, vehPathLatLngArr, vehMarker, vehMarker.deviceData, splFaultTimelineEvents);
             }).catch(reason => console.log("---- onHistoricPathCreatedOrUpdated ERROR:", reason));
@@ -606,7 +609,7 @@ const splMapFaultUtils = {
          tooltipDesc: "",
       };
 
-      if (!isNaN(currentSecond) && Array.isArray(timelineArr) && timelineArr.length > 1) {
+      if (currentSecond && Array.isArray(timelineArr) && timelineArr.length > 1) {
          timelineArr.sort((a, b) => { return a.latLngTime > b.latLngTime; });
 
          // Search out of bounds of fault timeline
@@ -643,7 +646,7 @@ const splMapFaultUtils = {
             }
          }
       }
-      return null;
+      return currentStateObj;
    },
 
    /**
@@ -893,6 +896,7 @@ class FaultPolyline {
       if (leafletObj && !L.Browser.mobile) {
          const tooltipFunc = (evt) => {
             leafletObj.unbindTooltip();
+            closeAllTooltips();
             leafletObj.bindTooltip(me.getFaultDescHtml(evt.latlng), {
                className: "spl-map-vehicle-tooltip",
             }).openTooltip(evt.latlng);
@@ -1240,7 +1244,7 @@ class FaultTimelineEventMgr {
                   timeline.push({
                      latLngTime: parseInt(faultObj.time),
                      realTime: parseInt(faultObj.time),
-                     evtType: faultObj.id
+                     evtType: faultObj.id.indexOf("_") > -1 ? faultObj.id.split("_")[0] : faultObj.id
                   });
                }
             }

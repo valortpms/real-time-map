@@ -70,6 +70,12 @@ export function fetchVehFaultsAndIgnitionAsync(vehId, firstTimeCallOverride) {
       Promise.all([fTask1, fTask2])
          .then(([[faults, vehIgnitionInfo], temptracFaults]) => {
             updateTempTracFaultStatusUsingIgnData(vehId, temptracFaults, vehIgnitionInfo);
+
+            // Make each FaultId unique, so entire fault history is merged into Fault DB
+            for (const idx in temptracFaults) {
+               temptracFaults[idx].id = temptracFaults[idx].id + "_" + idx;
+            }
+
             splSrv.cache.storeFaultData(vehId, temptracFaults, true);
             finalResolve([faults, vehIgnitionInfo]);
          })

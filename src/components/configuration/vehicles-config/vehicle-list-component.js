@@ -115,6 +115,7 @@ export class CreateDeviceListElement extends Component {
       me.dateChangeEventHandlerId = splSrv.events.register("onMapDateChangeResetReOpenPopups", () => {
          me.latLngCounter = 0;
          me.setState({ isVehActive: false });
+         me.searchForVehMapGPS();
       }, false);
 
       me.searchForVehMapGPS();

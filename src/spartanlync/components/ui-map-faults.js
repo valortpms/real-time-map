@@ -249,6 +249,7 @@ export const splMapFaultMgr = {
    _defaultPolylineSmoothFactor: 1,
 
    _vehMarkers: {},
+   _vehLatLngTimestampCache: {},
 
    _init: function (vehMarker, latLngByTimeIdx) {
       const me = this;
@@ -273,10 +274,20 @@ export const splMapFaultMgr = {
             faultSegments: {},
             historicPathLatLngToTimeDB: new INITlatLngToTimeDB(latLngByTimeIdx)
          };
+         me._importLatLngTimestampFromCache(vehId, vehMarker);
          me._vehMarkers[vehId] = vehMarker;
       }
-
       return vehMarker.splMapFaults;
+   },
+
+   _importLatLngTimestampFromCache: function (vehId, vehMarker) {
+      const me = this;
+      if (typeof me._vehLatLngTimestampCache[vehId] !== "undefined" && vehMarker && vehMarker.splMapFaults && vehMarker.splMapFaults.historicPathLatLngToTimeDB) {
+         for (const timestamp of Object.keys(me._vehLatLngTimestampCache[vehId])) {
+            const latLng = me._vehLatLngTimestampCache[vehId][timestamp];
+            vehMarker.splMapFaults.historicPathLatLngToTimeDB.updateDB(timestamp, latLng);
+         }
+      }
    },
 
    _getVehName: function (vehId) {
@@ -326,6 +337,8 @@ export const splMapFaultMgr = {
          const timestamp = splMapFaultUtils.latlngToTime(vehPathLatLngArr[0], null, latLngByTimeVehAPI, latLngByTimeIdx);
          const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, splFaultTimelineEvents);
 
+         if (demoVeh.utils.debugTracingLevel === 3) { console.log("(", vehId, ")==== t =", timestamp, " LatLng =", vehPathLatLngArr[0], " faultInfo =", faultInfo); }//DEBUG
+
          if (faultInfo && faultInfo.faultState) {
             sInfo = faultInfo;
             const segmentId = splMapFaultUtils.createLatlngSegmentId(me._faultsSegmentNamePrefix + vehId, vehPathLatLngArr[sStart]);
@@ -335,6 +348,7 @@ export const splMapFaultMgr = {
             sInfo.pointCount = 1;
             delete sInfo.tooltipDesc;
             segmentsArr.push(sInfo);
+            if (demoVeh.utils.debugTracingLevel === 3) { console.log("(", vehId, ")==== ================================== CREATE SEGMENT"); }//DEBUG
          }
          return segmentsArr;
       }
@@ -345,7 +359,7 @@ export const splMapFaultMgr = {
          const timestamp = splMapFaultUtils.latlngToTime(vehPathLatLng, null, latLngByTimeVehAPI, latLngByTimeIdx);
          const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, splFaultTimelineEvents);
 
-         if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " t =", timestamp, " LatLng =", vehPathLatLng, " faultInfo =", faultInfo); }//DEBUG
+         if (demoVeh.utils.debugTracingLevel === 3) { console.log("(", vehId, ")==== idx =", idx, " t =", timestamp, " LatLng =", vehPathLatLng); }//DEBUG
 
          if (!faultInfo) { return segmentsArr; }
          if (faultInfo.faultState) {
@@ -353,7 +367,7 @@ export const splMapFaultMgr = {
                sInfo = faultInfo;
                sStart = idx;
                sEnd = sStart + 1;
-               if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== START SEGMENT"); }//DEBUG
+               if (demoVeh.utils.debugTracingLevel === 3) { console.log("(", vehId, ")==== idx =", idx, " ================================== START SEGMENT-1"); }//DEBUG
             }
             else {
                if (sInfo.faultState !== faultInfo.faultState) {
@@ -364,16 +378,16 @@ export const splMapFaultMgr = {
                   sInfo.pointCount = idx - sStart + 1;
                   delete sInfo.tooltipDesc;
                   segmentsArr.push(sInfo);
-                  if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
+                  if (demoVeh.utils.debugTracingLevel === 3) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT-1"); }//DEBUG
 
                   sInfo = faultInfo;
                   sStart = idx;
                   sEnd = sStart + 1;
-                  if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== START SEGMENT"); }//DEBUG
+                  if (demoVeh.utils.debugTracingLevel === 3) { console.log("(", vehId, ")==== idx =", idx, " ================================== START SEGMENT-2"); }//DEBUG
                }
                else {
                   sEnd = idx;
-                  if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== UPDATE SEGMENT END"); }//DEBUG
+                  if (demoVeh.utils.debugTracingLevel === 3) { console.log("(", vehId, ")==== idx =", idx, " ================================== UPDATE SEGMENT END"); }//DEBUG
                }
             }
          }
@@ -388,10 +402,10 @@ export const splMapFaultMgr = {
                segmentsArr.push(sInfo);
                sInfo = null;
                sStart = sEnd = idx;
-               if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT"); }//DEBUG
+               if (demoVeh.utils.debugTracingLevel === 3) { console.log("(", vehId, ")==== idx =", idx, " ================================== CREATE SEGMENT-2"); }//DEBUG
             }
          }
-         if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")==== idx =", idx, " f =", faultInfo); }//DEBUG
+         if (demoVeh.utils.debugTracingLevel === 3) { console.log("(", vehId, ")==== idx =", idx, " f =", faultInfo); }//DEBUG
       }
       if (sStart !== sEnd) {
          const segmentId = splMapFaultUtils.createLatlngSegmentId(me._faultsSegmentNamePrefix + vehId, vehPathLatLngArr[sStart]);
@@ -401,7 +415,7 @@ export const splMapFaultMgr = {
          sInfo.pointCount = sInfo.endIdx - sInfo.startIdx + 1;
          delete sInfo.tooltipDesc;
          segmentsArr.push(sInfo);
-         if (demoVeh.utils.debugTracingLevel >= 2) { console.log("(", vehId, ")====================================== CREATE SEGMENT"); }//DEBUG
+         if (demoVeh.utils.debugTracingLevel === 3) { console.log("(", vehId, ")====================================== CREATE SEGMENT-3"); }//DEBUG
       }
 
       return segmentsArr;
@@ -422,6 +436,9 @@ export const splMapFaultMgr = {
          }
       }, false);
 
+      // Catch Event for storing mising Interpolated LatLng timestamps into LOCAL Vehicle DB
+      splSrv.events.register("onAddingNewVehicleLatLngTimestamp", (vehId, timestamp, latLng) => me.addLatLngTimestampToVeh(vehId, timestamp, latLng), false);
+
       // Fault Popup Closure Event Handler
       splSrv.events.register("onCloseAllPopupsForVeh", (vehId) => me.closeAllPopupsFor(vehId), false);
 
@@ -433,7 +450,6 @@ export const splMapFaultMgr = {
       const me = this;
       const splVehMapFaultsDB = me._init(vehMarker, vehDeviceData);
       if (!splVehMapFaultsDB || !vehPathLatLngArr.length) { return; }
-      if (demoVeh.utils.debugTracingLevel === 3) { console.log("==== setLatLngFaults(", vehId, ") INVOKED"); }//DEBUG
 
       // Search veh Path for fault segments
       for (const newFaultSegmentInfo of me._searchVehPathForFaultSegments(vehId, vehPathLatLngArr, vehDeviceData, splFaultTimelineEvents)) {
@@ -452,7 +468,7 @@ export const splMapFaultMgr = {
             if (faultSegment) {
                faultSegment.info = newFaultSegmentInfo;
             }
-            if (demoVeh.utils.debugTracingLevel) { console.log("==== splMapFaultMgr.setLatLngFaults(", vehId, ") CREATE =", faultSegment); } // DEBUG
+            if (demoVeh.utils.debugTracingLevel === 1) { console.log("==== splMapFaultMgr.setLatLngFaults(", vehId, ") CREATE =", faultSegment); } // DEBUG
          }
 
          // Update Segment
@@ -463,7 +479,7 @@ export const splMapFaultMgr = {
             if (newFaultSegmentInfo.pointCount > faultSegment.info.pointCount) {
                const numNewPoints = newFaultSegmentInfo.pointCount - faultSegment.info.pointCount;
                let i = 1;
-               if (demoVeh.utils.debugTracingLevel) { console.log("==== splMapFaultMgr.setLatLngFaults(", vehId, ") UPDATE =", faultSegment, " splVehMapFaultsDB =", splVehMapFaultsDB); } // DEBUG
+               if (demoVeh.utils.debugTracingLevel === 1) { console.log("==== splMapFaultMgr.setLatLngFaults(", vehId, ") UPDATE =", faultSegment, " splVehMapFaultsDB =", splVehMapFaultsDB); } // DEBUG
                while (i <= numNewPoints) {
                   const newPointIdx = faultSegment.info.endIdx + i;
                   const newLatLng = vehPathLatLngArr[newPointIdx];
@@ -481,6 +497,23 @@ export const splMapFaultMgr = {
    getVehMarker: function (vehId) {
       const me = this;
       return typeof me._vehMarkers[vehId] !== "undefined" ? me._vehMarkers[vehId] : null;
+   },
+
+   addLatLngTimestampToVeh: function (vehId, timestamp, latLng) {
+      const me = this;
+      const latLngByTimeVehAPI = typeof me._vehMarkers[vehId] !== "undefined" ? me._vehMarkers[vehId].splMapFaults.historicPathLatLngToTimeDB : null;
+
+      // Add to vehMarker Historical Path Db
+      if (latLngByTimeVehAPI) {
+         latLngByTimeVehAPI.updateDB(timestamp, latLng);
+      }
+      // Alternatively add to vehLatLngTimestampCache if vehMarker not yet created
+      else {
+         if (typeof me._vehLatLngTimestampCache[vehId] === "undefined") {
+            me._vehLatLngTimestampCache[vehId] = {};
+         }
+         me._vehLatLngTimestampCache[vehId][timestamp] = latLng;
+      }
    },
 
    closeAllPopupsFor: function (vehId) {
@@ -593,20 +626,28 @@ const splMapFaultUtils = {
    },
 
    /**
-   * faultInfoByTimestamp() SpartanLync Fault Info at a specific time on Leaflet polyline
+   * faultInfoByTimestamp() SpartanLync Fault Info at a specific time on Timeline Array
    *
    * @param {int} currentSecond - Unix timstamp of fault to search for details
    * @param {array} timelineArr - Array of fault event objects sorted on a timeline of sensor faults and ignition events
    *
    * @return {object}           - Details of AMBER/RED prioritized faults occuring on a specied second
    */
+   // eslint-disable-next-line complexity
    faultInfoByTimestamp: function (currentSecond, timelineArr) {
+      const me = this;
 
       const currentStateObj = {
          faultState: "",
          faultColor: "",
-         faultTime: "",
-         tooltipDesc: "",
+         faultTime: {
+            temptrac: "",
+            tpms: ""
+         },
+         tooltipDesc: {
+            temptrac: "",
+            tpms: ""
+         },
       };
 
       if (currentSecond && Array.isArray(timelineArr) && timelineArr.length > 1) {
@@ -616,12 +657,53 @@ const splMapFaultUtils = {
          if (currentSecond < timelineArr[0].latLngTime || currentSecond > timelineArr[timelineArr.length - 1].latLngTime) {
 
             // If search is after end of timeline, return last fault if exists
-            const lastTimelineEvt = timelineArr[timelineArr.length - 1];
-            if (currentSecond > lastTimelineEvt.latLngTime && typeof lastTimelineEvt.evtState !== "undefined") {
-               currentStateObj.faultState = lastTimelineEvt.evtState;
-               currentStateObj.faultColor = lastTimelineEvt.evtColor;
-               currentStateObj.faultTime = lastTimelineEvt.realTime;
-               currentStateObj.tooltipDesc = lastTimelineEvt.tooltipDesc;
+            if (currentSecond > timelineArr[timelineArr.length - 1].latLngTime) {
+
+               // Scan backwards till last tpms/temptrac record(s) or FaultOff record (NULL)
+               const lastTpmsEvt = me.findLastTimelineEvent(false, timelineArr);
+               const lastTempTracEvt = me.findLastTimelineEvent(true, timelineArr);
+
+               if (lastTpmsEvt && lastTempTracEvt) {
+                  if (lastTpmsEvt.evtState === lastTempTracEvt.evtState) {
+                     currentStateObj.faultState = lastTpmsEvt.evtState;
+                     currentStateObj.faultColor = lastTpmsEvt.evtColor;
+
+                     currentStateObj.faultTime.temptrac = lastTempTracEvt.realTime;
+                     currentStateObj.faultTime.tpms = lastTpmsEvt.realTime;
+
+                     currentStateObj.tooltipDesc.temptrac = lastTempTracEvt.tooltipDesc;
+                     currentStateObj.tooltipDesc.tpms = lastTpmsEvt.tooltipDesc;
+                  }
+                  else {
+                     const redStateEvt = lastTempTracEvt.faultState === "RED" ? lastTempTracEvt : lastTpmsEvt;
+                     currentStateObj.faultState = redStateEvt.evtState;
+                     currentStateObj.faultColor = redStateEvt.evtColor;
+
+                     currentStateObj.tooltipDesc.temptrac = redStateEvt.tooltipDesc;
+                     currentStateObj.faultTime.temptrac = redStateEvt.realTime;
+                     currentStateObj.faultTime.tpms = currentStateObj.tooltipDesc.tpms = "";
+                  }
+               }
+               else if (lastTpmsEvt) {
+                  currentStateObj.faultState = lastTpmsEvt.evtState;
+                  currentStateObj.faultColor = lastTpmsEvt.evtColor;
+
+                  currentStateObj.faultTime.temptrac = "";
+                  currentStateObj.faultTime.tpms = lastTpmsEvt.realTime;
+
+                  currentStateObj.tooltipDesc.temptrac = "";
+                  currentStateObj.tooltipDesc.tpms = lastTpmsEvt.tooltipDesc;
+               }
+               else if (lastTempTracEvt) {
+                  currentStateObj.faultState = lastTempTracEvt.evtState;
+                  currentStateObj.faultColor = lastTempTracEvt.evtColor;
+
+                  currentStateObj.faultTime.temptrac = lastTempTracEvt.realTime;
+                  currentStateObj.faultTime.tpms = "";
+
+                  currentStateObj.tooltipDesc.temptrac = lastTempTracEvt.tooltipDesc;
+                  currentStateObj.tooltipDesc.tpms = "";
+               }
             }
             return currentStateObj;
          }
@@ -631,13 +713,25 @@ const splMapFaultUtils = {
             const evtNext = timelineArr[parseInt(idx) + 1];
 
             if (typeof evtNow.evtState === "undefined") {
-               currentStateObj.faultState = currentStateObj.faultColor = currentStateObj.tooltipDesc = "";
+               currentStateObj.tooltipDesc.temptrac = evtNow.evtType.indexOf("temptrac") > -1 ? "" : currentStateObj.tooltipDesc.temptrac;
+               currentStateObj.tooltipDesc.tpms = evtNow.evtType.indexOf("temptrac") > -1 ? currentStateObj.tooltipDesc.tpms : "";
+
+               currentStateObj.faultTime.temptrac = evtNow.evtType.indexOf("temptrac") > -1 ? "" : currentStateObj.faultTime.temptrac;
+               currentStateObj.faultTime.tpms = evtNow.evtType.indexOf("temptrac") > -1 ? currentStateObj.faultTime.tpms : "";
+
+               if (currentStateObj.tooltipDesc.temptrac === "" && currentStateObj.tooltipDesc.tpms === "") {
+                  currentStateObj.faultState = currentStateObj.faultColor = "";
+               }
             }
             else {
                currentStateObj.faultState = evtNow.evtState;
                currentStateObj.faultColor = evtNow.evtColor;
-               currentStateObj.faultTime = evtNow.realTime;
-               currentStateObj.tooltipDesc = evtNow.tooltipDesc;
+
+               currentStateObj.faultTime.temptrac = evtNow.evtType === "temptracFault" ? evtNow.realTime : currentStateObj.faultTime.temptrac;
+               currentStateObj.faultTime.tpms = evtNow.evtType === "tpmsFault" ? evtNow.realTime : currentStateObj.faultTime.tpms;
+
+               currentStateObj.tooltipDesc.temptrac = evtNow.evtType === "temptracFault" ? evtNow.tooltipDesc : currentStateObj.tooltipDesc.temptrac;
+               currentStateObj.tooltipDesc.tpms = evtNow.evtType === "tpmsFault" ? evtNow.tooltipDesc : currentStateObj.tooltipDesc.tpms;
             }
 
             if ((typeof evtNow.evtState !== "undefined" && currentStateObj.faultState !== evtNow.evtState) ||
@@ -648,6 +742,32 @@ const splMapFaultUtils = {
       }
       return currentStateObj;
    },
+
+   /**
+   * findLastTimelineEvent() Fetch last TempTrac/TPMS record in timeline Array
+   *
+   * @param {boolean} searchForTemptrac - TRUE if searching for TempTrac record, FALSE for TPMS
+   * @param {array} timelineArr         - Array of fault event objects sorted on a timeline of sensor faults and ignition events
+   *
+   * @return {object}                   - Last record found in Array, after either Fault OFF or Ignition Event (NULL if none found)
+   */
+   findLastTimelineEvent: function (searchForTemptrac, timelineArr) {
+      let evtFound = null;
+      for (let i = timelineArr.length - 1; i >= 0; i--) {
+         const evt = timelineArr[i];
+         if (searchForTemptrac && (typeof evt.evtState === "undefined" || (evtFound && evtFound.evtType.indexOf("temptrac") > -1))) {
+            return evtFound;
+         }
+         if (!searchForTemptrac && ((typeof evt.evtState === "undefined" && evt.evtType.indexOf("temptrac") === -1) ||
+            (evtFound && evtFound.evtType.indexOf("temptrac") === -1))) {
+            return evtFound;
+         }
+         evtFound = searchForTemptrac && evt.evtType.indexOf("temptrac") > -1 ? evt : evtFound; // TEMPTRAC
+         evtFound = !searchForTemptrac && evt.evtType.indexOf("temptrac") === -1 ? evt : evtFound; // TPMS
+      }
+      return evtFound;
+   },
+
 
    /**
    * findLatLngSegment() Get info on the LatLng points bounding a LatLng position on a Leaflet polyline Array
@@ -883,9 +1003,14 @@ class FaultPolyline {
       const latLngByTimeVehAPI = me.vehMarker.splMapFaults.historicPathLatLngToTimeDB;
       const timestamp = splMapFaultUtils.searchLatlngArrForTime(latLng, me.polyLine.getLatLngs(), me.latLngByTimeAPI, latLngByTimeVehAPI, me.vehDeviceData);
       const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, me.splFaultTimelineEvents);
-      const humanTime = faultInfo.faultTime ? "<br />@" + moment.unix(faultInfo.faultTime).format(storage.humanDateTimeFormat) : "";
+      const faultTimeTemptracHtml = faultInfo.faultTime.temptrac ? moment.unix(faultInfo.faultTime.temptrac).format(storage.humanDateTimeFormat) : "";
+      const faultTimeTpmsHtml = faultInfo.faultTime.tpms ? moment.unix(faultInfo.faultTime.tpms).format(storage.humanDateTimeFormat) : "";
       const alertHeader = faultInfo.faultState === "RED" ? splmap.tr("alert_header_red") : splmap.tr("alert_header_amber");
-      const latLngTxt = me.vehName + (faultInfo.faultState ? `: ${alertHeader}:<br />${faultInfo.tooltipDesc}${humanTime}` : "");
+      const tooltipDesc =
+         faultInfo.tooltipDesc.temptrac + (faultTimeTemptracHtml && faultTimeTemptracHtml !== faultTimeTpmsHtml ? "<br />@" + faultTimeTemptracHtml : "") +
+         (faultInfo.tooltipDesc.temptrac ? "<br />" : "") + faultInfo.tooltipDesc.tpms + (faultTimeTpmsHtml ? "<br />@" + faultTimeTpmsHtml : "");
+
+      const latLngTxt = me.vehName + (faultInfo.faultState ? `: ${alertHeader}:<br />${tooltipDesc}` : "");
 
       return latLngTxt;
    }
@@ -1234,7 +1359,7 @@ class FaultTimelineEventMgr {
                   timeline.push({
                      latLngTime: parseInt(faultObj.time),
                      realTime: parseInt(faultObj.time),
-                     evtType: faultObj.id.indexOf("temptrac") > -1 ? "temtracFault" : "tpmsFault",
+                     evtType: faultObj.id.indexOf("temptrac") > -1 ? "temptracFault" : "tpmsFault",
                      evtState: faultObj.alert.color,
                      evtColor: faultObj.alert.color === "RED" ? colorHexCodes.spartanLyncRed : colorHexCodes.spartanLyncAmber,
                      tooltipDesc: splmap.tr(faultObj.alert.trId) + (faultLocDesc ? ` ( ${faultLocDesc} )` : "")

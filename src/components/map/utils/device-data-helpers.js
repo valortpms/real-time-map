@@ -1,4 +1,5 @@
 import { arrayBinaryIndexSearch } from "../../../utils/helper";
+import splSrv from "../../../spartanlync/services";
 
 export function getFirstLatLng(deviceData) {
    const firstDateTime = deviceData.orderedDateTimes[0];
@@ -30,7 +31,7 @@ export function getLatLngUpToIndex(index, deviceData) {
    );
 }
 
-export function getLatLngsForTimeRange(start, end, deviceData) {
+export function getLatLngsForTimeRange(start, end, deviceData, deviceID) {
 
    if (start > end) {
       return [];
@@ -39,10 +40,6 @@ export function getLatLngsForTimeRange(start, end, deviceData) {
    const { orderedDateTimes } = deviceData;
    const firstDateTime = orderedDateTimes[0];
    const lastDateTime = orderedDateTimes[orderedDateTimes.length - 1];
-   //console.log("==== getLatLngsForTimeRange() orderedDateTimes =", orderedDateTimes);//DEBUG
-   //console.log("==== getLatLngsForTimeRange() deviceData =", deviceData);//DEBUG
-   //console.log("==== getLatLngsForTimeRange() Object.keys =", deviceData);//DEBUG
-
 
    if (start === lastDateTime) {
       return [deviceData[lastDateTime].latLng];
@@ -67,6 +64,14 @@ export function getLatLngsForTimeRange(start, end, deviceData) {
       lastDateTimeIndex++;
    } else {
       startLatLng = getInterpolatedLatLng(start, deviceData, lastDateTimeIndex);
+
+      // Throw Event for Interpolated LatLng timestamp into LOCAL Vehicle DB, mising from Vehicle deviceData
+      if (start && typeof deviceData[start] === "undefined" && typeof deviceID !== "undefined") {
+         splSrv.events.exec("onAddingNewVehicleLatLngTimestamp", deviceID, start, {
+            lat: startLatLng[0].toString().match(/^-?\d+(?:\.\d{0,7})?/)[0],
+            lng: startLatLng[1].toString().match(/^-?\d+(?:\.\d{0,7})?/)[0]
+         });
+      }
    }
    const latLngList = [startLatLng];
 
@@ -88,6 +93,14 @@ export function getLatLngsForTimeRange(start, end, deviceData) {
    let endLatLng = getRealLatLng(end, deviceData);
    if (!endLatLng) {
       endLatLng = getInterpolatedLatLng(end, deviceData);
+
+      // Throw Event for Interpolated LatLng timestamp into LOCAL Vehicle DB, mising from Vehicle deviceData
+      if (end && typeof deviceData[end] === "undefined" && typeof deviceID !== "undefined") {
+         splSrv.events.exec("onAddingNewVehicleLatLngTimestamp", deviceID, end, {
+            lat: endLatLng[0].toString().match(/^-?\d+(?:\.\d{0,7})?/)[0],
+            lng: endLatLng[1].toString().match(/^-?\d+(?:\.\d{0,7})?/)[0]
+         });
+      }
    }
    latLngList.push(endLatLng);
 

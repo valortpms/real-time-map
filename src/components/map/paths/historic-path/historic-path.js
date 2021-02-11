@@ -14,7 +14,7 @@ export function initHistoricPath(deviceMarker) {
       deviceData,
    } = deviceMarker;
 
-   const latLngList = getLatLngsForTimeRange(storage.timeRangeStart, storage.currentTime, deviceData);
+   const latLngList = getLatLngsForTimeRange(storage.timeRangeStart, storage.currentTime, deviceData, deviceID);
    const polyline = L.polyline(latLngList, {
       smoothFactor: 1,
       weight: 3,
@@ -46,7 +46,7 @@ export const historicPathModel = {
    timeChangedUpdate(currentSecond) {
       clearTimeout(this.delayedInterval);
       this.delayedInterval = null;
-      const latLngs = getLatLngsForTimeRange(storage.timeRangeStart, currentSecond, this.deviceData);
+      const latLngs = getLatLngsForTimeRange(storage.timeRangeStart, currentSecond, this.deviceData, this.deviceID);
       this.polyline.setLatLngs(latLngs);
 
       // Throw Event notifying of creation of new Historic Path polyline on map

@@ -338,6 +338,9 @@ export const deviceMarkerModel = {
             layerModel.addToLayer(layerName, path);
          });
       }
+
+      // Throw FaultMgr Event to redraw Vehicle Faults on Map
+      splSrv.events.exec("onVehicleFaultReDraw", this.deviceID);
    },
 
    checkInLayer(layerName) {

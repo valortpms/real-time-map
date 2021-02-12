@@ -46,12 +46,12 @@ export const historicPathModel = {
    timeChangedUpdate(currentSecond) {
       clearTimeout(this.delayedInterval);
       this.delayedInterval = null;
-      const latLngs = getLatLngsForTimeRange(storage.timeRangeStart, currentSecond, this.deviceData, this.deviceID);
+      const [latLngs, timestamps] = getLatLngsForTimeRange(storage.timeRangeStart, currentSecond, this.deviceData, this.deviceID);
       this.polyline.setLatLngs(latLngs);
 
       // Throw Event notifying of creation of new Historic Path polyline on map
       if (typeof storage.selectedDevices[this.deviceID] !== "undefined") {
-         splSrv.events.exec("onHistoricPathCreatedOrUpdated", this.deviceID, this.polyline.getLatLngs());
+         splSrv.events.exec("onHistoricPathCreatedOrUpdated", this.deviceID, this.polyline.getLatLngs(), timestamps);
       }
    },
 
@@ -61,7 +61,7 @@ export const historicPathModel = {
 
          // Throw Event notifying of new point added to Historic Path polyline on map
          if (typeof storage.selectedDevices[this.deviceID] !== "undefined") {
-            splSrv.events.exec("onHistoricPathCreatedOrUpdated", this.deviceID, this.polyline.getLatLngs());
+            splSrv.events.exec("onHistoricPathCreatedOrUpdated", this.deviceID, this.polyline.getLatLngs(), currentSecond);
          }
 
       }, storage.dateKeeper$.getPeriod() * 0.75);

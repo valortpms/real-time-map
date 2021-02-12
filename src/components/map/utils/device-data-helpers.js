@@ -25,6 +25,10 @@ export function getAllLatLngs(deviceData) {
    );
 }
 
+export function getAllDateTimes(deviceData) {
+   return deviceData.orderedDateTimes;
+}
+
 export function getLatLngUpToIndex(index, deviceData) {
    return deviceData.orderedDateTimes.slice(0, index + 1).map(dateTime =>
       deviceData[dateTime].latLng
@@ -34,7 +38,7 @@ export function getLatLngUpToIndex(index, deviceData) {
 export function getLatLngsForTimeRange(start, end, deviceData, deviceID) {
 
    if (start > end) {
-      return [];
+      return [[], []];
    }
 
    const { orderedDateTimes } = deviceData;
@@ -42,19 +46,19 @@ export function getLatLngsForTimeRange(start, end, deviceData, deviceID) {
    const lastDateTime = orderedDateTimes[orderedDateTimes.length - 1];
 
    if (start === lastDateTime) {
-      return [deviceData[lastDateTime].latLng];
+      return [[deviceData[lastDateTime].latLng], [lastDateTime]];
    }
 
    if (end === firstDateTime) {
-      return [deviceData[firstDateTime].latLng];
+      return [[deviceData[firstDateTime].latLng], [firstDateTime]];
    }
 
    if (end < firstDateTime || lastDateTime < start) {
-      return [];
+      return [[], []];
    }
 
    if (start <= firstDateTime && lastDateTime <= end) {
-      return getAllLatLngs(deviceData);
+      return [getAllLatLngs(deviceData), getAllDateTimes(deviceData)];
    }
 
    let startLatLng = getRealLatLng(start, deviceData);
@@ -74,9 +78,10 @@ export function getLatLngsForTimeRange(start, end, deviceData, deviceID) {
       }
    }
    const latLngList = [startLatLng];
+   const dateTimesList = [start];
 
    if (start === end) {
-      return latLngList;
+      return [latLngList, dateTimesList];
    }
 
    let currentDateTime = orderedDateTimes[lastDateTimeIndex];
@@ -86,6 +91,7 @@ export function getLatLngsForTimeRange(start, end, deviceData, deviceID) {
       const latLng = getRealLatLng(currentDateTime, deviceData);
       if (latLng) {
          latLngList.push(latLng);
+         dateTimesList.push(currentDateTime);
       }
       currentDateTime = orderedDateTimes[lastDateTimeIndex];
    }
@@ -103,8 +109,9 @@ export function getLatLngsForTimeRange(start, end, deviceData, deviceID) {
       }
    }
    latLngList.push(endLatLng);
+   dateTimesList.push(end);
 
-   return latLngList;
+   return [latLngList, dateTimesList];
 }
 
 export function interpolateCurrentLatLng(currDateTime, prevDateTime, nextDateTime, prevLatLng, nextLatLng) {

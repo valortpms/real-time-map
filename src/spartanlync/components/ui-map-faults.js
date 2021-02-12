@@ -66,7 +66,7 @@ export const splMapFaultMgr = {
    _vehMarkers: {},
    _vehLatLngTimestampCache: {},
 
-   _init: function (vehMarker, latLngByTimeIdx) {
+   _init: function (vehMarker, latLngByTimeIdx, timestamps) {
       const me = this;
 
       if (typeof vehMarker !== "object" || typeof vehMarker.deviceID === "undefined") { return false; }
@@ -87,11 +87,24 @@ export const splMapFaultMgr = {
       if (typeof vehMarker.splMapFaults === "undefined") {
          vehMarker.splMapFaults = {
             faultSegments: {},
+            latLngTimestampIdx: null,
             historicPathLatLngToTimeDB: new INITlatLngToTimeDB(latLngByTimeIdx)
          };
          me._importLatLngTimestampFromCache(vehId, vehMarker);
          me._vehMarkers[vehId] = vehMarker;
       }
+
+      // Update Timestamps DB
+      if (Array.isArray(timestamps) && timestamps.length) {
+         vehMarker.splMapFaults.latLngTimestampIdx = timestamps;
+      }
+      else {
+         if (!Array.isArray(vehMarker.splMapFaults.latLngTimestampIdx)) {
+            vehMarker.splMapFaults.latLngTimestampIdx = [];
+         }
+         vehMarker.splMapFaults.latLngTimestampIdx.push(timestamps);
+      }
+
       return vehMarker.splMapFaults;
    },
 
@@ -109,7 +122,7 @@ export const splMapFaultMgr = {
       return typeof deviceSearch.selectedIDS[vehId] !== "undefined" ? deviceSearch.selectedIDS[vehId].name : vehId.toUpperCase();
    },
 
-   _createPolyline: function (faultId, vehId, startIdx, endIdx, color, vehPathLatLngArr, vehDeviceData, splVehMapFaultsDB, splFaultTimelineEvents) {
+   _createPolyline: function (faultId, vehId, startIdx, endIdx, color, vehPathLatLngArr, vehPathLatLngTimestampArr, vehDeviceData, splVehMapFaultsDB, splFaultTimelineEvents) {
       const me = this;
       let faultPolyline = null;
       try {
@@ -122,7 +135,8 @@ export const splMapFaultMgr = {
             me._defaultPolylineWeight,
             me._defaultCircleMarkerRadius,
             color,
-            vehPathLatLngArr.slice(startIdx, endIdx + 1)
+            vehPathLatLngArr.slice(startIdx, endIdx + 1),
+            vehPathLatLngTimestampArr
          );
       }
       catch (err) {
@@ -240,13 +254,13 @@ export const splMapFaultMgr = {
       const me = this;
 
       // Init CreateOrUpdate Faults Event Handler
-      splSrv.events.register("onHistoricPathCreatedOrUpdated", (vehId, vehPathLatLngArr) => {
+      splSrv.events.register("onHistoricPathCreatedOrUpdated", (vehId, vehPathLatLngArr, timestamps) => {
          const vehMarker = typeof markerList[vehId] !== "undefined" ? markerList[vehId] : null;
          if (vehPathLatLngArr.length && vehMarker) {
             // Wait for Faults to Load
-            if (debugTools.utils.debugTracingLevel === 3) { console.log("============ onHistoricPathCreatedOrUpdated(", vehId, ") INVOKED vehPathLatLngArr =", vehPathLatLngArr); }//DEBUG
+            if (debugTools.utils.debugTracingLevel === 3) { console.log("============ onHistoricPathCreatedOrUpdated(", vehId, ") INVOKED vehPathLatLngArr =", vehPathLatLngArr, " timestamps =", timestamps); }//DEBUG
             splMapFaultMgr.faults.getTimelineEvents(vehId).then(splFaultTimelineEvents => {
-               splMapFaultMgr.setLatLngFaults(vehId, vehPathLatLngArr, vehMarker, vehMarker.deviceData, splFaultTimelineEvents);
+               splMapFaultMgr.setLatLngFaults(vehId, vehPathLatLngArr, vehMarker, vehMarker.deviceData, splFaultTimelineEvents, timestamps);
             }).catch(reason => console.log("---- onHistoricPathCreatedOrUpdated ERROR:", reason));
          }
       }, false);
@@ -261,14 +275,16 @@ export const splMapFaultMgr = {
       splSrv.events.register("onPreDateTimeChange", () => me.clear(), false);
    },
 
-   setLatLngFaults: function (vehId, vehPathLatLngArr, vehMarker, vehDeviceData, splFaultTimelineEvents) {
+   setLatLngFaults: function (vehId, vehPathLatLngArr, vehMarker, vehDeviceData, splFaultTimelineEvents, timestamps) {
       const me = this;
-      const splVehMapFaultsDB = me._init(vehMarker, vehDeviceData);
+      const splVehMapFaultsDB = me._init(vehMarker, vehDeviceData, timestamps);
       if (!splVehMapFaultsDB || !vehPathLatLngArr.length) { return; }
 
       // Search veh Path for fault segments
       for (const newFaultSegmentInfo of me._searchVehPathForFaultSegments(vehId, vehPathLatLngArr, vehDeviceData, splFaultTimelineEvents)) {
          let faultSegment;
+         const vehPathLatLngTimestampArr = Array.isArray(splVehMapFaultsDB.latLngTimestampIdx) && splVehMapFaultsDB.latLngTimestampIdx.length ?
+            splVehMapFaultsDB.latLngTimestampIdx.slice(newFaultSegmentInfo.startIdx, newFaultSegmentInfo.endIdx + 1) : [];
 
          // Create Segment
          if (typeof splVehMapFaultsDB.faultSegments[newFaultSegmentInfo.id] === "undefined") {
@@ -276,7 +292,8 @@ export const splMapFaultMgr = {
                newFaultSegmentInfo.id, vehId,
                newFaultSegmentInfo.startIdx, newFaultSegmentInfo.endIdx,
                newFaultSegmentInfo.faultColor,
-               vehPathLatLngArr, vehDeviceData,
+               vehPathLatLngArr, vehPathLatLngTimestampArr,
+               vehDeviceData,
                splVehMapFaultsDB, splFaultTimelineEvents
             );
             faultSegment = splVehMapFaultsDB.faultSegments[newFaultSegmentInfo.id];
@@ -298,7 +315,8 @@ export const splMapFaultMgr = {
                while (i <= numNewPoints) {
                   const newPointIdx = faultSegment.info.endIdx + i;
                   const newLatLng = vehPathLatLngArr[newPointIdx];
-                  faultSegment.polyline.addLatLngToFault(newLatLng, vehDeviceData);
+                  const newLatLngTimestamp = typeof splVehMapFaultsDB.latLngTimestampIdx[newPointIdx] !== "undefined" ? splVehMapFaultsDB.latLngTimestampIdx[newPointIdx] : null;
+                  faultSegment.polyline.addLatLngToFault(newLatLng, newLatLngTimestamp, vehDeviceData);
                   i++;
                }
             }
@@ -383,6 +401,7 @@ const splMapFaultUtils = {
    searchLatlngArrForTime: function (latlng, latLngByArr, latLngByTimeFaultAPI, latLngByTimeVehAPI, latLngByTimeIdx) {
       const me = this;
       const info = me.findLatLngSegment(latlng, latLngByArr);
+      if (debugTools.utils.debugTracingLevel === 2) { console.log("==== searchLatlngArrForTime() info =", info); } // DEBUG
       if (info.found && info.nearestIdx !== null) {
          const latLngNeedle = info.nearestLatLng;
          return me.latlngToTime(latLngNeedle, latLngByTimeFaultAPI, latLngByTimeVehAPI, latLngByTimeIdx);
@@ -772,7 +791,8 @@ const INITlatLngToTimeDB = function (latLngByTimeIdx) {
 
 class FaultPolyline {
 
-   constructor(faultId, vehId, vehName, layerGroupName, smoothFactor, weight, radius, color, myLatLngArr) {
+   // eslint-disable-next-line complexity
+   constructor(faultId, vehId, vehName, layerGroupName, smoothFactor, weight, radius, color, myLatLngArr, myLatLngTimestampArr) {
 
       this.id = faultId;
       this.vehId = vehId;
@@ -809,15 +829,24 @@ class FaultPolyline {
       if (typeof myLatLngArr === "undefined" || !myLatLngArr.length) {
          throw new Error("No LatLng points to draw on map");
       }
-      this.drawPolyline(myLatLngArr);
+      if (typeof myLatLngTimestampArr === "undefined" || !myLatLngTimestampArr.length) {
+         throw new Error("No LatLng Timestamps to use");
+      }
+      if (myLatLngArr.length !== myLatLngTimestampArr.length) {
+         throw new Error("No LatLng + Timestamp Arrays do not match");
+      }
+      this.drawPolyline(myLatLngArr, myLatLngTimestampArr);
       this.initRedrawFaultPolyline();
    }
 
-   getFaultDescHtml(latLng) {
+   getFaultDescHtml(latLng, toolTipTimestamp) {
       const me = this;
+      let timestamp = toolTipTimestamp ? toolTipTimestamp : null;
 
-      const latLngByTimeVehAPI = me.vehMarker.splMapFaults.historicPathLatLngToTimeDB;
-      const timestamp = splMapFaultUtils.searchLatlngArrForTime(latLng, me.polyLine.getLatLngs(), me.latLngByTimeAPI, latLngByTimeVehAPI, me.vehDeviceData);
+      if (!toolTipTimestamp) {
+         const latLngByTimeVehAPI = me.vehMarker.splMapFaults.historicPathLatLngToTimeDB;
+         timestamp = splMapFaultUtils.searchLatlngArrForTime(latLng, me.polyLine.getLatLngs(), me.latLngByTimeAPI, latLngByTimeVehAPI, me.vehDeviceData);
+      }
       const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, me.splFaultTimelineEvents);
       const faultTimeTemptracHtml = faultInfo.faultTime.temptrac ? moment.unix(faultInfo.faultTime.temptrac).format(storage.humanDateTimeFormat) : "";
       const faultTimeTpmsHtml = faultInfo.faultTime.tpms ? moment.unix(faultInfo.faultTime.tpms).format(storage.humanDateTimeFormat) : "";
@@ -836,10 +865,10 @@ class FaultPolyline {
 
       if (leafletObj && !L.Browser.mobile) {
          const tooltipFunc = (evt) => {
-            //console.log("==== enableToolipOn() evt =", evt); //DEBUG
+            const timestamp = typeof evt.target.options.timestamp !== "undefined" ? evt.target.options.timestamp : null;
             leafletObj.unbindTooltip();
             closeAllTooltips();
-            leafletObj.bindTooltip(me.getFaultDescHtml(evt.latlng), {
+            leafletObj.bindTooltip(me.getFaultDescHtml(evt.latlng, timestamp), {
                className: "spl-map-vehicle-tooltip",
             }).openTooltip(evt.latlng);
          };
@@ -938,7 +967,7 @@ class FaultPolyline {
       }
    }
 
-   drawPolyline(myLatLngArr) {
+   drawPolyline(myLatLngArr, myLatLngTimestampArr) {
       const me = this;
       if (!me.polyLine && Array.isArray(myLatLngArr) && myLatLngArr.length) {
          me.polyLine = L.polyline(myLatLngArr, {
@@ -950,13 +979,15 @@ class FaultPolyline {
          me.polyLine.bringToFront();
 
          // Create circleMarkers on Fault Path
-         for (const latLng of myLatLngArr) {
-            me.drawCircleMarker(L.latLng(latLng));
+         for (const idx in myLatLngArr) {
+            const latLng = myLatLngArr[idx];
+            const timestamp = myLatLngTimestampArr[idx];
+            me.drawCircleMarker(L.latLng(latLng), timestamp);
          }
       }
    }
 
-   drawCircleMarker(latLng) {
+   drawCircleMarker(latLng, timestamp) {
       const me = this;
       if (latLng && me.polyLine) {
          const circleMarker = L.circleMarker(latLng, {
@@ -964,7 +995,8 @@ class FaultPolyline {
             stroke: true,
             fill: true,
             color: me.color,
-            weight: me.weight
+            weight: me.weight,
+            timestamp: timestamp
          });
          layerModel.addToLayer(me.layerGroupName, circleMarker);
          circleMarker.bringToFront();
@@ -992,14 +1024,14 @@ class FaultPolyline {
       }, false);
    }
 
-   addLatLngToFault(newLatLng, vehDeviceData) {
+   addLatLngToFault(newLatLng, newLatLngTimestamp, vehDeviceData) {
       const me = this;
       try {
          if (newLatLng) {
             const latLngByTimeVehAPI = splMapFaultMgr.getVehMarker(me.vehId).splMapFaults.historicPathLatLngToTimeDB;
             const timestamp = splMapFaultUtils.latlngToTime(newLatLng, me.latLngByTimeAPI, latLngByTimeVehAPI, vehDeviceData);
             me.polyLine.addLatLng(L.latLng(newLatLng));
-            me.drawCircleMarker(L.latLng(newLatLng));
+            me.drawCircleMarker(L.latLng(newLatLng), newLatLngTimestamp);
             if (timestamp) {
                me.latLngByTimeAPI.updateDB(timestamp, newLatLng);
             }

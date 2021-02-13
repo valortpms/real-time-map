@@ -400,11 +400,34 @@ const splMapFaultUtils = {
    */
    searchLatlngArrForTime: function (latlng, latLngByArr, latLngByTimeFaultAPI, latLngByTimeVehAPI, latLngByTimeIdx) {
       const me = this;
-      const info = me.findLatLngSegment(latlng, latLngByArr);
-      if (debugTools.utils.debugTracingLevel === 2) { console.log("==== searchLatlngArrForTime() info =", info); } // DEBUG
-      if (info.found && info.nearestIdx !== null) {
-         const latLngNeedle = info.nearestLatLng;
-         return me.latlngToTime(latLngNeedle, latLngByTimeFaultAPI, latLngByTimeVehAPI, latLngByTimeIdx);
+      const SEARCH_FROM_FRONT = true;
+      const SEARCH_FROM_REAR = false;
+      let foundLatLng = null;
+
+      const infoFromFront = me.findLatLngSegment(SEARCH_FROM_FRONT, latlng, latLngByArr);
+      const infoFromRear = me.findLatLngSegment(SEARCH_FROM_REAR, latlng, latLngByArr);
+
+      // Polyline is a loop or twist, there may be two (or more) possible points near target latlng
+      if (infoFromFront.nearestIdx && infoFromRear.nearestIdx) {
+
+         // If both points are the same, then answer is clear
+         if (infoFromFront.nearestIdx === infoFromRear.nearestIdx) {
+            foundLatLng = infoFromFront.nearestLatLng;
+         }
+         else {
+            const distanceToFrontPoint = L.latLng(infoFromFront.nearestLatLng).distanceTo(latlng);
+            const distanceToRearPoint = L.latLng(infoFromRear.nearestLatLng).distanceTo(latlng);
+            foundLatLng = distanceToFrontPoint <= distanceToRearPoint ? infoFromFront.nearestLatLng : infoFromRear.nearestLatLng;
+         }
+      }
+      else if (infoFromFront.nearestIdx) {
+         foundLatLng = infoFromFront.nearestLatLng;
+      }
+      else {
+         foundLatLng = infoFromRear.nearestLatLng;
+      }
+      if (foundLatLng) {
+         return me.latlngToTime(foundLatLng, latLngByTimeFaultAPI, latLngByTimeVehAPI, latLngByTimeIdx);
       }
       return null;
    },
@@ -602,20 +625,18 @@ const splMapFaultUtils = {
       return evtFound;
    },
 
-
    /**
-   * findLatLngSegment() Get info on the LatLng points bounding a LatLng position on a Leaflet polyline Array
+   * findLatLngSegment() Search for nearest LatLng points to specified LatLng position in Leaflet polyline Array
    *
-   * @param {object} latlng   - LatLng position on polyline to search on boundary points
-   * @param {array} latLngArr - Array of Leaflet LatLng points making up polyline
+   * @param {boolean} searchFromFront - When TRUE search from FRONT otherwise FALSE from rear of polyline.
+   * @param {object} latlng           - LatLng position to search for nearest polyline point
+   * @param {array} latLngArr         - Array of Leaflet LatLng points assembling polyline
    *
-   * @return {object}         - Details of the segment points boundary of a specied LatLng position on Leaflet polyline Array
+   * @return {object}                 - Details of the segment points boundary of a specied LatLng position on Leaflet polyline Array
    */
-   findLatLngSegment: function (latlng, latLngArr) {
+   findLatLngSegment: function (searchFromFront, latlng, latLngArr) {
 
-      let i = 0;
       const segmentStatusObj = {
-         found: false,
          startLatLng: {},
          endLatLng: {},
          nearestLatLng: {},
@@ -626,28 +647,50 @@ const splMapFaultUtils = {
 
       if (!latLngArr.length) { return segmentStatusObj; }
       if (latLngArr.length === 1) {
-         segmentStatusObj.found = true;
          segmentStatusObj.startLatLng = segmentStatusObj.endLatLng = segmentStatusObj.nearestLatLng = latLngArr[0];
          segmentStatusObj.startIdx = segmentStatusObj.endIdx = segmentStatusObj.nearestIdx = 0;
          return segmentStatusObj;
       }
 
-      while (latLngArr[i + 1]) {
-         const segmentFound = L.GeometryUtil.belongsSegment(L.latLng(latlng), L.latLng(latLngArr[i]), L.latLng(latLngArr[i + 1]));
-         if (segmentFound) {
-            const distanceToA = L.latLng(latLngArr[i]).distanceTo(latlng);
-            const distanceToB = L.latLng(latLngArr[i + 1]).distanceTo(latlng);
+      // Search from FIRST point to LAST in Array
+      if (searchFromFront) {
+         let i = 0;
+         while (latLngArr[i + 1]) {
+            const segmentFound = L.GeometryUtil.belongsSegment(L.latLng(latlng), L.latLng(latLngArr[i]), L.latLng(latLngArr[i + 1]));
+            if (segmentFound) {
+               const distanceToA = L.latLng(latLngArr[i]).distanceTo(latlng);
+               const distanceToB = L.latLng(latLngArr[i + 1]).distanceTo(latlng);
 
-            segmentStatusObj.found = true;
-            segmentStatusObj.startIdx = i;
-            segmentStatusObj.endIdx = i + 1;
-            segmentStatusObj.nearestIdx = distanceToA <= distanceToB ? i : i + 1;
-            segmentStatusObj.startLatLng = L.latLng(latLngArr[segmentStatusObj.startIdx]);
-            segmentStatusObj.endLatLng = L.latLng(latLngArr[segmentStatusObj.endIdx]);
-            segmentStatusObj.nearestLatLng = L.latLng(latLngArr[segmentStatusObj.nearestIdx]);
-            break;
+               segmentStatusObj.startIdx = i;
+               segmentStatusObj.endIdx = i + 1;
+               segmentStatusObj.nearestIdx = distanceToA <= distanceToB ? i : i + 1;
+               segmentStatusObj.startLatLng = L.latLng(latLngArr[segmentStatusObj.startIdx]);
+               segmentStatusObj.endLatLng = L.latLng(latLngArr[segmentStatusObj.endIdx]);
+               segmentStatusObj.nearestLatLng = L.latLng(latLngArr[segmentStatusObj.nearestIdx]);
+               break;
+            }
+            i++;
          }
-         i++;
+      }
+      // Search from LAST point to FIRST in Array
+      else {
+         let i = latLngArr.length - 1;
+         while (latLngArr[i - 1]) {
+            const segmentFound = L.GeometryUtil.belongsSegment(L.latLng(latlng), L.latLng(latLngArr[i - 1]), L.latLng(latLngArr[i]));
+            if (segmentFound) {
+               const distanceToA = L.latLng(latLngArr[i - 1]).distanceTo(latlng);
+               const distanceToB = L.latLng(latLngArr[i]).distanceTo(latlng);
+
+               segmentStatusObj.startIdx = i - 1;
+               segmentStatusObj.endIdx = i;
+               segmentStatusObj.nearestIdx = distanceToA <= distanceToB ? i - 1 : i;
+               segmentStatusObj.startLatLng = L.latLng(latLngArr[segmentStatusObj.startIdx]);
+               segmentStatusObj.endLatLng = L.latLng(latLngArr[segmentStatusObj.endIdx]);
+               segmentStatusObj.nearestLatLng = L.latLng(latLngArr[segmentStatusObj.nearestIdx]);
+               break;
+            }
+            i--;
+         }
       }
       return segmentStatusObj;
    },

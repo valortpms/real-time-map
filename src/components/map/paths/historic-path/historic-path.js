@@ -14,7 +14,7 @@ export function initHistoricPath(deviceMarker) {
       deviceData,
    } = deviceMarker;
 
-   const latLngList = getLatLngsForTimeRange(storage.timeRangeStart, storage.currentTime, deviceData, deviceID);
+   const latLngList = getLatLngsForTimeRange(storage.timeRangeStart, storage.currentTime, deviceData, deviceID)[0];
    const polyline = L.polyline(latLngList, {
       smoothFactor: 1,
       weight: 3,

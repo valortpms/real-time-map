@@ -491,6 +491,26 @@ const SpartanLyncServices = {
    convertUnixToTzHuman: function (unixTime) {
       const me = this;
       return isNaN(unixTime) ? null : moment.unix(unixTime).format(me.splHumanTimeFormat);
+   },
+
+   /**
+    * Fetch the Vehicle TempTrac Alarm Threshold Type from SplTools splStore + dbDeviceIds data
+    *
+    *  @returns string
+    */
+   getTemptracVehThresholdSetting: function (vehId) {
+      const me = this;
+      let vehThresholdType = "fridge";
+
+      if (vehId && typeof me._splStore.temptracAlarmThreshold !== "undefined") {
+         vehThresholdType = me._splStore.temptracAlarmThreshold;
+         if (typeof me._dbDeviceIds.ids[vehId] !== "undefined" &&
+            typeof me._dbDeviceIds.ids[vehId].temptracAlarmThreshold !== "undefined" &&
+            me._dbDeviceIds.ids[vehId].temptracAlarmThreshold) {
+            vehThresholdType = me._dbDeviceIds.ids[vehId].temptracAlarmThreshold;
+         }
+      }
+      return vehThresholdType;
    }
 };
 

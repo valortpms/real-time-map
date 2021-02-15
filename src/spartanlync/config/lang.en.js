@@ -138,4 +138,8 @@ window.splmap.lang.en = {
   "alert_desc_tractor":                            "Tractor",
   "alert_desc_trailer":                            "Trailer",
   "alert_desc_dolly":                              "Dolly",
+
+  "label_temptrac_threshold":                      "TempTrac Alert Threshold",
+  "label_temptrac_threshold_fri":                  "Fridge",
+  "label_temptrac_threshold_fre":                  "Freezer",
 }

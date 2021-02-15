@@ -60,7 +60,8 @@ export function fetchVehFaultsAndIgnitionAsync(vehId, firstTimeCallOverride) {
          const toFaultDateObj = moment.utc();
          const searchRangeArr = overrideFirstTimeCall === null ? splSrv.faultSearchRetryRangeInDays : [1];
          const searchUnit = overrideFirstTimeCall === null ? "days" : "hours";
-         getTempTracFaultsAsync(vehId, toFaultDateObj, searchRangeArr, searchUnit, "fridge")
+         const vehTemptracThresholdType = splSrv.getTemptracVehThresholdSetting(vehId);
+         getTempTracFaultsAsync(vehId, toFaultDateObj, searchRangeArr, searchUnit, vehTemptracThresholdType)
             .then((faults) => {
                subResolve2(faults);
             });

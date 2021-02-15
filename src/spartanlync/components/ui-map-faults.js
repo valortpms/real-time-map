@@ -890,12 +890,18 @@ class FaultPolyline {
          const latLngByTimeVehAPI = me.vehMarker.splMapFaults.historicPathLatLngToTimeDB;
          timestamp = splMapFaultUtils.searchLatlngArrForTime(latLng, me.polyLine.getLatLngs(), me.latLngByTimeAPI, latLngByTimeVehAPI, me.vehDeviceData);
       }
+
       const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, me.splFaultTimelineEvents);
       const faultTimeTemptracHtml = faultInfo.faultTime.temptrac ? moment.unix(faultInfo.faultTime.temptrac).format(storage.humanDateTimeFormat) : "";
       const faultTimeTpmsHtml = faultInfo.faultTime.tpms ? moment.unix(faultInfo.faultTime.tpms).format(storage.humanDateTimeFormat) : "";
       const alertHeader = faultInfo.faultState === "RED" ? splmap.tr("alert_header_red") : splmap.tr("alert_header_amber");
+
+      const vehTemptracThresholdType = splSrv.getTemptracVehThresholdSetting(me.vehId);
+      const temptracThresholdTypeDesc = vehTemptracThresholdType === "fridge" ? splmap.tr("label_temptrac_threshold_fri") : splmap.tr("label_temptrac_threshold_fre");
+      const vehTemptracThresholdTypeHtml = faultInfo.tooltipDesc.temptrac ? "<br />" + splmap.tr("label_temptrac_threshold") + ": " + temptracThresholdTypeDesc : "";
+
       const tooltipDesc =
-         faultInfo.tooltipDesc.temptrac + (faultTimeTemptracHtml && faultTimeTemptracHtml !== faultTimeTpmsHtml ? "<br />@" + faultTimeTemptracHtml : "") +
+         faultInfo.tooltipDesc.temptrac + vehTemptracThresholdTypeHtml + (faultTimeTemptracHtml && faultTimeTemptracHtml !== faultTimeTpmsHtml ? "<br />@" + faultTimeTemptracHtml : "") +
          (faultInfo.tooltipDesc.temptrac ? "<br />" : "") + faultInfo.tooltipDesc.tpms + (faultTimeTpmsHtml ? "<br />@" + faultTimeTpmsHtml : "");
 
       const latLngTxt = me.vehName + (faultInfo.faultState ? `: ${alertHeader}:<br />${tooltipDesc}` : "");
@@ -1361,7 +1367,8 @@ class FaultTimelineEventMgr {
                      const fTask2 = new Promise((subResolve2) => {
                         const searchUnit = "days";
                         const toFaultDateObj = moment.unix(toDateOverride).utc();
-                        getTempTracFaultsAsync(vehId, toFaultDateObj, searchRangeArr, searchUnit, "fridge")
+                        const vehTemptracThresholdType = splSrv.getTemptracVehThresholdSetting(vehId);
+                        getTempTracFaultsAsync(vehId, toFaultDateObj, searchRangeArr, searchUnit, vehTemptracThresholdType)
                            .then((faults) => {
                               if (debugTools.utils.debugTracingLevel === 1) { console.log("======== fetchIgnAndFaults(", vehId, ") TEMPTRAC faults =", faults); }//DEBUG
                               subResolve2(faults);

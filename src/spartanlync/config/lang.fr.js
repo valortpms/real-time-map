@@ -138,4 +138,8 @@ window.splmap.lang.fr = {
   "alert_desc_tractor":                            "Tracteur",
   "alert_desc_trailer":                            "Bande annonce",
   "alert_desc_dolly":                              "Chariot",
+
+  "label_temptrac_threshold":                      "Seuil d&apos;alarme TempTrac",
+  "label_temptrac_threshold_fri":                  "Frigo",
+  "label_temptrac_threshold_fre":                  "Cong&eacute;lateur",
 }

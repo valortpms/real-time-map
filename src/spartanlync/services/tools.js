@@ -59,7 +59,9 @@ const SpartanLyncServiceTools = {
       // But if early in boot-up lifecycle, defer till SpartanLync Services Loaded
       splSrv.events.register("onAppFocus", () => {
          if (splSrv._splToolsInstalled) {
-            splToolsHelper.scanForInstructions();
+            me.refreshSplStore()
+               .then(() => splToolsHelper.scanForInstructions())
+               .catch(reason => console.log(reason));
          }
          else {
             splSrv.events.register("onLoadSplServices", splToolsHelper.scanForInstructions);
@@ -269,6 +271,28 @@ const SpartanLyncServiceTools = {
       splSrv._splMapUrl = splMapPageUrl;
 
       return splMapPageName;
+   },
+
+   /**
+   *
+   * Refresh SplTools splStore + dbDeviceIds data
+   *
+   */
+   refreshSplStore: function () {
+      return new Promise(function (resolve, reject) {
+         splSrv.sessionMgr.getSettings((remoteStore, dbDeviceIds) => {
+            splSrv._dbDeviceIds = dbDeviceIds;
+            splSrv._splStore = remoteStore; // Update Locally
+
+            // Update sensorDataLifetime, based on "sensorInfoRefreshRate" user setting in SplTools
+            splSrv.sensorDataLifetime = remoteStore.sensorInfoRefreshRate;
+            splSrv.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
+
+            resolve();
+         }, (errMsg) => {
+            reject("Error Refreshing SplStore + dbDeviceIds: " + errMsg);
+         });
+      });
    },
 
    /**

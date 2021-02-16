@@ -34,12 +34,20 @@ export function initSplMapFaults() {
       //
       if (!L.Browser.mobile) { // Disabled for Mobile Browsers
          document.getElementById("speedLabel").addEventListener("click", debugTools.utils.switchDebugMode.bind(debugTools));
+         document.getElementById("dateInputLabel").addEventListener("click", debugTools.clear.bind(debugTools));
       }
    });
 }
 
 //DEBUG
 const debugTools = {
+
+   _mapGroupLayer: "splDemoLayer",        // Demo polyline layers are drawn on this layerGroup
+
+   clear: function () {
+      const me = this;
+      layerModel.clearLayersInGroup(me._mapGroupLayer);
+   },
 
    utils: {
 
@@ -62,6 +70,9 @@ export const splMapFaultMgr = {
    _defaultPolylineWeight: 3,
    _defaultCircleMarkerRadius: 2,
    _defaultPolylineSmoothFactor: 1,
+
+   _maxDiffInYAxisFor0DegreeLineAngle: 2,
+   _maxDiffInYAxisFor90DegreeLineAngle: 70,
 
    _vehMarkers: {},
    _vehLatLngTimestampCache: {},
@@ -390,49 +401,6 @@ export const splMapFaultMgr = {
 const splMapFaultUtils = {
 
    /**
-   * searchLatlngArrForTime() Get Unix timestamp of nearest LatLng point in a Leaflet polyline, by searching every segments
-   *
-   * @param {object} latlng          - LatLng position on polyline, as starting point for timestamp search
-   * @param {array} latLngByArr      - Array of Leaflet LatLng points making up polyline
-   * @param {object} latLngByTimeIdx - Object of LatLng points, with Unix timestamps as keys
-   *
-   * @return {int}                   - Unix timestamp of nearest LatLng point to supplied LatLng point in Leaflet polyline
-   */
-   searchLatlngArrForTime: function (latlng, latLngByArr, latLngByTimeFaultAPI, latLngByTimeVehAPI, latLngByTimeIdx) {
-      const me = this;
-      const SEARCH_FROM_FRONT = true;
-      const SEARCH_FROM_REAR = false;
-      let foundLatLng = null;
-
-      const infoFromFront = me.findLatLngSegment(SEARCH_FROM_FRONT, latlng, latLngByArr);
-      const infoFromRear = me.findLatLngSegment(SEARCH_FROM_REAR, latlng, latLngByArr);
-
-      // Polyline is a loop or twist, there may be two (or more) possible points near target latlng
-      if (infoFromFront.nearestIdx && infoFromRear.nearestIdx) {
-
-         // If both points are the same, then answer is clear
-         if (infoFromFront.nearestIdx === infoFromRear.nearestIdx) {
-            foundLatLng = infoFromFront.nearestLatLng;
-         }
-         else {
-            const distanceToFrontPoint = L.latLng(infoFromFront.nearestLatLng).distanceTo(latlng);
-            const distanceToRearPoint = L.latLng(infoFromRear.nearestLatLng).distanceTo(latlng);
-            foundLatLng = distanceToFrontPoint <= distanceToRearPoint ? infoFromFront.nearestLatLng : infoFromRear.nearestLatLng;
-         }
-      }
-      else if (infoFromFront.nearestIdx) {
-         foundLatLng = infoFromFront.nearestLatLng;
-      }
-      else {
-         foundLatLng = infoFromRear.nearestLatLng;
-      }
-      if (foundLatLng) {
-         return me.latlngToTime(foundLatLng, latLngByTimeFaultAPI, latLngByTimeVehAPI, latLngByTimeIdx);
-      }
-      return null;
-   },
-
-   /**
    * latlngToTime() Return Unix timestamp key to a specific LatLng point value by scanning for a LatLng match in multiple DB indexes
    *
    * @param {object} latlng               - Specific Real LatLng position in Db
@@ -449,12 +417,12 @@ const splMapFaultUtils = {
       if (lat && lng) {
          const latLngNeedle = L.latLng({ "lat": lat, "lng": lng });
 
-         // Try Local Db
+         // Try Local PolyLine DB
          if (latLngByTimeFaultAPI && typeof latLngByTimeFaultAPI.get === "function") {
             timestamp = latLngByTimeFaultAPI.get(latLngNeedle);
             if (timestamp) { return timestamp; }
          }
-         // Try Veh Historical Path Db
+         // Try Veh Historical Path DB
          if (latLngByTimeVehAPI && typeof latLngByTimeVehAPI.get === "function") {
             timestamp = latLngByTimeVehAPI.get(latLngNeedle);
             if (latLngByTimeFaultAPI && typeof latLngByTimeFaultAPI.updateDB === "function") {
@@ -626,16 +594,15 @@ const splMapFaultUtils = {
    },
 
    /**
-   * findLatLngSegment() Search for nearest LatLng points to specified LatLng position in Leaflet polyline Array
+   * findLatLngSegment() Search for nearest bounding LatLng points to a target LatLng position within Leaflet polyline Array
    *
-   * @param {boolean} searchFromFront - When TRUE search from FRONT otherwise FALSE from rear of polyline.
    * @param {object} latlng           - LatLng position to search for nearest polyline point
    * @param {array} latLngArr         - Array of Leaflet LatLng points assembling polyline
    *
    * @return {object}                 - Details of the segment points boundary of a specied LatLng position on Leaflet polyline Array
    */
-   findLatLngSegment: function (searchFromFront, latlng, latLngArr) {
-
+   findLatLngSegment: function (latlng, latLngArr) {
+      const me = this;
       const segmentStatusObj = {
          startLatLng: {},
          endLatLng: {},
@@ -652,45 +619,29 @@ const splMapFaultUtils = {
          return segmentStatusObj;
       }
 
+      if (debugTools.utils.debugTracingLevel === 2) { console.log("================================"); } //DEBUG
+
       // Search from FIRST point to LAST in Array
-      if (searchFromFront) {
-         let i = 0;
-         while (latLngArr[i + 1]) {
-            const segmentFound = L.GeometryUtil.belongsSegment(L.latLng(latlng), L.latLng(latLngArr[i]), L.latLng(latLngArr[i + 1]));
-            if (segmentFound) {
-               const distanceToA = L.latLng(latLngArr[i]).distanceTo(latlng);
-               const distanceToB = L.latLng(latLngArr[i + 1]).distanceTo(latlng);
+      let i = 0;
+      while (latLngArr[i + 1]) {
+         const isLatLngInSegment = me.isPointIntersectOnLine(
+            storage.map.latLngToLayerPoint(L.latLng(latlng)),
+            storage.map.latLngToLayerPoint(L.latLng(latLngArr[i])),
+            storage.map.latLngToLayerPoint(L.latLng(latLngArr[i + 1]))
+         );
+         if (isLatLngInSegment) {
+            const distanceToA = L.latLng(latLngArr[i]).distanceTo(latlng);
+            const distanceToB = L.latLng(latLngArr[i + 1]).distanceTo(latlng);
 
-               segmentStatusObj.startIdx = i;
-               segmentStatusObj.endIdx = i + 1;
-               segmentStatusObj.nearestIdx = distanceToA <= distanceToB ? i : i + 1;
-               segmentStatusObj.startLatLng = L.latLng(latLngArr[segmentStatusObj.startIdx]);
-               segmentStatusObj.endLatLng = L.latLng(latLngArr[segmentStatusObj.endIdx]);
-               segmentStatusObj.nearestLatLng = L.latLng(latLngArr[segmentStatusObj.nearestIdx]);
-               break;
-            }
-            i++;
+            segmentStatusObj.startIdx = i;
+            segmentStatusObj.endIdx = i + 1;
+            segmentStatusObj.nearestIdx = distanceToA <= distanceToB ? i : i + 1;
+            segmentStatusObj.startLatLng = L.latLng(latLngArr[segmentStatusObj.startIdx]);
+            segmentStatusObj.endLatLng = L.latLng(latLngArr[segmentStatusObj.endIdx]);
+            segmentStatusObj.nearestLatLng = L.latLng(latLngArr[segmentStatusObj.nearestIdx]);
+            break;
          }
-      }
-      // Search from LAST point to FIRST in Array
-      else {
-         let i = latLngArr.length - 1;
-         while (latLngArr[i - 1]) {
-            const segmentFound = L.GeometryUtil.belongsSegment(L.latLng(latlng), L.latLng(latLngArr[i - 1]), L.latLng(latLngArr[i]));
-            if (segmentFound) {
-               const distanceToA = L.latLng(latLngArr[i - 1]).distanceTo(latlng);
-               const distanceToB = L.latLng(latLngArr[i]).distanceTo(latlng);
-
-               segmentStatusObj.startIdx = i - 1;
-               segmentStatusObj.endIdx = i;
-               segmentStatusObj.nearestIdx = distanceToA <= distanceToB ? i - 1 : i;
-               segmentStatusObj.startLatLng = L.latLng(latLngArr[segmentStatusObj.startIdx]);
-               segmentStatusObj.endLatLng = L.latLng(latLngArr[segmentStatusObj.endIdx]);
-               segmentStatusObj.nearestLatLng = L.latLng(latLngArr[segmentStatusObj.nearestIdx]);
-               break;
-            }
-            i--;
-         }
+         i++;
       }
       return segmentStatusObj;
    },
@@ -772,6 +723,100 @@ const splMapFaultUtils = {
          console.log("==== splMapFaultUtils.parseLatLng() Error Parsing LatLng: [", latLngObj, "]: Reason:", err);
       }
       return [null, null];
+   },
+
+   /**
+   * isPointIntersectOnLine() Plots all cooordinates between two points looking for intersection with target point
+   *
+   * @param {object} targetPoint    - Target point to search for intersection on Line
+   * @param {object} LineBeginPoint - One end of Segment
+   * @param {object} LineEndPoint   - Other end of Segment
+   *
+   * @return {boolean}              - TRUE if target intersects on Line Segment
+   */
+   isPointIntersectOnLine: function (targetPoint, LineBeginPoint, LineEndPoint) {
+      const me = this;
+      const waypoints = me.getPointsOnLine(LineBeginPoint, LineEndPoint);
+      for (const idx in waypoints) {
+         const haystackPoint = waypoints[idx];
+         const getLineAngle = (originX, originY, targetX, targetY) => {
+            const dx = originX - targetX;
+            const dy = originY - targetY;
+
+            // let theta = Math.atan2(dy, dx);  // [0, Ⲡ] then [-Ⲡ, 0]; clockwise; 0° = west
+            // let theta = Math.atan2(-dy, dx); // [0, Ⲡ] then [-Ⲡ, 0]; anticlockwise; 0° = west
+            // let theta = Math.atan2(dy, -dx); // [0, Ⲡ] then [-Ⲡ, 0]; anticlockwise; 0° = east
+            let theta = Math.atan2(-dy, -dx);   // [0, Ⲡ] then [-Ⲡ, 0]; clockwise; 0° = east
+
+            theta *= 180 / Math.PI;             // [0, 180] then [-180, 0]; clockwise; 0° = east
+            //if (theta < 0) { theta += 360; }  // (0 - 360); clockwise; 0° = east
+            if (theta < 0) { theta += 180; }    // (0 - 90); clockwise;
+            if (theta > 90) { theta -= 180; }   // (90 - 0); clockwise;
+
+            return Math.abs(Math.round(theta));
+         };
+         const calcMaxDifference = (angle) => {
+            // position will be between 0 and 90 degrees
+            const minp = 0;
+            const maxp = 90;
+
+            // The needs to be between 2 and 35 difference in tolerance
+            const minv = Math.log(splMapFaultMgr._maxDiffInYAxisFor0DegreeLineAngle);
+            const maxv = Math.log(splMapFaultMgr._maxDiffInYAxisFor90DegreeLineAngle);
+
+            // calculate adjustment factor
+            const scale = (maxv - minv) / (maxp - minp);
+
+            return Math.round(Math.exp(minv + scale * (angle - minp)));
+         };
+         const lineAngle = getLineAngle(LineBeginPoint.x, LineBeginPoint.y, LineEndPoint.x, LineEndPoint.y);
+         const maxYDiff = calcMaxDifference(lineAngle);
+         const yDiff = Math.abs(targetPoint.y - haystackPoint.y);
+
+         // DEBUG
+         if (targetPoint.x === haystackPoint.x && debugTools.utils.debugTracingLevel === 2) {
+            console.log("==== [", targetPoint.x, ",", targetPoint.y, "] == [", haystackPoint.x, ",", haystackPoint.y, "] ([" + LineBeginPoint.x + "," + LineBeginPoint.y + "]x[" + LineEndPoint.x + "," + LineEndPoint.y + "]) Angle =", lineAngle, "yDiff =", yDiff, "Limit =", maxYDiff); //DEBUG
+         }
+
+         if (targetPoint.x === haystackPoint.x && yDiff <= maxYDiff) {
+            return true;
+         }
+      }
+      return false;
+   },
+
+   /**
+   * getPointsOnLine() Returns all point coordinates between two ends of a Line
+   *
+   * @param {object} pointA - One end of Line
+   * @param {object} pointB - Other end of Line
+   *
+   * @return {array}        - Array of Points
+   */
+   getPointsOnLine: function (pointA, pointB) {
+      const startPoint = pointA.x < pointB.x ? [pointA.x, pointA.y] : [pointB.x, pointB.y];
+      const endPoint = pointA.x < pointB.x ? [pointB.x, pointB.y] : [pointA.x, pointA.y];
+      const pointsArr = [];
+
+      const slope = ((a, b) => {
+         if (a[0] === b[0]) {
+            return null;
+         }
+         return (b[1] - a[1]) / (b[0] - a[0]);
+      })(startPoint, endPoint);
+
+      const intercept = ((point, slope) => {
+         if (slope === null) {
+            return point[0]; // vertical line
+         }
+         return point[1] - slope * point[0];
+      })(startPoint, slope);
+
+      for (let x = startPoint[0]; x <= endPoint[0]; x++) {
+         const y = slope * x + intercept;
+         pointsArr.push({ x: x, y: Math.round(y) });
+      }
+      return (pointsArr);
    }
 };
 
@@ -887,8 +932,29 @@ class FaultPolyline {
       let timestamp = toolTipTimestamp ? toolTipTimestamp : null;
 
       if (!toolTipTimestamp) {
-         const latLngByTimeVehAPI = me.vehMarker.splMapFaults.historicPathLatLngToTimeDB;
-         timestamp = splMapFaultUtils.searchLatlngArrForTime(latLng, me.polyLine.getLatLngs(), me.latLngByTimeAPI, latLngByTimeVehAPI, me.vehDeviceData);
+         const info = splMapFaultUtils.findLatLngSegment(latLng, me.polyLine.getLatLngs());
+
+         if (info.nearestIdx !== null && typeof me.vehMarker.splMapFaults.latLngTimestampIdx !== "undefined") {
+            timestamp = me.vehMarker.splMapFaults.latLngTimestampIdx[info.nearestIdx];
+         }
+         // DEBUG - PLEASE DELETE FOR PROD
+         if (info.nearestIdx !== null && debugTools.utils.debugTracingLevel === 2) {
+            layerModel.clearLayersInGroup(debugTools._mapGroupLayer);
+
+            const targetCircle = L.circleMarker(info.nearestLatLng, { radius: 5, stroke: true, fill: true, color: colorHexCodes.testPurple, weight: 2 });
+            let partnerCircle;
+            if (info.nearestIdx === info.startIdx) {
+               partnerCircle = L.circleMarker(info.endLatLng, { radius: 5, stroke: true, fill: true, color: colorHexCodes.testLimeGreen, weight: 2 });
+            }
+            else {
+               partnerCircle = L.circleMarker(info.startLatLng, { radius: 5, stroke: true, fill: true, color: colorHexCodes.testLimeGreen, weight: 2 });
+            }
+            layerModel.addToLayer(debugTools._mapGroupLayer, targetCircle);
+            layerModel.addToLayer(debugTools._mapGroupLayer, partnerCircle);
+            targetCircle.bringToBack();
+            partnerCircle.bringToBack();
+         }
+         if (info.nearestIdx === null && debugTools.utils.debugTracingLevel === 2) { console.log("===== getFaultDescHtml() ======= TIMESTAMP NOT FOUND ======="); } //DEBUG
       }
 
       const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, me.splFaultTimelineEvents);
@@ -936,7 +1002,8 @@ class FaultPolyline {
 
             // Mobile-only Fault Popup Content
             if (L.Browser.mobile) {
-               popupHtml = filterMarkerButton(me.vehId, vehNameEscaped) + me.getFaultDescHtml(evt.latlng);
+               const timestamp = typeof evt.target.options.timestamp !== "undefined" ? evt.target.options.timestamp : null;
+               popupHtml = filterMarkerButton(me.vehId, vehNameEscaped) + me.getFaultDescHtml(evt.latlng, timestamp);
             }
             // Non-Mobile VehName-only Popup content
             else {

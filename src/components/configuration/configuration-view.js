@@ -8,6 +8,7 @@ import { diagnosticSearch } from "./status-config/status-search";
 import { exceptionSearch } from "./exception-config/exception-search";
 import { deviceSearch } from "./vehicles-config/vehicle-search";
 import { splSensorDataParser } from "../../spartanlync/services/sensor-data-tools";
+import { liveButtonModel } from "../../components/controls/live-button-model/live-button-model";
 import { markerList } from "../../dataStore/map-data";
 import storage from "../../dataStore";
 import splSrv from "../../spartanlync/services";
@@ -63,60 +64,72 @@ export class ConfigView extends React.Component {
 
             // eslint-disable-next-line complexity
             vehicleFaultAlertEventHandlerId = splSrv.events.register("onFaultAlert", (vehId, vehObj) => {
-
-               // Flag next invocation of sensor data update task
-               // to re-render the Map & VehConfig Panel sensor data content using new fault data
-               vehObj.sdataTools.releaseStaleCachedSensorDataOnNextFetch(vehId); // for VehConfig sensor data
-               splSrv.sdataTools.releaseStaleCachedSensorDataOnNextFetch(vehId); // for Map sensor data
-
-               // Process Alerts
+               const BackInTimeMode = liveButtonModel.getToDateOverride(); // Are we in BackInTime Mode or LIVE
                const alertlevel = {
                   time: 0,
                   color: "",
                   tooltipHtml: ""
                };
-               for (const faultObj of splSrv.cache.getFaultData(vehId)) {
-                  if (typeof faultObj.time !== "undefined" &&
-                     typeof faultObj.alert !== "undefined" &&
-                     typeof faultObj.alert.color !== "undefined" &&
-                     typeof faultObj.alert.type !== "undefined" &&
-                     typeof faultObj.occurredOnLatestIgnition !== "undefined" &&
-                     faultObj.occurredOnLatestIgnition &&
-                     faultObj.time &&
-                     faultObj.alert.type !== "Sensor Fault" &&
-                     faultObj.alert.color.toString().trim() !== ""
-                  ) {
-                     // Remove Alerts with locations that do not exist
-                     let faultObjLoc = typeof faultObj.loc !== "undefined" && Array.isArray(faultObj.loc) ? JSON.parse(JSON.stringify(faultObj.loc)) : null;
-                     let skipFault = faultObjLoc ? false : true;
 
-                     if (faultObjLoc && faultObjLoc.length) {
-                        faultObjLoc = faultObjLoc.filter((locObj) => {
-                           return vehObj.locExistsInSensorData(faultObj.alert.type, locObj);
-                        });
-                        if (!faultObjLoc.length) {
-                           skipFault = true;
+               // Only Show Alerts in LIVE mode
+               if (!BackInTimeMode) {
+
+                  // Flag next invocation of sensor data update task
+                  // to re-render the Map & VehConfig Panel sensor data content using new fault data
+                  vehObj.sdataTools.releaseStaleCachedSensorDataOnNextFetch(vehId); // for VehConfig sensor data
+                  splSrv.sdataTools.releaseStaleCachedSensorDataOnNextFetch(vehId); // for Map sensor data
+
+                  // Process Alerts
+                  for (const faultObj of splSrv.cache.getFaultData(vehId)) {
+                     if (typeof faultObj.time !== "undefined" &&
+                        typeof faultObj.alert !== "undefined" &&
+                        typeof faultObj.alert.color !== "undefined" &&
+                        typeof faultObj.alert.type !== "undefined" &&
+                        typeof faultObj.occurredOnLatestIgnition !== "undefined" &&
+                        faultObj.occurredOnLatestIgnition &&
+                        faultObj.time &&
+                        faultObj.alert.type !== "Sensor Fault" &&
+                        faultObj.alert.color.toString().trim() !== ""
+                     ) {
+
+                        // Remove Alerts with locations that do not exist
+                        let faultObjLoc = typeof faultObj.loc !== "undefined" && Array.isArray(faultObj.loc) ? JSON.parse(JSON.stringify(faultObj.loc)) : null;
+                        let skipFault = faultObjLoc ? false : true;
+
+                        if (faultObjLoc && faultObjLoc.length) {
+                           faultObjLoc = faultObjLoc.filter((locObj) => {
+                              return vehObj.locExistsInSensorData(faultObj.alert.type, locObj);
+                           });
+                           if (!faultObjLoc.length) {
+                              skipFault = true;
+                           }
                         }
-                     }
-                     if (skipFault) { continue; }
+                        if (skipFault) { continue; }
 
-                     // Get most recent / urgent post-ignition fault level alert
-                     if (!alertlevel.color ||
-                        (alertlevel.color && alertlevel.color.toUpperCase() === "AMBER" && faultObj.alert.color.toUpperCase() === "RED") ||
-                        (alertlevel.color.toUpperCase() === faultObj.alert.color.toUpperCase() && faultObj.time > alertlevel.time)) {
+                        // Get most recent / urgent post-ignition fault level alert
+                        if (!alertlevel.color ||
+                           (alertlevel.color && alertlevel.color.toUpperCase() === "AMBER" && faultObj.alert.color.toUpperCase() === "RED") ||
+                           (alertlevel.color.toUpperCase() === faultObj.alert.color.toUpperCase() && faultObj.time > alertlevel.time)) {
 
-                        const sensorLocHtml = splSensorDataParser._convertLocArrObjToLocHtml(faultObjLoc);
+                           const sensorLocHtml = splSensorDataParser.convertLocArrObjToLocHtml(faultObjLoc);
+                           const vehTemptracThresholdType = splSrv.getTemptracVehThresholdSetting(vehId);
 
-                        alertlevel.time = faultObj.time;
-                        alertlevel.color = faultObj.alert.color;
-                        alertlevel.class = "strobe-" + faultObj.alert.color.toLowerCase();
-                        alertlevel.alertSummary = splmap.tr("alert_header") + ": " + splmap.tr(faultObj.alert.trId);
-                        alertlevel.tooltipHtml =
-                           '<p class="spl-vehicle-alert-tooltip-header">' + splmap.tr("alert_header") + ":</p>" + splmap.tr(faultObj.alert.trId) + "<br />" +
-                           (faultObj.alert.type === "Tire Pressure Fault" ? "( " + splmap.tr("alert_tire_pressure_fault") + " )<br />" : "") +
-                           (faultObj.alert.type === "Tire Temperature Fault" ? "( " + splmap.tr("alert_temperature_over") + " )<br />" : "") +
-                           "@" + splSrv.convertUnixToTzHuman(faultObj.time) +
-                           (sensorLocHtml ? '<p class="spl-vehicle-alert-tooltip-location-header">' + splmap.tr("alert_sensor_location_header") + ":</p>" + sensorLocHtml : "");
+                           alertlevel.time = faultObj.time;
+                           alertlevel.color = faultObj.alert.color;
+                           alertlevel.class = "strobe-" + faultObj.alert.color.toLowerCase();
+                           alertlevel.alertSummary = splmap.tr("alert_header") + ": " + splmap.tr(faultObj.alert.trId);
+                           alertlevel.tooltipHtml =
+                              '<p class="spl-vehicle-alert-tooltip-header">' + splmap.tr("alert_header") + ":</p>" + splmap.tr(faultObj.alert.trId) + "<br />" +
+                              (faultObj.alert.type === "TempTrac Temperature Fault" ?
+                                 "<span class='spl-vehicle-alert-tooltip-temptrac-label'>(" +
+                                 splmap.tr("label_temptrac_threshold") + ": " +
+                                 (vehTemptracThresholdType === "fridge" ? splmap.tr("label_temptrac_threshold_fri") : splmap.tr("label_temptrac_threshold_fre")) +
+                                 ")</span><br />" : "") +
+                              (faultObj.alert.type === "Tire Pressure Fault" ? "( " + splmap.tr("alert_tire_pressure_fault") + " )<br />" : "") +
+                              (faultObj.alert.type === "Tire Temperature Fault" ? "( " + splmap.tr("alert_temperature_over") + " )<br />" : "") +
+                              "@" + splSrv.convertUnixToTzHuman(faultObj.time) +
+                              (sensorLocHtml ? '<p class="spl-vehicle-alert-tooltip-location-header">' + splmap.tr("alert_sensor_location_header") + ":</p>" + sensorLocHtml : "");
+                        }
                      }
                   }
                }

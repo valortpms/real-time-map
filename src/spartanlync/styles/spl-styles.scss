@@ -383,6 +383,10 @@
    padding: 0px;
    margin: 0px 0px 5px 0px;
 }
+#RTM-ViewContainer span.spl-vehicle-alert-tooltip-temptrac-label  {
+   font-size: 10px;
+}
+
 #RTM-ViewContainer .spl-vehicle-alert-tooltip-location-header {
    font-size: 11px;
    font-weight: bold;
@@ -713,6 +717,10 @@
 }
 .leaflet-tooltip-right.spl-map-vehicle-tooltip:before {
    border-right-color: #000000;
+}
+.leaflet-tooltip.spl-map-vehicle-tooltip span.temp-press-symbol {
+   display: inline-block;
+   font-size: 9px;
 }
 
 .car-icon.strobe-amber {

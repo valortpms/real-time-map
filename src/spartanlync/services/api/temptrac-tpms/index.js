@@ -210,7 +210,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                   }
                }
             };
-            console.log("--- VehicleID [ " + devId + " ]: getVehStatus(): Collecting latest Vehicle Status information...");
+            console.log("VehicleID [ " + devId + " ]: getVehStatus(): Collecting latest Vehicle Status information...");
 
             // Invoke Device Status API Call
             me._timer.a1 = new Date();
@@ -219,7 +219,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                   if (result && result.length) {
                      const vehStatusObj = result[0];
                      me._timer.a2 = new Date();
-                     console.log("--- VehicleID [ " + devId + " ]: getVehStatus(): Vehicle Status Info retrieved - " + me._convertSecondsToHMS((me._timer.a2 - me._timer.a1) / 1000));
+                     console.log("VehicleID [ " + devId + " ]: getVehStatus(): Vehicle Status Info retrieved - " + me._convertSecondsToHMS((me._timer.a2 - me._timer.a1) / 1000));
                      vStatusCallback(vehStatusObj);
                   }
                   else {
@@ -229,8 +229,8 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                },
                function (errorString) {
                   me._timer.a2 = new Date();
-                  console.log("--- VehicleID [ " + devId + " ]: Vehicle Status Info retrieval failed - " + me._convertSecondsToHMS((me._timer.a2 - me._timer.a1) / 1000));
-                  console.log("--- VehicleID [ " + devId + " ]: Error: getVehStatus.api.call(): " + errorString);
+                  console.log("VehicleID [ " + devId + " ]: ERROR: Vehicle Status Info retrieval failed - " + me._convertSecondsToHMS((me._timer.a2 - me._timer.a1) / 1000));
+                  console.log("VehicleID [ " + devId + " ]: ERROR: getVehStatus.api.call(): " + errorString);
                   vStatusCallback(null);
                });
          },
@@ -539,8 +539,8 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                },
                function (errorString) {
                   me._timer.b4 = new Date();
-                  console.log("--- VehicleID [ " + me._devId + " ]: Sensor data retrieval failed - " + me._convertSecondsToHMS((me._timer.b4 - me._timer.b3) / 1000));
-                  console.log("--- VehicleID [ " + me._devId + " ]: Error: getFaults.api.multiCall(): " + errorString);
+                  console.log("VehicleID [ " + me._devId + " ]: ---- Sensor data retrieval failed - " + me._convertSecondsToHMS((me._timer.b4 - me._timer.b3) / 1000));
+                  console.log("VehicleID [ " + me._devId + " ]: ERROR: getFaults.api.multiCall(): " + errorString);
 
                   // Retry if its a first time call
                   if (me._apiFaultFirstTimeCall) {
@@ -774,8 +774,8 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                },
                function (errorString) {
                   me._timer.b2 = new Date();
-                  console.log("--- VehicleID [ " + me._devId + " ]: Sensor data retrieval failed - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000));
-                  console.log("--- VehicleID [ " + me._devId + " ]: Error: getData.api.multiCall(): " + errorString);
+                  console.log("VehicleID [ " + me._devId + " ]: ---- Sensor data retrieval failed - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000));
+                  console.log("VehicleID [ " + me._devId + " ]: ERROR: getData.api.multiCall(): " + errorString);
 
                   // Retry if its a first time call
                   if (me._apiFirstTimeCall) {

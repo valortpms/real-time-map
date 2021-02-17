@@ -78,7 +78,7 @@ export const INITSplSensorDataTools = function (goLibCreatorFunc) {
                      me._cache[vehId].noSensorDataFound = false;
 
                      if (sensorData.vehCfg.total === 1) {
-                        console.log("--- NEW SENSOR DATA FOUND after the last search.  " +
+                        console.log("VehicleID [ " + vehId + " ]: --- NEW SENSOR DATA FOUND after the last search.  " +
                            "Temptrac [" + Object.keys(sensorData.temptrac).length + "]  " +
                            "TPMS Temperature [" + Object.keys(sensorData.tpmstemp).length + "]  " +
                            "TPMS Pressure [" + Object.keys(sensorData.tpmspress).length + "]"
@@ -86,7 +86,7 @@ export const INITSplSensorDataTools = function (goLibCreatorFunc) {
                      }
                      else {
                         sensorData.vehCfg.ids.map(compId => {
-                           console.log("--- NEW SENSOR DATA FOUND on " +
+                           console.log("VehicleID [ " + vehId + " ]: --- NEW SENSOR DATA FOUND on " +
                               me._vehComponents[compId].toUpperCase() + " after the last search.  " +
                               "Temptrac [" + Object.keys(sensorData[compId].temptrac).length + "]  " +
                               "TPMS Temperature [" + Object.keys(sensorData[compId].tpmstemp).length + "]  " +
@@ -547,7 +547,7 @@ export const splSensorDataParser = {
 
       const me = this;
       const htmlEntities = new Html5Entities();
-      const data = me.do(sdata, !sdataToolsLib.getFirstTime(vehId));
+      const data = me._do(sdata, !sdataToolsLib.getFirstTime(vehId));
       const lastReadingLabel = splmap.tr("sensor_search_last_reading");
       const splToolsSwitchTooltip = splmap.tr("sensor_search_switchto_spltools_instruction");
       const timeWarpHtml = typeof sdata.toDate !== "undefined" ? "<strong>" + splmap.tr("sensor_search_back_in_time") + "</strong>" : "";
@@ -716,7 +716,7 @@ export const splSensorDataParser = {
     *
     *  @returns object
     */
-   do: function (sdata, isUpdate) {
+   _do: function (sdata, isUpdate) {
       const me = this;
       const cloneData = JSON.parse(JSON.stringify(sdata)); // clone sensor data object... can't modify the original
       const compIds = cloneData.vehCfg.total === 1 ? [cloneData.vehCfg.active] : cloneData.vehCfg.ids;
@@ -726,6 +726,13 @@ export const splSensorDataParser = {
          vehName: cloneData.vehName,
          lastReadTimestamp: ""
       };
+      const vehTemptracThresholdType = splSrv.getTemptracVehThresholdSetting(cloneData.vehId);
+      const vehTemptracThresholdTypeHtml =
+         "<span class='spl-vehicle-alert-tooltip-temptrac-label'>(" +
+         splmap.tr("label_temptrac_threshold") + ": " +
+         (vehTemptracThresholdType === "fridge" ? splmap.tr("label_temptrac_threshold_fri") : splmap.tr("label_temptrac_threshold_fre")) +
+         ")</span>";
+
       me._lastReadTimestampUnix = 0;
 
       // Process Single/Multi-Component source sensor data
@@ -769,7 +776,7 @@ export const splSensorDataParser = {
                                  class: "alert-" + faultObj.alert.color.toLowerCase(),
                                  html:
                                     "<p class='spl-vehicle-alert-tooltip-header'>" + splmap.tr("alert_header") + ":</p>" +
-                                    splmap.tr(faultObj.alert.trId) + "<br />( " + splmap.tr("alert_temptrac_fault") + " )<br />" +
+                                    splmap.tr(faultObj.alert.trId) + "<br />" + vehTemptracThresholdTypeHtml + "<br />" +
                                     "@" + splSrv.convertUnixToTzHuman(faultObj.time) + "<p>"
                               };
                            }
@@ -944,16 +951,21 @@ export const splSensorDataParser = {
    /**
    * Convert Location Array of Objects to HTML string
    * [0: {axle: 1, tire: 2, vehComp: "tractor"}] => "<div><span>Axle 1 Tire 2 &hyphen; Tractor</span></div>"
+   *     OR
+   * [0: {zone: "1", vehComp: "tractor"}] => "<div><span>Zone 1 &hyphen; Tractor</span></div>"
    *
    *  @returns string
    */
-   _convertLocArrObjToLocHtml: function (locArr) {
+   convertLocArrObjToLocHtml: function (locArr) {
       const me = this;
       if (typeof locArr !== "undefined" && locArr !== null &&
          Array.isArray(locArr) && locArr.length) {
          let locHtml = "";
          locArr.forEach(locObj => {
-            const locStr = "Axle " + locObj.axle + " Tire " + locObj.tire + " &hyphen; " + splSrv.vehCompDb.names[locObj.vehComp];
+            const locStr = (typeof locObj.zone !== "undefined" ?
+               "Zone " + locObj.zone :
+               "Axle " + locObj.axle + " Tire " + locObj.tire) +
+               " &hyphen; " + splSrv.vehCompDb.names[locObj.vehComp];
             locHtml += "<span>" + me._locTr(locStr) + "</span>";
          });
          return '<div class="spl-vehicle-alert-tooltip-location-items">' + locHtml + "</div>";
@@ -964,6 +976,7 @@ export const splSensorDataParser = {
    _locTr: function (rawVal) {
       let val = rawVal.toString().trim();
       if (val) {
+         val = val.replace("Zone", splmap.tr("alert_desc_zone"));
          val = val.replace("Axle", splmap.tr("alert_desc_axle"));
          val = val.replace("Tire", splmap.tr("alert_desc_tire"));
          val = val.replace("Tractor", splmap.tr("alert_desc_tractor"));

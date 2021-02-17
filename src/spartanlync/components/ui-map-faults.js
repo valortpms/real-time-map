@@ -927,6 +927,7 @@ class FaultPolyline {
       this.initRedrawFaultPolyline();
    }
 
+   // eslint-disable-next-line complexity
    getFaultDescHtml(latLng, toolTipTimestamp) {
       const me = this;
       let timestamp = toolTipTimestamp ? toolTipTimestamp : null;
@@ -958,21 +959,46 @@ class FaultPolyline {
       }
 
       const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, me.splFaultTimelineEvents);
-      const faultTimeTemptracHtml = faultInfo.faultTime.temptrac ? moment.unix(faultInfo.faultTime.temptrac).format(storage.humanDateTimeFormat) : "";
-      const faultTimeTpmsHtml = faultInfo.faultTime.tpms ? moment.unix(faultInfo.faultTime.tpms).format(storage.humanDateTimeFormat) : "";
       const alertHeader = faultInfo.faultState === "RED" ? splmap.tr("alert_header_red") : splmap.tr("alert_header_amber");
+
+      const faultTimeTemptracHtml = faultInfo.faultTime.temptrac ? moment.unix(faultInfo.faultTime.temptrac).format(storage.humanDateTimeFormat) : "";
+      const faultValueTemptrac = faultInfo.faultTime.temptrac ? me.getFaultValueHtml(true, faultInfo.faultTime.temptrac) : "";
+      const faultValueTemptracHtml = faultValueTemptrac ? "<br />" + faultValueTemptrac : "";
 
       const vehTemptracThresholdType = splSrv.getTemptracVehThresholdSetting(me.vehId);
       const temptracThresholdTypeDesc = vehTemptracThresholdType === "fridge" ? splmap.tr("label_temptrac_threshold_fri") : splmap.tr("label_temptrac_threshold_fre");
       const vehTemptracThresholdTypeHtml = faultInfo.tooltipDesc.temptrac ? "<br />" + splmap.tr("label_temptrac_threshold") + ": " + temptracThresholdTypeDesc : "";
 
+      const faultTimeTpmsHtml = faultInfo.faultTime.tpms ? moment.unix(faultInfo.faultTime.tpms).format(storage.humanDateTimeFormat) : "";
+      const faultValueTpms = faultInfo.faultTime.tpms ? me.getFaultValueHtml(false, faultInfo.faultTime.tpms) : "";
+      const faultValueTpmsHtml = faultValueTpms ? "<br />" + faultValueTpms : "";
+
       const tooltipDesc =
-         faultInfo.tooltipDesc.temptrac + vehTemptracThresholdTypeHtml + (faultTimeTemptracHtml && faultTimeTemptracHtml !== faultTimeTpmsHtml ? "<br />@" + faultTimeTemptracHtml : "") +
-         (faultInfo.tooltipDesc.temptrac ? "<br />" : "") + faultInfo.tooltipDesc.tpms + (faultTimeTpmsHtml ? "<br />@" + faultTimeTpmsHtml : "");
+         faultInfo.tooltipDesc.temptrac + vehTemptracThresholdTypeHtml +
+         (faultTimeTemptracHtml && faultTimeTemptracHtml !== faultTimeTpmsHtml ? "<br />@" + faultTimeTemptracHtml + faultValueTemptracHtml : faultValueTemptracHtml) +
+         (faultInfo.tooltipDesc.temptrac ? "<br />" : "") + faultInfo.tooltipDesc.tpms +
+         (faultTimeTpmsHtml ? "<br />@" + faultTimeTpmsHtml : "") + faultValueTpmsHtml;
 
       const latLngTxt = me.vehName + (faultInfo.faultState ? `: ${alertHeader}:<br />${tooltipDesc}` : "");
 
       return latLngTxt;
+   }
+
+   getFaultValueHtml(isTemptrac, timestamp) {
+      const me = this;
+      let html = "";
+
+      //console.log("==== getFaultValueHtml(", me.vehId, ") sdata =", splSrv.sdataTools._cache); //DEBUG
+
+
+
+
+      /*
+            const showVal = Math.random() < 0.5 ? 0 : 1;
+            html = showVal ? (isTemptrac ? "9.9 <span class='temp-press-symbol'>&#8451;</span> &hyphen; 98 <span class='temp-press-symbol'>&#8457;</span>" : "77.7 <span class='temp-press-symbol'>Psi</span> &hyphen; 77.6 <span class='temp-press-symbol'>kPa</span> &hyphen; 77.5 <span class='temp-press-symbol'>Bar</span>") : html;
+      */
+
+      return html;
    }
 
    enableToolipOn(leafletObj) {
@@ -1310,7 +1336,7 @@ class FaultTimelineEventMgr {
                         resolve(me.createTimelineFromFaultIgnData(vehIdCompleted, me._historicalFaultData[vehIdCompleted], me._historicalIgnData[vehIdCompleted]));
                      }
                      else {
-                        reject("Timeline for VehicleID [ " + vehId + " ] NOT CREATED. Error fetching data");
+                        reject("VehicleID [ " + vehId + " ]: Timeline NOT CREATED. Error fetching data");
                      }
                   }
                }, true, vehId);

@@ -42,7 +42,7 @@ const SpartanLyncServices = {
    },
 
    vehCompDb: {},
-   vehCompTr: {                                         // Id/Description/TranslationCodes for supported Vehicles components
+   vehCompTr: {                                             // Id/Description/TranslationCodes for supported Vehicles components
       "toEn": {
          "tractor": "Tractor",
          "trailer1": "Trailer 1",
@@ -201,6 +201,7 @@ const SpartanLyncServices = {
          }
       },
 
+      // eslint-disable-next-line complexity
       updateFaultStatusUsingIgnData: function (vehId) {
          const me = this;
          if (typeof vehId !== "undefined" && vehId !== null &&
@@ -210,12 +211,44 @@ const SpartanLyncServices = {
             typeof me._faultCache[vehId] === "object" && Object.keys(me._faultCache[vehId]).length &&
             typeof me._ignitionCache[vehId]["on-latest"] !== "undefined" && me._ignitionCache[vehId]["on-latest"]
          ) {
+            // TempTrac Conditions: scan for post-ignition temptracXLFaultOff / temptracXHFaultOff events
+            let XLFaultOffTime = 0;
+            let XHFaultOffTime = 0;
             for (const faultId in me._faultCache[vehId]) {
+               const faultObj = me._faultCache[vehId][faultId];
+               if (faultObj.id && typeof faultObj.occurredOnLatestIgnition !== "undefined" &&
+                  faultObj.occurredOnLatestIgnition && faultObj.id.indexOf("FaultOff") > -1) {
+                  XLFaultOffTime = faultObj.id.indexOf("temptracXLFaultOff") > -1 && faultObj.time > XLFaultOffTime ? faultObj.time : XLFaultOffTime;
+                  XHFaultOffTime = faultObj.id.indexOf("temptracXHFaultOff") > -1 && faultObj.time > XHFaultOffTime ? faultObj.time : XHFaultOffTime;
+               }
+            }
+
+            // Process Faults
+            for (const faultId in me._faultCache[vehId]) {
+
+               // Flag ALL Faults based on Ignition
                me._faultCache[vehId][faultId].occurredOnLatestIgnition =
                   (
                      typeof me._faultCache[vehId][faultId].time !== "undefined" &&
                      me._faultCache[vehId][faultId].time >= me._ignitionCache[vehId]["on-latest"]
                   ) ? true : false;
+
+               // Flag TempTrac faults based on XL/XH FaultOff events
+               if ((XLFaultOffTime || XHFaultOffTime) &&
+                  me._faultCache[vehId][faultId].occurredOnLatestIgnition &&
+                  me._faultCache[vehId][faultId].id.indexOf("temptrac") > -1) {
+
+                  if (XLFaultOffTime > 0 &&
+                     me._faultCache[vehId][faultId].id.indexOf("temptrac_xl") > -1 &&
+                     me._faultCache[vehId][faultId].time <= XLFaultOffTime) {
+                     me._faultCache[vehId][faultId].occurredOnLatestIgnition = false;
+                  }
+                  if (XHFaultOffTime > 0 &&
+                     me._faultCache[vehId][faultId].id.indexOf("temptrac_xh") > -1 &&
+                     me._faultCache[vehId][faultId].time <= XHFaultOffTime) {
+                     me._faultCache[vehId][faultId].occurredOnLatestIgnition = false;
+                  }
+               }
             }
          }
       }

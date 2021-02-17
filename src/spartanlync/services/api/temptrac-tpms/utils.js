@@ -33,7 +33,7 @@ export function fetchVehSensorDataAsync(vehId, vehComp, firstTimeCallOverride) {
 };
 
 /**
-*  Asynchronously Fetch Vehicle Faults and Ignition data
+*  Asynchronously Fetch TPMS & TempTrac Vehicle Faults and Ignition data
 *
 *  @returns {array} objects
 */
@@ -80,7 +80,7 @@ export function fetchVehFaultsAndIgnitionAsync(vehId, firstTimeCallOverride) {
             splSrv.cache.storeFaultData(vehId, temptracFaults, true);
             finalResolve([faults, vehIgnitionInfo]);
          })
-         .catch(reason => console.log("---- Error while searching for FAULTS on VehicleID [ " + vehId + " ]: ", reason));
+         .catch(reason => console.log("VehicleID [ " + vehId + " ]: ---- ERROR while searching for FAULTS: ", reason));
    });
 };
 
@@ -132,7 +132,7 @@ export function getTempTracFaultsAsync(vehId, toFaultDateObj, searchRangeArr, se
 
 
 /**
-* Update property "occurredOnLatestIgnition" on fdata object with the latest ignition status from vehicle ignition data
+* Update property "occurredOnLatestIgnition" on TempTrac fdata objects with latest ignition status from vehicle ignition data
 *
 *  @returns void
 */

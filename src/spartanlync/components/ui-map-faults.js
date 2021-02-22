@@ -939,7 +939,7 @@ class FaultPolyline {
             timestamp = me.vehMarker.splMapFaults.latLngTimestampIdx[info.nearestIdx];
          }
          // DEBUG - PLEASE DELETE FOR PROD
-         if (info.nearestIdx !== null && debugTools.utils.debugTracingLevel === 2) {
+         if (info.nearestIdx !== null && debugTools.utils.debugTracingLevel >= 2) {
             layerModel.clearLayersInGroup(debugTools._mapGroupLayer);
 
             const targetCircle = L.circleMarker(info.nearestLatLng, { radius: 5, stroke: true, fill: true, color: colorHexCodes.testPurple, weight: 2 });
@@ -955,8 +955,9 @@ class FaultPolyline {
             targetCircle.bringToBack();
             partnerCircle.bringToBack();
          }
-         if (info.nearestIdx === null && debugTools.utils.debugTracingLevel === 2) { console.log("===== getFaultDescHtml() ======= TIMESTAMP NOT FOUND ======="); } //DEBUG
+         if (info.nearestIdx === null && debugTools.utils.debugTracingLevel === 2) { console.log("===== getFaultDescHtml(", me.vehId, ") ======= TIMESTAMP NOT FOUND ======="); } //DEBUG
       }
+      if (debugTools.utils.debugTracingLevel >= 2) { console.log("======== getFaultDescHtml(", me.vehId, ") timestamp =", timestamp); }//DEBUG
 
       const faultInfo = splMapFaultUtils.faultInfoByTimestamp(timestamp, me.splFaultTimelineEvents);
       const alertHeader = faultInfo.faultState === "RED" ? splmap.tr("alert_header_red") : splmap.tr("alert_header_amber");
@@ -1476,6 +1477,11 @@ class FaultTimelineEventMgr {
 
                            if (vehId && temptracFaults && temptracFaults.length) {
                               updateTempTracFaultStatusUsingIgnData(vehId, temptracFaults, me._historicalIgnData[vehId]);
+
+                              // Init
+                              if (typeof me._historicalFaultData[vehId] === "undefined") {
+                                 me._historicalFaultData[vehId] = [];
+                              }
 
                               // Merge into Historical Faults
                               for (const idx in temptracFaults) {

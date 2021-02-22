@@ -23,6 +23,7 @@ export class SplSensorDataTypesButton extends Component {
       this.renderSplButton = this.renderSplButton.bind(this);
       this.onCloseContentHandler = this.onCloseContentHandler.bind(this);
       this.locExistsInSensorData = this.locExistsInSensorData.bind(this);
+      this.onDateTimeChangeHandler = this.onDateTimeChangeHandler.bind(this);
       this.configureSensorDataTypesBtn = this.configureSensorDataTypesBtn.bind(this);
 
       this.state = {
@@ -35,9 +36,10 @@ export class SplSensorDataTypesButton extends Component {
       this.vehId = this.props.id;
       this.vehName = this.props.name.trim();
       this.faultAlertEventHandlerId = null;
-      this.dateTimeChangedEventHandlerId = null;
-      this.refreshFaultMonitorOnDateTimeChangedEventHandlerId = null;
       this.sdataCache = null;
+
+      this.onClickDateTimeChangedEventHandlerId = null;
+      this.refreshDataOnDateTimeChangedEventHandlerId = null;
 
       this.noSensorsFoundOnThisVehicle = false;
 
@@ -95,8 +97,8 @@ export class SplSensorDataTypesButton extends Component {
       // Set Language-specific sensor data search messages
       me.sdataTools.setSensorSearchInProgressResponseMsg(splmap.tr("sensor_search_busy_msg"));
 
-      // On Date Change awitching between LIVE and BackInTime Mode, re-evaluate Fault Alerts
-      me.refreshFaultMonitorOnDateTimeChangedEventHandlerId = splSrv.events.register("onDateTimeChanged", () => splSrv.events.exec("onFaultAlert", me.vehId, me), false);
+      // Handle Tasks required after DateTimeChane Event occurs
+      me.refreshDataOnDateTimeChangedEventHandlerId = splSrv.events.register("onDateTimeChanged", () => me.onDateTimeChangeHandler(), false);
 
       // Fetch SpartanLync Sensor Types installed into vehicle
       me.fetchSensorTypesAndFaults();
@@ -219,7 +221,7 @@ export class SplSensorDataTypesButton extends Component {
          const vehCompNames = me.sdataCache.vehCfg.ids.map(compId => { return splSrv.vehCompDb.names[compId]; }).join(", ");
          const btnNames = btn.join(", ");
 
-         console.log("VehicleID [", me.vehId, "]: Sensor data reports Sensor Types [", btnNames, "] on", me.sdataCache.vehCfg.ids.length, "component" + (me.sdataCache.vehCfg.ids.length > 1 ? "s" : ""), "[", vehCompNames, "]");
+         console.log("VehicleID [", me.vehId, "]: SENSOR DATA reports Sensor Types [", btnNames, "] on", me.sdataCache.vehCfg.ids.length, "component" + (me.sdataCache.vehCfg.ids.length > 1 ? "s" : ""), "[", vehCompNames, "]");
          if (btn.length !== me.state.buttons.length || me.sdataCache.vehCfg.ids.length !== me.state.components.length) {
             me.setState({
                components: me.sdataCache.vehCfg.ids.length > 1 ? me.sdataCache.vehCfg.ids : [],
@@ -257,7 +259,7 @@ export class SplSensorDataTypesButton extends Component {
    }
 
    /**
-    * Click Handler, invoked once there are sensor types to display
+    * Click Handler, invoked when there are sensor types or data to discover and display
     *
     *  @returns void
     */
@@ -301,7 +303,7 @@ export class SplSensorDataTypesButton extends Component {
 
                   // On a Date/Time change
                   // Flush vehicle cache and fetch new sensor data
-                  me.dateTimeChangedEventHandlerId = splSrv.events.register("onDateTimeChanged", () => {
+                  me.onClickDateTimeChangedEventHandlerId = splSrv.events.register("onDateTimeChanged", () => {
                      me.sdataTools.resetCache(me.vehId);
                      setTimeout(() => {
                         me.updateSensorDataContent(); // After a 1 second delay, refresh sensor data content using new date/time
@@ -319,35 +321,52 @@ export class SplSensorDataTypesButton extends Component {
    }
 
    /**
+    * Handle Tasks required after DateTimeChane Event occurs
+    *
+    *  @returns void
+    */
+   onDateTimeChangeHandler() {
+      const me = this;
+      const inBackInTimeMode = liveButtonModel.getToDateOverride(); // Are we in BackInTime Mode or LIVE
+
+      // ReLoad Historical data into Vehicle Sensor Data cache
+      if (inBackInTimeMode) {
+
+      }
+
+      // On Date Change switching between LIVE and BackInTime Mode, re-evaluate Fault Alerts
+      splSrv.events.exec("onFaultAlert", me.vehId, me);
+   }
+
+   /**
     * Close Handler, invoked once UI is closed
     *
     *  @returns void
     */
    onCloseContentHandler() {
       const me = this;
-      manageSensorDataContentUI.cleanup(me.vehId);
       me.stopContentRefresh();
+      manageSensorDataContentUI.cleanup(me.vehId);
       me.stopFaultAndTypesBtnMonitorTask();
       me.setState({ html: "" });
       splSrv.vehRegistry.close(me.vehId);
 
-      //
+      // Clear onFaultAlert Handler
       if (me.faultAlertEventHandlerId) {
          splSrv.events.delete("onFaultAlert", me.faultAlertEventHandlerId);
       }
       me.faultAlertEventHandlerId = null;
 
-      //
-      if (me.dateTimeChangedEventHandlerId) {
-         splSrv.events.delete("onDateTimeChanged", me.dateTimeChangedEventHandlerId);
+      // Clear onDateTimeChanged Handler(s)
+      if (me.onClickDateTimeChangedEventHandlerId) {
+         splSrv.events.delete("onDateTimeChanged", me.onClickDateTimeChangedEventHandlerId);
       }
-      me.dateTimeChangedEventHandlerId = null;
-
+      me.onClickDateTimeChangedEventHandlerId = null;
       //
-      if (me.refreshFaultMonitorOnDateTimeChangedEventHandlerId) {
-         splSrv.events.delete("onDateTimeChanged", me.refreshFaultMonitorOnDateTimeChangedEventHandlerId);
+      if (me.refreshDataOnDateTimeChangedEventHandlerId) {
+         splSrv.events.delete("onDateTimeChanged", me.refreshDataOnDateTimeChangedEventHandlerId);
       }
-      me.refreshFaultMonitorOnDateTimeChangedEventHandlerId = null;
+      me.refreshDataOnDateTimeChangedEventHandlerId = null;
    }
 
    /**
@@ -394,7 +413,7 @@ export class SplSensorDataTypesButton extends Component {
    }
    stopContentRefresh() {
       const me = this;
-      if (me.contentRefreshTimerHandlel) {
+      if (me.contentRefreshTimerHandle) {
          clearInterval(me.contentRefreshTimerHandle);
       }
       me.contentRefreshTimerHandle = null;

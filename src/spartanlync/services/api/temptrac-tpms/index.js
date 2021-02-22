@@ -359,7 +359,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
 
                      me._timer.b4 = new Date();
                      console.log("Fault data for VehicleID [ " + me._devId + " ] retrieved - " + me._convertSecondsToHMS((me._timer.b4 - me._timer.b3) / 1000));
-                     console.log("Fault data for VehicleID [ " + me._devId + " ] being analyzed - Please Wait!");
+                     console.log("Fault data for VehicleID [ " + me._devId + " ] being analyzed - Almost There!");
 
                      // Collect Ignition data
                      me._vehIgnitionData = me._generateVehIgnitionDb(result[1]);
@@ -612,7 +612,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                      console.log("Sensor data for VehicleID [ " + me._devId + " ] retrieved - " + me._convertSecondsToHMS((me._timer.b2 - me._timer.b1) / 1000));
 
                      // Analyze and Sort sensor data
-                     console.log("Sensor data for VehicleID [ " + me._devId + " ] being analyzed - Please Wait!");
+                     console.log("Sensor data for VehicleID [ " + me._devId + " ] being analyzed - Almost There!");
                      me._timer.b1 = new Date();
                      for (const res of result) {
                         if (Array.isArray(res) && res.length) {

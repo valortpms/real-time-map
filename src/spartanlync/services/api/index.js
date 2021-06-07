@@ -291,7 +291,12 @@ export const INITSplSessionMgr = function (myApi, credentials) {
    /**
    * getTempTracFaults() Fetch Temptrac Faults
    *
+   * @param {string}   vehId - Geotab Vehicle Id to search
+   * @param {string}   fromDate - Search FROM date in UTC
+   * @param {string}   toDate - Search TO date in UTC
+   * @param {string}   tempThreshold - TempTrac Search Threshold Type ("fridge" or "freezer")
    * @param {function} callback - Handler for post-retrieval
+   * @param {function} errorCallback - Handler for error reporting
    *
    * @return {array}  FaulsArray - Temptrac Faults found within date range or NULL if empty
    *

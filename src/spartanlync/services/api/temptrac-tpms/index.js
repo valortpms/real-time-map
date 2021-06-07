@@ -297,7 +297,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
 
             // Build then perform TPMS/Temptrac Multicall
             console.log("Please Wait...Attempt#" + (me._apiCallFaultRetryCount + 1) +
-               " Retrieving Fault data on VehicleID [ " + me._devId + " ] using " + (
+               " Retrieving TPMS Fault data on VehicleID [ " + me._devId + " ] using " + (
                   me._apiFaultFirstTimeCall ?
                      me._timeFaultSearchRetryRangeInDays[me._apiCallFaultRetryCount] + " day" :
                      me._convertSecondsToHMS(me._timeRangeForRepeatFaultSearchesInSeconds)

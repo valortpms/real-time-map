@@ -91,6 +91,7 @@ geotab.addin.splgeotabmap = (elt, service) => {
       },
       splStoreFetchedUnix: null,
       splStore: null,
+      dbDeviceIds: null
     },
 
     toolTipSettings: {
@@ -103,6 +104,7 @@ geotab.addin.splgeotabmap = (elt, service) => {
       }
     },
 
+    fetchTemptracFaultFirstTime: {},
     mapAlertMarkers: {},
     watchlistAndAlertSettings: {
       mapVehMenuItemIcon: "data:image/svg+xml;base64,PHN2ZyBpZD0ic3BhcnRhbmx5bmMtd2F0Y2hsaXN0LWljb24iIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDMyIDMyIj48cGF0aCBpZD0id2hpdGUiIGQ9Ik02Ljg2LDMyYTIuMzgsMi4zOCwwLDAsMS0yLjM5LTIuMzZWOC43NkEyLjM4LDIuMzgsMCwwLDEsNi44Niw2LjRoMS4zYTMuMTEsMy4xMSwwLDAsMSwzLjA3LTIuN2guMTNhNC43Niw0Ljc2LDAsMCwxLDkuMjgsMGguMTJhMy4xMiwzLjEyLDAsMCwxLDMuMDgsMi43aDEuM2EyLjM4LDIuMzgsMCwwLDEsMi4zOSwyLjM2VjI5LjY0QTIuMzgsMi4zOCwwLDAsMSwyNS4xNCwzMloiIGZpbGw9IiNmZmYiLz48cGF0aCBpZD0iZGFyay1ncmF5IiBkPSJNMjUuMTQsNy40SDIyLjg3VjYuODFBMi4xMiwyLjEyLDAsMCwwLDIwLjc2LDQuN2gtMWEzLjc2LDMuNzYsMCwwLDAtNy41MiwwaC0xYTIuMTEsMi4xMSwwLDAsMC0yLjEsMi4xMVY3LjRINi44NkExLjM5LDEuMzksMCwwLDAsNS40Nyw4Ljc2VjI5LjY0QTEuMzksMS4zOSwwLDAsMCw2Ljg2LDMxSDI1LjE0YTEuMzksMS4zOSwwLDAsMCwxLjM5LTEuMzZWOC43NkExLjM5LDEuMzksMCwwLDAsMjUuMTQsNy40Wk0xNiwzQTEuNzksMS43OSwwLDAsMSwxNy43OSw0LjdIMTQuMjFBMS43OSwxLjc5LDAsMCwxLDE2LDNabTguNTMsMjZINy40N1Y5LjRIOS4xM3YuODZIMjIuODdWOS40aDEuNjZabS02LTExLjkyYTUuOTIsNS45MiwwLDEsMS04LjM3LDguMzcsMS4zLDEuMywwLDAsMSwwLTEuODQsMS4zMiwxLjMyLDAsMCwxLDEuODQsMCwzLjMyLDMuMzIsMCwxLDAsNC42OS00LjY5LDEuMzIsMS4zMiwwLDAsMSwwLTEuODRBMS4zLDEuMywwLDAsMSwxOC41NSwxNy4wOFoiIGZpbGw9IiMyZjNjNDMiLz48cGF0aCBpZD0ibGlnaHQtZ3JheSIgZD0iTTEzLjQ1LDIyLjE4YTUuOTIsNS45MiwwLDAsMSw4LjM3LTguMzdBMS4zLDEuMywwLDAsMSwyMCwxNS42NWEzLjMyLDMuMzIsMCwxLDAtNC42OSw0LjcsMS4zLDEuMywwLDAsMS0xLjg0LDEuODNaIiBmaWxsPSIjOTc5ZGExIi8+PC9zdmc+",

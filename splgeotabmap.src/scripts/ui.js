@@ -432,10 +432,44 @@ const InitOutputUI = function (my, rootDomObj, containerId, panelLabelId, panelT
             typeof faultObj.occurredOnLatestIgnition !== "undefined" &&
             typeof faultObj.loc !== "undefined" &&
             Array.isArray(faultObj.loc) && faultObj.loc.length &&
-            faultObj.occurredOnLatestIgnition &&
-            (faultObj.alert.type === "Tire Pressure Fault" || faultObj.alert.type === "Tire Temperature Fault")
+            faultObj.occurredOnLatestIgnition && (
+              faultObj.alert.type === "TempTrac Temperature Fault" ||
+              faultObj.alert.type === "Tire Pressure Fault" ||
+              faultObj.alert.type === "Tire Temperature Fault"
+            )
           ) {
+            // eslint-disable-next-line complexity
             faultObj.loc.forEach(locObj => {
+
+              // TempTrac Temperature Alerts
+              if (typeof locObj.vehComp !== "undefined" &&
+                typeof cloneData[compId].temptrac !== "undefined" &&
+                faultObj.alert.type === "TempTrac Temperature Fault" &&
+                locObj.vehComp === compId) {
+
+                // Add TempTrac Threshold Setting value
+                const temptracThresholdHtml =
+                  typeof faultObj.threshold !== "undefined" ?
+                    " ( " + my.tr("alert_temptrac_threshold_title") + ": " +
+                    (faultObj.threshold === "fridge" ? my.tr("alert_temptrac_threshold_fri") : my.tr("alert_temptrac_threshold_fre"))
+                    + " )" : "";
+
+                const locId = "temptrac_zone" + locObj.zone;
+                if (typeof cloneData[compId].temptrac[locId] !== "undefined") {
+                  if (typeof cloneData[compId].temptrac[locId].alert === "undefined" || (
+                    typeof cloneData[compId].temptrac[locId].alert !== "undefined" &&
+                    faultObj.time > cloneData[compId].temptrac[locId].alert.time)) {
+                    cloneData[compId].temptrac[locId].alert = {
+                      time: faultObj.time,
+                      class: "alert-" + faultObj.alert.color.toLowerCase(),
+                      tooltip:
+                        my.tr("alert_header") + ": " +
+                        my.tr(faultObj.alert.trId) + " @" + my.app.convertUnixToTzHuman(faultObj.time) +
+                        temptracThresholdHtml + " - "
+                    };
+                  }
+                }
+              }
 
               // TPMS Pressure Alerts
               if (typeof locObj.vehComp !== "undefined" &&
@@ -1062,8 +1096,8 @@ const InitOutputUI = function (my, rootDomObj, containerId, panelLabelId, panelT
         if (locObj.type === "Temptrac") {
           const locHtml = me._convertLocToShortName(locObj.zone);
           outHtml += `
-            <div class="sensor-timestamp${animationClassName}" aria-label="${sensorTimeTitle}: ${sensorTime}" data-microtip-position="top" role="tooltip">
-              <div class="val-loc">${locHtml}</div>
+            <div class="sensor-timestamp${animationClassName}" aria-label="${alertTooltip}${sensorTimeTitle}: ${sensorTime}" data-microtip-position="top" role="tooltip">
+              <div class="val-loc ${alertClass}">${locHtml}</div>
               <div class="val-temp">${locObj.val.c}<span>&#8451;</span><p>${locObj.val.f}<span>&#8457;</span></p></div>
             </div>`;
         }

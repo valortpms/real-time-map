@@ -451,7 +451,7 @@ const SplGeotabMapUtils = function (my) {
 
               my.splSessionMgr = new INITSplSessionMgr(my.splApi, my.storage.credentials);
               my.splSessionMgr.getSettings(
-                (remoteStore) => {
+                (remoteStore, dbDeviceIds) => {
                   //
                   // Report Error if settings are:
                   // 1. Missing
@@ -469,6 +469,7 @@ const SplGeotabMapUtils = function (my) {
                   }
                   my.storage.splStoreFetchedUnix = moment().utc().unix();
                   my.storage.splStore = remoteStore;
+                  my.storage.dbDeviceIds = dbDeviceIds;
                   resolve(); // Notify on successful Load
                 },
                 (reason) => reject(my.tr("error_startup_general") + " " + reason)
@@ -507,6 +508,7 @@ const SplGeotabMapUtils = function (my) {
             if (remoteStore !== null && typeof remoteStore.splMap !== "undefined") {
               my.storage.splStoreFetchedUnix = moment().utc().unix();
               my.storage.splStore = remoteStore;
+              my.storage.dbDeviceIds = dbDeviceIds;
             }
             my.storage.splStore.timestamp = moment().utc().format(); // Set timestamp of local Storage object to NOW
             my.storage.splStore.splMap.splGeotabMapWatchlist = my.storage.sensorData.vehRegistry.watchlist;
@@ -645,6 +647,8 @@ const SplGeotabMapUtils = function (my) {
               if (skipFault) { continue; }
 
               // Process Fault
+              //
+              // - Init
               if (!my.storage.sensorData.watchlistAndAlertData.index.includes(vehId)) {
                 // Init
                 my.storage.sensorData.watchlistAndAlertData.index.push(vehId);
@@ -672,6 +676,7 @@ const SplGeotabMapUtils = function (my) {
               }
               my.storage.sensorData.watchlistAndAlertData[vehId].alerts.push(faultObj);
 
+              // - Sort to Highest-Severify, then Most-Recent Timestamp Fault
               if (faultObj.occurredOnLatestIgnition &&
                 faultObj.time &&
                 faultObj.alert.type !== "Sensor Fault" &&
@@ -687,12 +692,19 @@ const SplGeotabMapUtils = function (my) {
                   // Add instructional message
                   sensorLocArr.push(my.tr("alert_tooltip_instruction_msg"));
 
+                  // Add TempTrac Threshold Setting value
+                  const temptracThresholdHtml =
+                    typeof faultObj.threshold !== "undefined" ?
+                      my.tr("alert_temptrac_threshold_title") + ": " + (faultObj.threshold === "fridge" ? my.tr("alert_temptrac_threshold_fri") : my.tr("alert_temptrac_threshold_fre"))
+                      : "";
+
                   alertlevel.time = faultObj.time;
                   alertlevel.color = faultObj.alert.color;
                   alertlevel.iconName = "mapVehAlertIcon" + faultObj.alert.color.charAt(0).toUpperCase() + faultObj.alert.color.slice(1).toLowerCase();
                   alertlevel.tooltip.title = "SpartanLync " + my.tr("alert_header") + ": " + my.tr(faultObj.alert.trId) +
                     (faultObj.alert.type === "Tire Pressure Fault" ? " ( " + my.tr("alert_tire_pressure_fault") + " )" : "") +
-                    (faultObj.alert.type === "Tire Temperature Fault" ? " ( " + my.tr("alert_temperature_over") + " )" : "");
+                    (faultObj.alert.type === "Tire Temperature Fault" ? " ( " + my.tr("alert_temperature_over") + " )" : "") +
+                    (faultObj.alert.type === "TempTrac Temperature Fault" ? " (" + temptracThresholdHtml + ")" : "");
                   alertlevel.tooltip.sensorLocLabel = ["@" + me.convertUnixToTzHuman(faultObj.time), my.tr("alert_sensor_location_header") + ":"];
                   alertlevel.tooltip.sensorLocArr = sensorLocArr;
                 }
@@ -746,11 +758,13 @@ const SplGeotabMapUtils = function (my) {
                   const [vehInfo] = result[i + 1];
                   const vehId = veh.id;
 
-                  my.storage.sensorData.watchlistAndAlertData[vehId].name = veh.name;
-                  my.storage.sensorData.watchlistAndAlertData[vehId].time = moment(vehInfo.dateTime).unix();
-                  my.storage.sensorData.watchlistAndAlertData[vehId].speed = vehInfo.speed;
-                  my.storage.sensorData.watchlistAndAlertData[vehId].loc.lat = vehInfo.latitude;
-                  my.storage.sensorData.watchlistAndAlertData[vehId].loc.lng = vehInfo.longitude;
+                  if (typeof my.storage.sensorData.watchlistAndAlertData[vehId] !== "undefined") {
+                    my.storage.sensorData.watchlistAndAlertData[vehId].name = veh.name;
+                    my.storage.sensorData.watchlistAndAlertData[vehId].time = moment(vehInfo.dateTime).unix();
+                    my.storage.sensorData.watchlistAndAlertData[vehId].speed = vehInfo.speed;
+                    my.storage.sensorData.watchlistAndAlertData[vehId].loc.lat = vehInfo.latitude;
+                    my.storage.sensorData.watchlistAndAlertData[vehId].loc.lng = vehInfo.longitude;
+                  }
                 }
 
                 // Render Vehicle Watchlist sensor data data in UI
@@ -778,8 +792,8 @@ const SplGeotabMapUtils = function (my) {
           return false;
         }
         const sdataCache = my.storage.sensorData.cache[vehId].data;
-        const sdataType = locType === "Tire Temperature Fault" ? "tpmstemp" : "tpmspress";
-        const locId = (locType === "Tire Temperature Fault" ? "tiretemp_axle" : "tirepress_axle") + locObj.axle + "tire" + locObj.tire;
+        const sdataType = locType === "TempTrac Temperature Fault" ? "temptrac" : (locType === "Tire Temperature Fault" ? "tpmstemp" : "tpmspress");
+        const locId = locType === "TempTrac Temperature Fault" ? "temptrac_zone" + locObj.zone : ((locType === "Tire Temperature Fault" ? "tiretemp_axle" : "tirepress_axle") + locObj.axle + "tire" + locObj.tire);
 
         if (sdataCache && typeof sdataCache.vehCfg !== "undefined" && typeof sdataCache.vehCfg.compsdata !== "undefined" &&
           typeof locObj.vehComp !== "undefined" && locObj.vehComp && typeof sdataCache.vehCfg.compsdata[locObj.vehComp] !== "undefined") {
@@ -877,6 +891,7 @@ const SplGeotabMapUtils = function (my) {
        * @return void
        */
       getSensorData: function (vehId, vehName) {
+
         // Get SpartanLync Sensor Data
         if (my.storage.sensorData.searchInProgress) {
           const aSyncGoLib = INITGeotabTpmsTemptracLib(
@@ -913,16 +928,17 @@ const SplGeotabMapUtils = function (my) {
         me.fetchVehFaultsAndIgnitionAsync(vehId, overrideFirstTimeCall)
           .then(([faults, vehIgnitionInfo]) => {
 
-            // Update Fault & Ignition data cache(s)
+            // Update Faults & Ignition data cache(s)
             me.storeFaultData(vehId, faults);
             me.storeIgnData(vehId, vehIgnitionInfo);
 
             // Update Faults cache with new ignition data
             if (typeof vehIgnitionInfo !== "undefined" && vehIgnitionInfo !== null &&
-              typeof vehIgnitionInfo === "object" && typeof vehIgnitionInfo["on-latest"] !== "undefined" &&
-              vehIgnitionInfo["on-latest"]) {
+              typeof vehIgnitionInfo === "object" && typeof vehIgnitionInfo["on-latest"] !== "undefined") {
               me.updateFaultStatusUsingIgnData(vehId);
             }
+            me.configTemptracFaults(vehId);
+            me.reportNewFaults(vehId);
           })
           .catch((reason) => {
             console.log("---- Error while searching for FAULTS on VehicleID [ " + vehId + " ] named [ " + vehName + " ]: ", reason);
@@ -1047,17 +1063,137 @@ const SplGeotabMapUtils = function (my) {
       */
       fetchVehFaultsAndIgnitionAsync: function (vehId, firstTimeCallOverride) {
         const overrideFirstTimeCall = typeof firstTimeCallOverride === "undefined" ? null : firstTimeCallOverride;
-        return new Promise((resolve, reject) => {
-          const aSyncGoLib = INITGeotabTpmsTemptracLib(
-            my.service.api,
-            my.sensorSearchRetryRangeInDays,
-            my.sensorSearchTimeRangeForRepeatSearchesInSeconds,
-            my.faultSearchRetryRangeInDays,
-            my.faultSearchTimeRangeForRepeatSearchesInSeconds
-          );
-          aSyncGoLib.getFaults(vehId, function (faults, vehIgnitionInfo) {
-            resolve([faults, vehIgnitionInfo]);
-          }, overrideFirstTimeCall);
+        return new Promise((finalResolve) => {
+
+          // Poll for TPMS Faults
+          const fTask1 = new Promise((subResolve1) => {
+            const aSyncGoLib = INITGeotabTpmsTemptracLib(
+              my.service.api,
+              my.sensorSearchRetryRangeInDays,
+              my.sensorSearchTimeRangeForRepeatSearchesInSeconds,
+              my.faultSearchRetryRangeInDays,
+              my.faultSearchTimeRangeForRepeatSearchesInSeconds
+            );
+            aSyncGoLib.getFaults(vehId, function (faults, vehIgnitionInfo) {
+              subResolve1([faults, vehIgnitionInfo]);
+            }, overrideFirstTimeCall);
+          });
+
+          // Poll for TempTrac Faults
+          const fTask2 = new Promise((subResolve2) => {
+            me.fetchTemptracFaults(vehId, (temptracFaults) => {
+              subResolve2(temptracFaults);
+            });
+          });
+
+          // Merge all the faults together amd return with Ignition info
+          Promise.allSettled([fTask1, fTask2])
+            .then(([tpmsResult, temptracResult]) => {
+              const [tpmsFaults, vehIgnitionInfo] = tpmsResult.value;
+              const temptracFaults = temptracResult.value;
+              let faults;
+
+              // Merge TempTrac with TPMS Fault search results
+              if (Array.isArray(temptracFaults) && temptracFaults.length) {
+                faults = tpmsFaults === null ? temptracFaults : tpmsFaults.concat(temptracFaults);
+              }
+              else {
+                faults = tpmsFaults;
+              }
+              finalResolve([faults, vehIgnitionInfo]);
+            });
+        });
+      },
+
+      /**
+      * Fetch the Vehicle TempTrac Alarm Threshold Type from SplTools splStore + dbDeviceIds data
+      *
+      *  @returns string
+      */
+      getTemptracVehThresholdSetting: function (vehId) {
+        const me = this;
+        let vehThresholdType = "fridge";
+
+        if (vehId && typeof my.storage.splStore.temptracAlarmThreshold !== "undefined") {
+          vehThresholdType = my.storage.splStore.temptracAlarmThreshold;
+          if (typeof my.storage.dbDeviceIds.ids[vehId] !== "undefined" &&
+            typeof my.storage.dbDeviceIds.ids[vehId].temptracAlarmThreshold !== "undefined" &&
+            my.storage.dbDeviceIds.ids[vehId].temptracAlarmThreshold) {
+            vehThresholdType = my.storage.dbDeviceIds.ids[vehId].temptracAlarmThreshold;
+          }
+        }
+        return vehThresholdType;
+      },
+
+      /**
+      * Fetch TempTrac Faults generated in the past over a range of days for a specified vehicle
+      * @param {string} [vehId] The vehicleId to fetch TempTrac faults for
+      * @param {function} [callback] Function invoked and passed TempTrac fault data (NULL if nothing found)
+      *
+      * @return void
+      */
+      fetchTemptracFaults: function (vehId, callback) {
+        if (!callback || typeof callback !== "function") { return null; }
+        if (!vehId) { callback(null); }
+        my.fetchTemptracFaultFirstTime[vehId] = typeof my.fetchTemptracFaultFirstTime[vehId] === "undefined" ? true : false;
+
+        const toFaultDateObj = moment.utc();
+        const searchRangeArr = my.fetchTemptracFaultFirstTime[vehId] ? my.faultSearchRetryRangeInDays : [1];
+        const searchUnit = my.fetchTemptracFaultFirstTime[vehId] ? "days" : "hour";
+        const vehTemptracThresholdType = me.getTemptracVehThresholdSetting(vehId);
+        me.searchForTemptracFaults(vehId, toFaultDateObj, searchRangeArr, searchUnit, vehTemptracThresholdType)
+          .then((faults) => {
+            callback(faults);
+          });
+      },
+
+      /**
+      * Asynchronously attempt searches for Vehicle TempTrac Faults over a range of days
+      * @param {string} [vehId] The vehicleId to search on
+      * @param {object} [toFaultDateObj] Moment Object representing To date in Search
+      * @param {array}  [searchRangeArr] Array of date range values searched in sequential order before returning results or failing
+      * @param {string} [searchUnit] Unit in "days" or "hour" to interpret values of [searchRangeArr]
+      * @param {string} [tempThreshold] TempTrac Threshold search criteria (Must be "fridge" or "freezer")
+      *
+      * @return {array} objects
+      */
+      searchForTemptracFaults: function (vehId, toFaultDateObj, searchRangeArr, searchUnit, tempThreshold) {
+        return new Promise((resolve) => {
+
+          if (!vehId || !toFaultDateObj || !searchRangeArr || !searchUnit || !tempThreshold ||
+            !Array.isArray(searchRangeArr) || !searchRangeArr.length ||
+            typeof toFaultDateObj !== "object" || !moment.isMoment(toFaultDateObj)) {
+            resolve(null);
+          }
+
+          (async () => {
+            const toFaultDate = toFaultDateObj.format();
+            let fdata = null;
+
+            for (const idx in searchRangeArr) {
+              const searchRange = searchRangeArr[idx];
+              const fromFaultDate = moment.unix(toFaultDateObj.unix()).utc().subtract(searchRange, searchUnit).format();
+
+              console.log("Please Wait...Attempt#" + (parseInt(idx) + 1) +
+                " Retrieving TempTrac Fault data on VehicleID [ " + vehId + " ] using " +
+                searchRange + " " + searchUnit + " date range: FROM: " +
+                fromFaultDate + " UTC => TO: " + toFaultDate + " UTC");
+
+              await new Promise((loopResolve) => {
+                my.splSessionMgr.getTempTracFaults(vehId, fromFaultDate, toFaultDate, tempThreshold, (faults) => {
+                  fdata = faults;
+                  loopResolve();
+                }, () => loopResolve());
+              });
+              if (fdata !== null) { break; }
+            }
+
+            // Report to console
+            if (fdata === null || fdata && !fdata.length) {
+              console.log("VehicleID [ " + vehId + " ]: NO TempTrac FAULT DATA FOUND for this date range!");
+            }
+            resolve(fdata);
+          })();
         });
       },
 
@@ -1096,6 +1232,7 @@ const SplGeotabMapUtils = function (my) {
             my.ui.clearMapAlerts();
             my.storage.splStore = null;
             my.sdataTools.resetCache();
+            my.fetchTemptracFaultFirstTime = {};
             my.storage.sensorData.cache = {};
             my.storage.sensorData.faultCache = {};
             my.storage.sensorData.ignitionCache = {};
@@ -1132,7 +1269,7 @@ const SplGeotabMapUtils = function (my) {
         if (typeof locArr !== "undefined" && locArr !== null &&
           Array.isArray(locArr) && locArr.length) {
           locArr.forEach(locObj => {
-            const locStr = "Axle " + locObj.axle + " Tire " + locObj.tire + " - " + my.vehCompDb.names[locObj.vehComp];
+            const locStr = (typeof locObj.zone !== "undefined" ? "Zone " + locObj.zone : ("Axle " + locObj.axle + " Tire " + locObj.tire)) + " - " + my.vehCompDb.names[locObj.vehComp];
             locDescArr.push(me._locTr(locStr));
           });
         }
@@ -1142,6 +1279,7 @@ const SplGeotabMapUtils = function (my) {
       _locTr: function (rawVal) {
         let val = rawVal.toString().trim();
         if (val) {
+          val = val.replace("Zone", my.tr("alert_desc_zone"));
           val = val.replace("Axle", my.tr("alert_desc_axle"));
           val = val.replace("Tire", my.tr("alert_desc_tire"));
           val = val.replace("Tractor", my.tr("alert_desc_tractor"));
@@ -1184,34 +1322,28 @@ const SplGeotabMapUtils = function (my) {
           if (typeof my.storage.sensorData.faultCache[vehId] === "undefined") {
             my.storage.sensorData.faultCache[vehId] = {};
           }
-          let newOrUpdatedFaultCount = 0;
 
-          // Update fault data cache with individual updates for each fault
+          // Update fault data cache with new Fault data from Geotab & TempTrac Fault API
           for (const faultObj of data) {
             const faultId = "fault_" + faultObj.id;
             if (typeof my.storage.sensorData.faultCache[vehId][faultId] === "undefined") {
               my.storage.sensorData.faultCache[vehId][faultId] = {};
             }
-            if (typeof my.storage.sensorData.faultCache[vehId][faultId].time === "undefined" || faultObj.time > my.storage.sensorData.faultCache[vehId][faultId].time) {
+            if (typeof my.storage.sensorData.faultCache[vehId][faultId].time === "undefined" ||
+              faultObj.time > my.storage.sensorData.faultCache[vehId][faultId].time) {
+
               // Exclude "Sensor Fault" Types / "Missing Sensor" Fault from cache
               if (typeof faultObj.alert !== "undefined" && typeof faultObj.alert.type !== "undefined" &&
                 faultObj.alert.type === "Sensor Fault") {
                 delete my.storage.sensorData.faultCache[vehId][faultId];
                 continue;
               }
-              if (typeof faultObj.alert !== "undefined" &&
-                typeof faultObj.occurredOnLatestIgnition !== "undefined" &&
-                faultObj.occurredOnLatestIgnition) {
-                newOrUpdatedFaultCount++;
+              // Initialize Faults from TempTrac Fault API as FALSE
+              if (typeof faultObj.occurredOnLatestIgnition !== "undefined" && faultObj.occurredOnLatestIgnition === null) {
+                faultObj.occurredOnLatestIgnition = false;
               }
               my.storage.sensorData.faultCache[vehId][faultId] = faultObj;
             }
-          }
-          if (newOrUpdatedFaultCount) {
-            console.log("[" + newOrUpdatedFaultCount + "] NEW POST-IGNITION SPARTANLYNC FAULTS FOUND or UPDATED after the last search.");
-          }
-          else {
-            console.log("NO NEW POST-IGNITION SPARTANLYNC FAULT DATA FOUND for this date range!");
           }
         }
       },
@@ -1257,7 +1389,7 @@ const SplGeotabMapUtils = function (my) {
           typeof my.storage.sensorData.ignitionCache[vehId] !== "undefined" && typeof my.storage.sensorData.ignitionCache === "object" &&
           typeof my.storage.sensorData.faultCache !== "undefined" && my.storage.sensorData.faultCache !== null && typeof my.storage.sensorData.faultCache[vehId] !== "undefined" &&
           typeof my.storage.sensorData.faultCache[vehId] === "object" && Object.keys(my.storage.sensorData.faultCache[vehId]).length &&
-          typeof my.storage.sensorData.ignitionCache[vehId]["on-latest"] !== "undefined" && my.storage.sensorData.ignitionCache[vehId]["on-latest"]
+          typeof my.storage.sensorData.ignitionCache[vehId]["on-latest"] !== "undefined"
         ) {
           for (const faultId in my.storage.sensorData.faultCache[vehId]) {
             my.storage.sensorData.faultCache[vehId][faultId].occurredOnLatestIgnition =
@@ -1266,6 +1398,74 @@ const SplGeotabMapUtils = function (my) {
                 my.storage.sensorData.faultCache[vehId][faultId].time >= my.storage.sensorData.ignitionCache[vehId]["on-latest"]
               ) ? true : false;
           }
+        }
+      },
+
+      configTemptracFaults: function (vehId) {
+
+        const latestTemptracFaultOFF = {
+          timeXL: 0,
+          timeXH: 0
+        };
+
+        if (typeof vehId !== "undefined" && vehId !== null &&
+          typeof my.storage.sensorData.faultCache !== "undefined" &&
+          my.storage.sensorData.faultCache !== null &&
+          typeof my.storage.sensorData.faultCache[vehId] !== "undefined" &&
+          typeof my.storage.sensorData.faultCache[vehId] === "object" &&
+          Object.keys(my.storage.sensorData.faultCache[vehId]).length
+        ) {
+
+          // If Exist, get latest XL/XH TempTrac FaultOFF event
+          for (const faultId in my.storage.sensorData.faultCache[vehId]) {
+            const faultObj = my.storage.sensorData.faultCache[vehId][faultId];
+            if (faultObj.id.indexOf("FaultOff") > -1) {
+              if (faultObj.id === "temptracXLFaultOff") {
+                latestTemptracFaultOFF.timeXL = faultObj.time;
+              }
+              if (faultObj.id === "temptracXHFaultOff") {
+                latestTemptracFaultOFF.timeXH = faultObj.time;
+              }
+            }
+          }
+
+          // Update TempTrac faults using latest XL/XH TempTrac FaultOFF events
+          for (const faultId in my.storage.sensorData.faultCache[vehId]) {
+            const faultObj = my.storage.sensorData.faultCache[vehId][faultId];
+            if ((latestTemptracFaultOFF.timeXL && faultObj.id.indexOf("fault_temptrac_xl") > -1 && faultObj.time <= latestTemptracFaultOFF.timeXL) ||
+              (latestTemptracFaultOFF.timeXH && faultObj.id.indexOf("fault_temptrac_xh") > -1 && faultObj.time <= latestTemptracFaultOFF.timeXH)) {
+              faultObj.occurredOnLatestIgnition = false;
+            }
+          }
+        }
+      },
+
+      reportNewFaults: function (vehId) {
+
+        let newOrUpdatedFaultAlertCount = 0;
+
+        // Count New Post-Ignition Faults
+        if (typeof vehId !== "undefined" && vehId !== null &&
+          typeof my.storage.sensorData.faultCache !== "undefined" &&
+          my.storage.sensorData.faultCache !== null &&
+          typeof my.storage.sensorData.faultCache[vehId] !== "undefined" &&
+          typeof my.storage.sensorData.faultCache[vehId] === "object" &&
+          Object.keys(my.storage.sensorData.faultCache[vehId]).length
+        ) {
+          for (const faultId in my.storage.sensorData.faultCache[vehId]) {
+            const faultObj = my.storage.sensorData.faultCache[vehId][faultId];
+            if (typeof faultObj.alert !== "undefined" && faultObj.occurredOnLatestIgnition) {
+              newOrUpdatedFaultAlertCount++;
+            }
+          }
+        }
+
+        // Report to Console
+        if (newOrUpdatedFaultAlertCount) {
+          console.log("VehicleID [", vehId, "] - " + newOrUpdatedFaultAlertCount + " NEW POST-IGNITION SPARTANLYNC FAULTS FOUND or UPDATED after the last search.");
+        }
+        else {
+          console.log("VehicleID [", vehId, "] - NO NEW POST-IGNITION SPARTANLYNC FAULT DATA FOUND for this date range!");
         }
       },
 
@@ -1621,7 +1821,7 @@ const INITSplSessionMgr = function (myApi, credentials) {
         credentials: me._credentials,
       },
       (result) => {
-        if (me._isSuccess(result)) {
+        if (me._isSuccess(result) && result.data !== null && result.data) {
           const settings = result.data;
           if (typeof settings.storageObj !== "undefined" && typeof settings.deviceIdDb !== "undefined") {
             // If flash message from server exists,
@@ -1698,12 +1898,63 @@ const INITSplSessionMgr = function (myApi, credentials) {
   };
 
   /**
+  * getTempTracFaults() Fetch TempTrac Fault data
+  *
+  * @param {string}   vehId - Geotab Vehicle Id to search
+  * @param {string}   fromDate - Search FROM date in UTC
+  * @param {string}   toDate - Search TO date in UTC
+  * @param {string}   tempThreshold - TempTrac Search Threshold Type ("fridge" or "freezer")
+  * @param {function} callback - Handler for post-retrieval
+  * @param {function} errorCallback - Handler for error reporting
+  *
+  * @return {array}   FaulsArray - Temptrac Faults found within date range or NULL if empty
+  *
+  */
+  this.getTempTracFaults = function (vehId, fromDate, toDate, tempThreshold, callback, errorCallback) {
+    const me = this;
+    if (!callback || typeof callback !== "function" || !me._api || !me._credentials) { return; }
+
+    const errCallback = errorCallback && typeof errorCallback === "function" ? errorCallback : null;
+    me._api.requestService(
+      {
+        temptracfaults: {
+          vehId: vehId,
+          fromDate: fromDate,
+          toDate: toDate,
+          tempThreshold: tempThreshold,
+          noHistoryLatestOnly: true
+        },
+        credentials: me._credentials
+      },
+      (result) => {
+        if (me._isSuccess(result)) {
+          callback(result.data);
+        }
+        else {
+          me._handleAppError(result, "---- splSessionMgr(): getTempTracFaults(): FETCHING ERROR ----");
+        }
+      },
+      // API ERROR FETCHING
+      (result) => {
+        const msg = "---- splSessionMgr(): getTempTracFaults(): API ERROR FETCHING: " + result;
+        if (errCallback) {
+          errCallback(msg);
+        }
+      }
+    );
+  };
+
+  /**
    *  Handler for Setting debug in SplAPI
    */
   this.enableDebug = function (enable) {
     const me = this;
     me._api.enableDebug(enable);
   };
+
+  /**
+   *  Utility Methods
+   */
 
   this._isSuccess = function (result) {
     if (
@@ -1714,9 +1965,7 @@ const INITSplSessionMgr = function (myApi, credentials) {
       result.responseStatus !== null &&
       typeof result.responseStatus &&
       result.responseStatus === "success" &&
-      typeof result.data !== "undefined" &&
-      result.data !== null &&
-      result.data
+      typeof result.data !== "undefined"
     ) {
       return true;
     }
@@ -1996,7 +2245,7 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
 
         // Build then perform TPMS/Temptrac Multicall
         console.log("Please Wait...Attempt#" + (me._apiCallFaultRetryCount + 1) +
-          " Retrieving Fault data on VehicleID [ " + me._devId + " ] using " + (
+          " Retrieving TPMS Fault data on VehicleID [ " + me._devId + " ] using " + (
             me._apiFaultFirstTimeCall ?
               me._timeFaultSearchRetryRangeInDays[me._apiCallFaultRetryCount] + " day" :
               me._convertSecondsToHMS(me._timeRangeForRepeatFaultSearchesInSeconds)
@@ -2119,7 +2368,7 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
                 if (me._apiFaultFirstTimeCall) {
 
                   // If its a first time call + no fault date found, Retry with a different date range
-                  console.log("NO FAULT DATA FOUND! Retrying search with another date range...");
+                  console.log("VehicleID [ " + me._devId + " ]: NO FAULT DATA FOUND! Retrying search with another date range...");
                   me._apiCallFaultRetryCount++;
                   me._setDateRangeAndInvokeFaultCalls();
                   return;
@@ -2127,7 +2376,7 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
                 else {
 
                   // Repeat calls will fails with "No Results" found. No Retry. Return "No Results" response to callback
-                  console.log("NO FAULT DATA FOUND for this date range!");
+                  console.log("VehicleID [ " + me._devId + " ]: NO FAULT DATA FOUND for this date range!");
                   me._apiCallFaultRetryCount = 0;
                   me._fDataCallback(null, me._vehIgnitionData);
                   return;
@@ -2234,7 +2483,7 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
               }
 
               // Return "NOT-FOUND" result to callback
-              console.log("NO FAULT DATA FOUND for this date range!");
+              console.log("VehicleID [ " + me._devId + " ]: NO FAULT DATA FOUND for this date range!");
               me._apiCallFaultRetryCount = 0;
               me._fDataCallback(null, me._vehIgnitionData);
             }

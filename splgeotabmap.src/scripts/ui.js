@@ -91,7 +91,7 @@ const InitOutputUI = function (my, rootDomObj, containerId, panelLabelId, panelT
         if (errorEl.classList.contains("hidden")) {
           errorEl.classList.remove("hidden");       // Show what we do need
         }
-        console.log("==== " + my.tr("error_app_title") + ": " + msg.replace(/\<br \/\>/g, " "));
+        console.log("==== " + my.tr("error_app_title") + ": " + msg.toString().replace(/\<br \/\>/g, " "));
         errorEl.innerHTML = my.tr("error_title") + ":<br />" + msg;
       }
     });

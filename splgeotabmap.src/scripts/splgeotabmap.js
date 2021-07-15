@@ -167,6 +167,9 @@ geotab.addin.splgeotabmap = (elt, service) => {
     my.faultSearchTimeRangeForRepeatSearchesInSeconds
   );
   my.vehCompDb = my.goLib.getVehComponentDB();
+  my.goLib.onDiagIdsLoaded((vehCompDB) => {
+    my.vehCompDb = vehCompDB;
+  });
   my.ui = new InitOutputUI(my, elt,
     splSelContainer, splSelLabel, splSelTitleBold,
     geotabAddInPanelOpenCloseBtnSel, geotabAddInPanelSel, geotabAddInPanelClass,

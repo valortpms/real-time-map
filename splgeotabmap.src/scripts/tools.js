@@ -3137,6 +3137,7 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
         },
 
         parseJSON: function (raw) {
+          let json = "";
           try {
             json = JSON.parse(raw);
           } catch (e) {

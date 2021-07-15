@@ -3105,7 +3105,6 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
         },
 
         validateData: function (storageData) {
-          const my = this;
           const now = moment().utc().unix();
           let storageObj = null;
           if (storageData) {
@@ -3122,8 +3121,6 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
          *  @param {data} data The data object
          */
         set: function (storageData) {
-          const my = this;
-
           // Set Version
           if (!storageData || typeof storageData.idxNames === "undefined") {
             return;
@@ -3488,7 +3485,7 @@ const INITGeotabTpmsTemptracLib = function (api, retrySearchRange, repeatingSear
           ],
         },
         idxIds: {}
-      },
+      }
     };
     return me;
   }.bind(this)();

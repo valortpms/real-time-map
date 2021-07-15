@@ -22,6 +22,13 @@ export function fetchVehSensorDataAsync(vehId, vehComp, firstTimeCallOverride) {
          splSrv.faultSearchRetryRangeInDays,
          splSrv.faultSearchTimeRangeForRepeatSearchesInSeconds
       );
+
+      // Attach DiagIdsLoaded listener (to update global diagIdsDB)
+      aSyncGoLib.onDiagIdsLoaded((diagIdsDB) => {
+         splSrv.vehCompDb = diagIdsDB;
+      });
+
+      // Fetch sensor data from Geotab API for vehicle
       aSyncGoLib.getData(vehId, vehComponent, function (sensorData) {
          if (sensorData === null) {
             reject(splSrv.sensorDataNotFoundMsg);

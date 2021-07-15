@@ -43,7 +43,8 @@ export const INITSplSensorDataTools = function (goLibCreatorFunc) {
             expiry: moment().add(me._sensorDataLifetime, "seconds").unix(),
             data: null
          };
-         me._goLibVeh[vehId] = me._goLibCreatorFunc(); // Create TEMPTRAC-TPMS library object vehicle instance
+         // Create TEMPTRAC-TPMS library object vehicle instance
+         me._goLibVeh[vehId] = me._goLibCreatorFunc();
       }
       return new Promise((resolve, reject) => {
          // Do not allow simultaneous searches on the same vehicle

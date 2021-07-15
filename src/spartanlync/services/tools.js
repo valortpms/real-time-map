@@ -43,11 +43,11 @@ const SpartanLyncServiceTools = {
             splSrv.faultSearchTimeRangeForRepeatSearchesInSeconds
          );
       };
-      splSrv.vehCompDb = splSrv.goLibCreatorFunc().getVehComponentDB();
       splSrv.sdataTools = new INITSplSensorDataTools(splSrv.goLibCreatorFunc);
       splSrv.sdataTools.setSensorDataLifetimeInSec(splSrv.sensorDataLifetime);
       splSrv.sdataTools.setSensorDataNotFoundMsg(splSrv.sensorDataNotFoundMsg);
       splSrv.sdataTools.setVehComponents(splSrv.vehCompTr.toEn);
+      splSrv.vehCompDb = splSrv.goLibCreatorFunc().getVehComponentDB();
 
       // Detect if running on SpartanLync Servers in proxy-mode
       if (typeof splSrv.state.inSpartanLyncDomain !== "undefined" &&

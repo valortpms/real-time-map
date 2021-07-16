@@ -1144,6 +1144,7 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
             _lockPollingTime: 1000,   // Time to wait before polling for lock removal
             _lockPollingAttempts: 20, // Amount of attempts to check for lock removal
             _lockTimerCounter: 0,
+            _dbName: null,
 
             /**
              *  Gets data from localStorage
@@ -1172,30 +1173,22 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
                }
             },
 
-            validateData: function (storageData) {
-               const now = moment().utc().unix();
-               let storageObj = null;
-               if (storageData) {
-                  if (typeof storageData.ver !== "undefined" && typeof storageData.expiry !== "undefined" &&
-                     storageData.ver === me._diagIdsLocalStorageVersion && storageData.expiry > now) {
-                     storageObj = storageData;
-                  }
-               }
-               return storageObj;
-            },
-
             /**
              *  Saves data into localStorage
              *  @param {data} data The data object
              */
             set: function (storageData) {
+               const my = this;
 
                // Set Version
                if (!storageData || typeof storageData.idxNames === "undefined") {
                   return;
                }
-               else if (typeof storageData.ver === "undefined") {
+               if (typeof storageData.ver === "undefined") {
                   storageData.ver = me._diagIdsLocalStorageVersion;
+               }
+               if (typeof storageData.db === "undefined") {
+                  storageData.db = my.getDatabaseName();
                }
 
                // Set timestamp of Expiry of this local Storage object
@@ -1203,6 +1196,51 @@ export function INITGeotabTpmsTemptracLib(api, retrySearchRange, repeatingSearch
 
                // Attempt to Save Remotely
                localStorage.setItem(me._diagIdsLocalStorageKeyName, JSON.stringify(storageData));
+            },
+
+            /**
+             *  Verify validity of data object, if invalid, return NULL
+             */
+            validateData: function (storageData) {
+               const my = this;
+               const now = moment().utc().unix();
+               const dbName = my.getDatabaseName();
+               let storageObj = null;
+               if (storageData) {
+                  if (typeof storageData.db !== "undefined" &&
+                     typeof storageData.ver !== "undefined" &&
+                     typeof storageData.expiry !== "undefined" &&
+                     storageData.db === dbName &&
+                     storageData.ver === me._diagIdsLocalStorageVersion &&
+                     storageData.expiry > now) {
+                     storageObj = storageData;
+                  }
+               }
+               return storageObj;
+            },
+
+            /**
+             *  Parse and return Geotab database name from URL
+             */
+            getDatabaseName: function () {
+               const my = this;
+               let dbName = "unknown";
+
+               if (my._dbName) {
+                  return my._dbName;
+               }
+               // Get from DEV credentials object
+               if (window.location.hostname === "localhost") {
+                  const credentials = my.parseJSON(localStorage.getItem("geotabAPI_credentials"));
+                  dbName = typeof credentials.database !== "undefined" ? credentials.database : dbName;
+               }
+               // Get from Browser URL
+               else {
+                  const pathArr = window.location.pathname.replace("/", "").split("/");
+                  dbName = pathArr.length ? pathArr[0] : dbName;
+               }
+               my._dbName = dbName;
+               return dbName;
             },
 
             parseJSON: function (raw) {
